@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>이야기 스튜디오 v1.7 (Auto Indent)</title>
+    <title>이야기 스튜디오 v1.8 (Template Update)</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -103,29 +103,24 @@
         
         .paper-wrapper { width: 100%; max-width: 880px; padding: 40px 0 50vh; display: flex; justify-content: center; position: relative; z-index: 5; }
         .paper-wrapper.typewriter { padding-bottom: 150vh; }
-        .paper { width: 100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 50px 60px; min-height: 90vh; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
+        .paper { width: 100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 60px 80px; min-height: 90vh; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
         .paper.mobile { max-width: 555px; padding: 35px 30px; }
         
-        /* * [수정] text-indent: 1em 추가 
-         * - 문단의 첫 줄(맨 윗줄)을 자동으로 들여쓰기 합니다.
-         */
+        /* 문단 첫 줄 들여쓰기 */
         textarea.editor { 
             width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
             background: transparent; font-family: inherit; font-size: 18px; line-height: 2; 
             color: var(--text-main); display: block; padding: 0; margin: 0; 
             position: relative; z-index: 2; 
-            text-indent: 1em; /* 여기 추가됨 */
+            text-indent: 1em; 
         }
         
-        /* * [수정] text-indent: 1em 추가
-         * - Typewriter 모드 계산용 미러 엘리먼트에도 동일하게 적용해야 스크롤이 튀지 않습니다.
-         */
         #caret-mirror { 
             position: absolute; top: -9999px; left: -9999px; visibility: hidden; 
             white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; 
             font-family: inherit; font-size: 18px; line-height: 1.8; 
             padding: 60px 80px; width: 800px; 
-            text-indent: 1em; /* 여기 추가됨 */
+            text-indent: 1em; 
         }
         
         .corkboard { width: 100%; padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; align-content: flex-start; }
@@ -528,25 +523,17 @@
             const handleNav = () => { updateTypewriter(true); };
             const focusEditor = () => { if (editorRef.value) editorRef.value.focus(); };
 
-            // [추가된 함수] 엔터 키 입력 시 자동 들여쓰기 처리
             const handleEnter = (e) => {
                 const ta = e.target;
                 const start = ta.selectionStart;
                 const end = ta.selectionEnd;
                 const val = activeNode.value.content || '';
-
-                // 들여쓰기 문자: 전각 공백(ㄱ+한자+1) -> '\u3000'
-                // 일반 공백을 원하면 '  '로 바꾸세요.
                 const indent = '\u3000'; 
-                
-                // 현재 커서 위치에 [개행 + 들여쓰기] 삽입
-                const newVal = val.substring(0, start) + '\n' + indent + val.substring(end);
-                
+                const insertion = '\n\n' + indent; 
+                const newVal = val.substring(0, start) + insertion + val.substring(end);
                 activeNode.value.content = newVal;
-
-                // Vue 데이터 반영 후 커서 위치 조정 및 높이 계산
                 nextTick(() => {
-                    ta.selectionStart = ta.selectionEnd = start + 1 + indent.length;
+                    ta.selectionStart = ta.selectionEnd = start + insertion.length;
                     autoResize();
                     updateTypewriter(true);
                     debouncedSave();
@@ -555,7 +542,36 @@
 
             // CRUD & Tree
             const editingProjectId = ref(null);
-            const createProject = () => { const title = prompt('새 프로젝트:', '새 소설'); if (title) { const newId = Date.now().toString(36); projects.value[newId] = { id: newId, title, updatedAt: new Date().toISOString(), nodes: [{id:'f1',type:'folder',title:'설정집',parent:null,closed:false,content:'',synopsis:''},{id:'c1',type:'chapter',title:'세계관',parent:'f1',content:'# 세계관\n',synopsis:''}], config:{target:5000} }; saveData(); loadProject(newId, 'c1'); } };
+            
+            // [수정] 템플릿 적용된 프로젝트 생성 함수
+            const createProject = () => {
+                const title = prompt('새 프로젝트:', '새 소설');
+                if (title) {
+                    const newId = Date.now().toString(36);
+                    projects.value[newId] = {
+                        id: newId,
+                        title,
+                        updatedAt: new Date().toISOString(),
+                        nodes: [
+                            // 1. 설정집 폴더
+                            { id: 'f1', type: 'folder', title: '설정집', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
+                                { id: 'c1', type: 'chapter', title: '세계관', parent: 'f1', closed: false, content: '# 세계관\n\n　', synopsis: '', iconType: 'loc' },
+                                { id: 'c2', type: 'chapter', title: '캐릭터', parent: 'f1', closed: false, content: '# 캐릭터 설정\n\n　', synopsis: '', iconType: 'char' },
+                            
+                            // 2. 본문 폴더
+                            { id: 'f2', type: 'folder', title: '본문', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
+                                { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '여기에 초안을 작성하세요.\n\n　', synopsis: '', iconType: 'flag-red' },
+                                { id: 'c4', type: 'chapter', title: '제 1장', parent: 'f2', closed: false, content: '제 1장 본문 시작.\n\n　', synopsis: '', iconType: 'idea' },
+                                { id: 'c5', type: 'chapter', title: '제 2장', parent: 'f2', closed: false, content: '제 2장 본문 시작.\n\n　', synopsis: '', iconType: 'default' }
+                        ],
+                        config: { target: 5000 }
+                    };
+                    saveData();
+                    // 생성 후 초안(c3) 챕터를 자동으로 엽니다.
+                    loadProject(newId, 'c3'); 
+                }
+            };
+
             const deleteProject = (id) => { if(confirm('삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
             const startEditProject = (id) => { currentProjectId.value = null; editingProjectId.value = id; };
             const endEditProject = () => { if(editingProjectId.value) { if(!projects.value[editingProjectId.value].title.trim()) projects.value[editingProjectId.value].title='제목 없음'; saveData(); editingProjectId.value=null; } };
@@ -606,7 +622,7 @@
                 currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
-                handleEnter // [추가] 엔터키 처리 함수 리턴에 포함
+                handleEnter 
             };
         }
     });
