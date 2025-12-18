@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>이야기 스튜디오 v1.7 (Auto Indent)</title>
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        @font-face {
+            font-family: 'Ridibatang';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff') format('woff');
+            font-weight: normal; font-display: swap;
+        }
+
+        :root {
+            --bg-app: #F4F4F5; --bg-sidebar: #FFFFFF; --bg-paper: #FFFFFF; --bg-modal: #FFFFFF;
+            --text-main: #18181B; --text-mute: #71717A; --accent: #3B82F6; --accent-bg: #EFF6FF;
+            --border: #E4E4E7; --sidebar-width: 260px; --postit-bg: #FEF3C7; --postit-text: #78350F;
+            --postit-border: #FCD34D;
+            --alert-success: #10B981; --alert-error: #EF4444;
+            --active-color: #3F3F46; --active-bg: #E5E7EB;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-app: #09090B; --bg-sidebar: #18181B; --bg-paper: #18181B; --bg-modal: #18181B;
+            --text-main: #FAFAFA; --text-mute: #A1A1AA; --accent: #60A5FA; --accent-bg: #27272A;
+            --border: #27272A; --postit-bg: #422006; --postit-text: #FEF3C7; --postit-border: #78350F;
+            --active-color: #FAFAFA; --active-bg: #3F3F46;
+        }
+
+        * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background-color: var(--bg-app); color: var(--text-main); height: 100vh; overflow: hidden; font-size: 14px; transition: background-color 0.3s, color 0.3s; }
+        body.custom-font-active { font-family: 'Ridibatang', sans-serif !important; }
+        input, textarea, button { font-family: inherit; }
+        #app { display: flex; width: 100%; height: 100%; }
+
+        /* Project Manager */
+        .project-manager { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; overflow-y: auto; }
+        .project-header { width: 100%; max-width: 800px; display: flex; flex-direction: column; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid var(--border); }
+        .project-header-top { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .project-header-top h2 { display: flex; align-items: center; }
+        .global-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; width: 80%; }
+        .global-action-icon { background: none; border: none; color: var(--text-mute); cursor: pointer; border-radius: 6px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .global-action-icon:hover { background: var(--accent-bg); color: var(--accent); }
+        .global-btn { background: var(--bg-paper); border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .global-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+        .project-list { width: 100%; max-width: 800px; list-style: none; background: var(--bg-paper); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .project-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 25px; border-bottom: 1px solid var(--border); cursor: default; transition: background-color 0.2s; }
+        .project-item:hover { background: var(--accent-bg); }
+        .project-item-info { flex: 1; cursor: pointer; display: flex; align-items: baseline; gap: 12px; } 
+        .project-item-info:hover { color: var(--accent); } 
+        .project-item-title { font-size: 16px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; } 
+        .project-item-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 4px 6px; font-size: 16px; font-family: inherit; font-weight: 700; }
+        .project-item-date { font-size: 12px; color: var(--text-mute); font-weight: 400; flex-shrink: 0; }
+        .project-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+        /* Sidebar & Layout */
+        aside { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s ease; overflow: hidden; white-space: nowrap; z-index: 50; }
+        aside.closed { width: 0 !important; min-width: 0 !important; border: none; }
+        .side-head { height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-weight: 700; }
+        .tree-container { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .manager-footer { margin-top: auto; width: 100%; max-width: 800px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-mute); }
+        .editor-footer { height: 40px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-sidebar); padding: 0 10px; gap: 4px; flex-shrink: 0; }
+        .footer-icon-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; background: none; color: var(--text-mute); border-radius: 6px; border: none; transition: 0.2s; cursor: pointer; flex-shrink: 0; }
+        .footer-icon-btn:hover { background: var(--active-bg); color: var(--text-main); }
+        .footer-icon-btn.active { background: var(--active-bg); color: var(--active-color); }
+        
+        .tree-list { list-style: none; padding-left: 20px; }
+        .tree-list.root { padding-left: 0; }
+        .node-row { display: flex; align-items: center; padding: 6px 16px; cursor: pointer; color: var(--text-mute); border-left: 3px solid transparent; }
+        .node-row:hover { background: var(--accent-bg); color: var(--text-main); }
+        .node-row.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
+        
+        .node-icon-wrapper { width: 24px; display: flex; justify-content: center; cursor: pointer; border-radius: 4px; margin-right: 6px; }
+        .node-icon-wrapper:hover { background: rgba(0,0,0,0.05); }
+        
+        .icon-picker-popover { 
+            position: fixed; background: var(--bg-paper); border: 1px solid var(--border); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; padding: 8px; 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+            z-index: 9999; 
+        }
+        .icon-option { width: 32px; height: 32px; border: none; background: none; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--text-mute); transition: 0.2s; }
+        .icon-option:hover { background: var(--active-bg); color: var(--text-main); transform: scale(1.1); }
+        
+        .node-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 2px 4px; }
+        .node-actions { display: none; margin-left: auto; gap: 4px; }
+        .node-row:hover .node-actions { display: flex; }
+
+        /* Main & Editor */
+        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        .toolbar { height: 50px; flex-shrink: 0; background: var(--bg-app); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; z-index: 60; }
+        .toolbar-left-group { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-mute); overflow: hidden; white-space: nowrap; }
+        .crumb-item { cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: 0.2s; display: flex; align-items: center; gap: 4px; }
+        .crumb-item:hover { color: var(--accent); background: var(--accent-bg); }
+        .crumb-divider { opacity: 0.4; }
+        .workspace { flex: 1; overflow-y: auto; display: flex; justify-content: center; align-items: flex-start; padding-bottom: 0; position: relative; }
+        
+        .paper-wrapper { width: 100%; max-width: 880px; padding: 40px 0 50vh; display: flex; justify-content: center; position: relative; z-index: 5; }
+        .paper-wrapper.typewriter { padding-bottom: 150vh; }
+        .paper { width: 100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 50px 60px; min-height: 90vh; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
+        .paper.mobile { max-width: 555px; padding: 35px 30px; }
+        
+        /* * [수정] text-indent: 1em 추가 
+         * - 문단의 첫 줄(맨 윗줄)을 자동으로 들여쓰기 합니다.
+         */
+        textarea.editor { 
+            width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
+            background: transparent; font-family: inherit; font-size: 18px; line-height: 2; 
+            color: var(--text-main); display: block; padding: 0; margin: 0; 
+            position: relative; z-index: 2; 
+            text-indent: 1em; /* 여기 추가됨 */
+        }
+        
+        /* * [수정] text-indent: 1em 추가
+         * - Typewriter 모드 계산용 미러 엘리먼트에도 동일하게 적용해야 스크롤이 튀지 않습니다.
+         */
+        #caret-mirror { 
+            position: absolute; top: -9999px; left: -9999px; visibility: hidden; 
+            white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; 
+            font-family: inherit; font-size: 18px; line-height: 1.8; 
+            padding: 60px 80px; width: 800px; 
+            text-indent: 1em; /* 여기 추가됨 */
+        }
+        
+        .corkboard { width: 100%; padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; align-content: flex-start; }
+        .postit { background: var(--postit-bg); color: var(--postit-text); border: 1px solid var(--postit-border); height: 350px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; }
+        .postit:hover { transform: translateY(-4px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); z-index: 2; }
+        .postit-head { padding: 12px 16px; font-weight: 700; border-bottom: 1px dashed rgba(0,0,0,0.1); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .postit-body { flex: 1; padding: 8px; overflow: hidden; }
+        .postit-textarea { width: 100%; height: 100%; resize: none; border: none; background: transparent; font-family: inherit; font-size: 14px; line-height: 1.6; color: inherit; }
+        .postit-footer { padding: 6px 12px; font-size: 12px; text-align: right; opacity: 0.8; border-top: 1px dashed rgba(0,0,0,0.1); margin-top: auto; font-feature-settings: "tnum"; }
+
+        /* Status Bar Gauge */
+        .status-bar { position: absolute; bottom: 0; right: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding: 8px 16px; font-size: 12px; color: var(--text-mute); cursor: pointer; z-index: 60; position: absolute; overflow: hidden; }
+        .status-bar:hover { color: var(--text-main); border-color: var(--accent); }
+        .status-gauge { position: absolute; top: 0; left: 0; height: 100%; background: var(--accent); opacity: 0.2; transition: width 0.3s ease; z-index: 0; pointer-events: none; }
+        .status-text-content { position: relative; z-index: 1; }
+        
+        /* Modal & Alert */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: var(--bg-modal); width: 320px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; }
+        .modal-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; }
+        .modal-divider { height: 1px; background: var(--border); margin: 16px 0; }
+        .modal-input { width: 80px; text-align: right; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); padding: 2px 4px; border-radius: 4px; font-family: inherit; }
+        
+        .toast-alert { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100%); z-index: 1000; background: var(--bg-sidebar); padding: 10px 18px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .toast-alert.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .alert-icon { font-size: 18px; }
+        .alert-success .alert-icon { color: var(--alert-success); }
+        .alert-error .alert-icon { color: var(--alert-error); }
+
+        .btn { background: none; border: none; cursor: pointer; padding: 6px; color: var(--text-mute); display:flex; border-radius:4px; }
+        .btn:hover { color: var(--text-main); background: var(--active-bg); }
+        .btn.active { color: var(--accent); background: var(--accent-bg); }
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-app); }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 5px; border: 2px solid var(--bg-app); }
+        [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #475569; border-color: #09090B; }
+    </style>
+</head>
+<body :class="{'custom-font-active': isCustomFontActive}">
+
+<div id="caret-mirror"></div>
+
+<div id="app">
+    <div v-if="pickerOpen" class="icon-picker-popover" :style="{top: pickerPos.y + 'px', left: pickerPos.x + 'px'}">
+        <button class="icon-option" @click="changeIcon('default')" title="기본"><i class="ph ph-file-text"></i></button>
+        <button class="icon-option" style="color:#EF4444" @click="changeIcon('flag-red')" title="빨강 플래그"><i class="ph ph-flag-banner" style="font-weight:fill;"></i></button>
+        <button class="icon-option" style="color:#F59E0B" @click="changeIcon('flag-yellow')" title="노랑 플래그"><i class="ph ph-flag-banner" style="font-weight:fill;"></i></button>
+        <button class="icon-option" style="color:#10B981" @click="changeIcon('flag-green')" title="초록 플래그"><i class="ph ph-flag-banner" style="font-weight:fill;"></i></button>
+        <button class="icon-option" style="color:#3B82F6" @click="changeIcon('flag-blue')" title="파랑 플래그"><i class="ph ph-flag-banner" style="font-weight:fill;"></i></button>
+        <button class="icon-option" style="color:#8B5CF6" @click="changeIcon('char')" title="인물/캐릭터"><i class="ph ph-user"></i></button>
+        <button class="icon-option" style="color:#EC4899" @click="changeIcon('loc')" title="장소/배경"><i class="ph ph-map-pin"></i></button>
+        <button class="icon-option" style="color:#F59E0B" @click="changeIcon('item')" title="중요 아이템"><i class="ph ph-key"></i></button>
+        <button class="icon-option" style="color:#EAB308" @click="changeIcon('idea')" title="아이디어/메모"><i class="ph ph-lightbulb"></i></button>
+        <button class="icon-option" style="color:#EF4444" @click="changeIcon('love')" title="로맨스/감정"><i class="ph ph-heart" style="font-weight:fill;"></i></button>
+        <button class="icon-option" style="color:#64748B" @click="changeIcon('fight')" title="전투/갈등"><i class="ph ph-sword"></i></button>
+        <button class="icon-option" style="color:#A855F7" @click="changeIcon('magic')" title="마법/이능력"><i class="ph ph-sparkle"></i></button>
+        <button class="icon-option" style="color:#57534E" @click="changeIcon('skull')" title="위기/빌런"><i class="ph ph-skull"></i></button>
+        <button class="icon-option" style="color:#10B981" @click="changeIcon('done')" title="완료"><i class="ph ph-check-circle" style="font-weight:fill;"></i></button>
+        <button class="icon-option" @click="changeIcon('time')" title="시간/회상"><i class="ph ph-clock"></i></button>
+    </div>
+
+    <template v-if="currentView === 'manager'">
+        <div class="project-manager">
+            <div class="project-header">
+                <div class="project-header-top">
+                    <h2><i class="ph ph-books" style="font-size: 24px; margin-right: 8px;"></i> 프로젝트 목록</h2>
+                    <div class="global-actions">
+                        <button class="global-action-icon" @click="exportAllData" title="전체 백업"><i class="ph ph-floppy-disk" style="font-size:20px;"></i></button>
+                        <button class="global-action-icon" @click="triggerImportAll" title="불러오기"><i class="ph ph-upload-simple" style="font-size:20px;"></i></button>
+                        <button class="global-btn" style="color:var(--accent); border-color:var(--accent);" @click="createProject"><i class="ph ph-plus" style="font-size:18px;"></i> 새 프로젝트</button>
+                    </div>
+                </div>
+            </div>
+            
+            <ul class="project-list">
+                <li v-for="proj in projects" :key="proj.id" class="project-item" :class="{ 'editing-mode': editingProjectId === proj.id }">
+                    <div class="project-item-info" @click="editingProjectId !== proj.id && loadProject(proj.id)">
+                        <div v-if="editingProjectId === proj.id" style="width: 100%;">
+                            <input type="text" v-model="proj.title" class="project-item-input" @blur="endEditProject" @keydown.enter="endEditProject" @click.stop v-focus />
+                        </div>
+                        <template v-else>
+                            <div class="project-item-title">{{ proj.title }}</div>
+                            <div class="project-item-date">최근 저장: {{ formatDate(proj.updatedAt) }}</div>
+                        </template>
+                    </div>
+                    <div class="project-actions">
+                        <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:20px;"></i></button>
+                        <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:20px;"></i></button>
+                    </div>
+                </li>
+            </ul>
+            <div v-if="Object.keys(projects).length === 0" style="margin-top:20px; color:var(--text-mute);">새로운 프로젝트를 시작해 보세요!</div>
+            
+            <div class="manager-footer">Copyright by 스위스버터</div>
+        </div>
+    </template>
+    
+    <template v-else-if="currentView === 'editor' && currentProject">
+        <aside :class="{ closed: !sidebarOpen }">
+            <div class="side-head">
+                <span style="font-weight:800; letter-spacing:-0.5px;">{{ currentProject.title }}</span>
+                <div style="display:flex; gap:4px;">
+                    <button class="btn" @click="addNode('folder')" title="새 폴더"><i class="ph ph-folder-plus" style="font-size:18px;"></i></button>
+                    <button class="btn" @click="addNode('chapter')" title="새 챕터"><i class="ph ph-file-plus" style="font-size:18px;"></i></button>
+                </div>
+            </div>
+            <div class="tree-container" @click="pickerOpen = false">
+                <sortable-tree :items="rootNodes" :all-nodes="currentProject.nodes" parent-id="root" class="root" @item-drop="onDrop" @icon-click="openPicker"></sortable-tree>
+            </div>
+            <div class="editor-footer">
+                <button class="footer-icon-btn" @click="handleEditorExit"><i class="ph ph-house-line"></i></button>
+                 <button class="footer-icon-btn" :class="{active: mobileView}" @click="toggleMobile"><i class="ph ph-device-mobile"></i></button>
+                <button class="footer-icon-btn" :class="{active: typewriterMode}" @click="toggleTypewriter"><i class="ph ph-crosshair"></i></button>
+                <button class="footer-icon-btn" :class="{active: isCustomFontActive}" @click="toggleRidibatangFont"><i class="ph ph-text-aa"></i></button>
+                <button class="footer-icon-btn" :class="{active: theme === 'dark'}" @click="toggleTheme"><i class="ph" :class="theme==='dark' ? 'ph-moon' : 'ph-sun'"></i></button>
+            </div>
+        </aside>
+
+        <main @click="pickerOpen = false">
+            <div class="toolbar">
+                <div class="toolbar-left-group">
+                    <button class="btn" @click="sidebarOpen = !sidebarOpen"><i class="ph" :class="sidebarOpen ? 'ph-caret-left' : 'ph-list'" style="font-size:20px;"></i></button>
+                    <div class="breadcrumb">
+                        <template v-for="(item, index) in breadcrumbs" :key="index">
+                            <span v-if="index > 0" class="crumb-divider"><i class="ph ph-caret-right"></i></span>
+                            <div class="crumb-item" @click="selectNode(item.id)">
+                                <i class="ph" :class="getIconProperty(item).class" :style="{ color: getIconProperty(item).color, fontWeight: getIconProperty(item).weight || 'normal' }" style="font-size:16px;"></i>
+                                <span class="crumb-text" :class="{'crumb-current': index === breadcrumbs.length - 1}">{{ item.title }}</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <div class="workspace" id="workspace-el" @click="focusEditor">
+                <div v-if="activeNode && activeNode.type === 'chapter'" class="paper-wrapper" :class="{typewriter: typewriterMode}">
+                    <div class="paper" :class="{mobile: mobileView}">
+                        <textarea 
+                            class="editor" 
+                            v-model="activeNode.content" 
+                            placeholder="이곳에 글을 작성하세요..." 
+                            ref="editorRef" 
+                            @input="handleMainInput" 
+                            @click="handleNav" 
+                            @keyup="handleNav" 
+                            @keydown.enter.prevent="handleEnter"
+                            spellcheck="false">
+                        </textarea>
+                    </div>
+                </div>
+                <div v-else-if="activeNode && activeNode.type === 'folder'" class="corkboard">
+                    <div v-for="child in activeChildren" :key="child.id" class="postit">
+                        <div class="postit-head" @click.stop="selectNode(child.id)">
+                             <i class="ph" :class="getIconProperty(child).class" :style="{ color: getIconProperty(child).color, marginRight:'4px' }"></i> {{ child.title }}
+                        </div>
+                        <div class="postit-body">
+                            <textarea class="postit-textarea" v-model="child.synopsis" @input="handlePostitInput(child)"></textarea>
+                        </div>
+                        <div class="postit-footer">{{ formatPostitDate(child.updatedAt) }}</div>
+                    </div>
+                    <div v-if="activeChildren.length === 0" style="grid-column:1/-1; text-align:center; color:var(--text-mute);">비어있는 폴더입니다.</div>
+                </div>
+                <div v-else style="align-self:center; color:var(--text-mute);">챕터를 선택하세요.</div>
+            </div>
+            
+            <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click.stop="showStats = true">
+                <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
+                <span class="status-text-content">{{ stats.total }}자 ({{ stats.percent }}%)</span>
+            </div>
+        </main>
+    </template>
+
+    <div v-if="showStats" class="modal-overlay" @click="showStats = false">
+        <div class="modal-box" @click.stop>
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-weight:bold; font-size:16px;">
+                <span>문서 통계</span><i class="ph ph-x" style="cursor:pointer" @click="showStats=false"></i>
+            </div>
+            <div class="modal-row"><span style="color:var(--text-mute)">공백 포함</span><strong>{{ stats.total }} 자</strong></div>
+            <div class="modal-row"><span style="color:var(--text-mute)">공백 제외</span><strong>{{ stats.noSpace }} 자</strong></div>
+            <div class="modal-divider"></div>
+            <div class="modal-row" style="align-items:center;">
+                <span style="color:var(--text-mute)">목표치</span>
+                <input type="number" v-model="targetGoal" class="modal-input" @change="saveConfig">
+            </div>
+            <div class="modal-row"><span style="color:var(--text-mute)">성취율</span><strong style="color:var(--accent)">{{ stats.percent }}%</strong></div>
+        </div>
+    </div>
+    
+    <div v-if="showAlert" class="toast-alert" :class="[alertType, { 'show': showAlert }]">
+        <i class="ph alert-icon" :class="alertType === 'alert-success' ? 'ph-check-circle' : 'ph-x-circle'"></i>
+        <span>{{ alertMessage }}</span>
+    </div>
+    
+    <input type="file" ref="fileInput" @change="handleImportAll" style="display:none" accept=".vel, .txt">
+</div>
+
+<script>
+    const { createApp, ref, computed, nextTick, onMounted, watch } = Vue;
+
+    // --- Utils ---
+    const utf8_to_b64 = (str) => { try { return btoa(unescape(encodeURIComponent(str))); } catch (e) { return btoa(str); } };
+    const b64_to_utf8 = (str) => { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); } };
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    };
+    const formatPostitDate = (dateString) => {
+        if (!dateString) return '';
+        const d = new Date(dateString);
+        return `수정 : ${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    };
+    const debounce = (fn, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => fn(...args), delay); }; };
+
+    // --- Component: NodeRow ---
+    const NodeRow = {
+        name: 'NodeRow', props: ['node'], emits: ['icon-click'],
+        setup(props) {
+            const iconData = computed(() => {
+                const type = props.node.iconType || 'default';
+                const isFolder = props.node.type === 'folder';
+                
+                if (isFolder) return { class: props.node.closed ? 'ph-folder' : 'ph-folder-open', color: '#F59E0B' };
+                
+                const map = {
+                    'default': { class: 'ph-file-text', color: '' },
+                    'flag-red': { class: 'ph-flag-banner', color: '#EF4444', weight: 'fill' },
+                    'flag-yellow': { class: 'ph-flag-banner', color: '#F59E0B', weight: 'fill' },
+                    'flag-green': { class: 'ph-flag-banner', color: '#10B981', weight: 'fill' },
+                    'flag-blue': { class: 'ph-flag-banner', color: '#3B82F6', weight: 'fill' },
+                    'char': { class: 'ph-user', color: '#8B5CF6' },
+                    'loc': { class: 'ph-map-pin', color: '#EC4899' },
+                    'item': { class: 'ph-key', color: '#F59E0B' },
+                    'idea': { class: 'ph-lightbulb', color: '#EAB308' },
+                    'fight': { class: 'ph-sword', color: '#64748B' },
+                    'love': { class: 'ph-heart', color: '#EF4444', weight: 'fill' },
+                    'magic': { class: 'ph-sparkle', color: '#A855F7' },
+                    'skull': { class: 'ph-skull', color: '#57534E' },
+                    'done': { class: 'ph-check-circle', color: '#10B981', weight: 'fill' },
+                    'time': { class: 'ph-clock', color: '' }
+                };
+                return map[type] || map['default'];
+            });
+
+            return { iconData };
+        },
+        template: `
+            <div class="node-row" :class="{ active: $root.activeId === node.id }" @click.stop="$root.selectNode(node.id)" @dblclick.stop="$root.startEdit(node.id)">
+                <span style="width:20px; display:flex; justify-content:center;" @click.stop="$root.toggleNode(node.id)">
+                    <i class="ph" v-if="node.type==='folder'" :class="node.closed ? 'ph-caret-right' : 'ph-caret-down'" style="font-size:12px; opacity:0.7;"></i>
+                </span>
+                <div class="node-icon-wrapper" @click.stop="$emit('icon-click', $event, node.id)">
+                    <i class="ph" :class="iconData.class" :style="{ color: iconData.color, fontWeight: iconData.weight || 'normal' }" style="font-size:18px;"></i>
+                </div>
+                <div v-if="$root.editingId !== node.id" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ node.title }}</div>
+                <input v-else v-model="node.title" class="node-input" @blur="$root.endEdit" @keydown.enter="$root.endEdit" @click.stop v-focus>
+                <div class="node-actions" v-if="$root.editingId !== node.id"><i class="ph ph-trash" @click.stop="$root.deleteNode(node.id)" style="padding:4px; cursor:pointer;" title="삭제"></i></div>
+            </div>
+        `, directives: { focus: { mounted: (el) => el.focus() } }
+    };
+
+    const SortableTree = {
+        name: 'SortableTree', components: { NodeRow }, props: ['items', 'allNodes', 'parentId'], emits: ['item-drop', 'icon-click'],
+        setup(props, { emit }) {
+            const listRef = ref(null);
+            onMounted(() => {
+                if(listRef.value) new Sortable(listRef.value, { 
+                    group: 'nested', animation: 150, fallbackOnBody: true, swapThreshold: 0.65, 
+                    onEnd: (evt) => {
+                        const itemId = evt.item.dataset.id; 
+                        const newParentId = evt.to.dataset.pid === 'root' ? null : evt.to.dataset.pid; 
+                        emit('item-drop', { itemId, newParentId, newIndex: evt.newIndex });
+                    }
+                });
+            });
+            return { listRef };
+        },
+        template: `<ul ref="listRef" :data-pid="parentId" class="tree-list"><li v-for="node in items" :key="node.id" :data-id="node.id"><node-row :node="node" @icon-click="(e, id) => $emit('icon-click', e, id)"></node-row><sortable-tree v-if="node.type === 'folder' && !node.closed" :items="allNodes.filter(n => n.parent === node.id)" :all-nodes="allNodes" :parent-id="node.id" @item-drop="$emit('item-drop', $event)" @icon-click="(e, id) => $emit('icon-click', e, id)"></sortable-tree></li></ul>`
+    };
+
+    function useAlert() {
+        const showAlert = ref(false); const alertMessage = ref(''); const alertType = ref('alert-success'); let alertTimeout = null;
+        const showInternalAlert = (message, type = 'success') => {
+            clearTimeout(alertTimeout); alertMessage.value = message; alertType.value = type === 'success' ? 'alert-success' : 'alert-error'; showAlert.value = true;
+            nextTick(() => { const toast = document.querySelector('.toast-alert'); if (toast) toast.classList.add('show'); });
+            alertTimeout = setTimeout(() => { const toast = document.querySelector('.toast-alert'); if (toast) toast.classList.remove('show'); setTimeout(() => { showAlert.value = false; }, 300); }, 3000);
+        };
+        return { showAlert, alertMessage, alertType, showInternalAlert };
+    }
+
+    const app = createApp({
+        components: { SortableTree },
+        directives: { focus: { mounted: (el) => el.focus() } },
+        setup() {
+            // UI State
+            const currentView = ref('manager'); const sidebarOpen = ref(true); const theme = ref('light'); const isCustomFontActive = ref(false);
+            const { showAlert, alertMessage, alertType, showInternalAlert } = useAlert();
+            const showStats = ref(false);
+            
+            // Icon Picker State
+            const pickerOpen = ref(false);
+            const pickerPos = ref({ x: 0, y: 0 });
+            const pickingNodeId = ref(null);
+
+            // Data State
+            const projects = ref({});
+            const currentProjectId = ref(null);
+
+            const currentProject = computed(() => currentProjectId.value ? projects.value[currentProjectId.value] : null);
+            
+            const saveData = () => { if (currentProjectId.value && projects.value[currentProjectId.value]) projects.value[currentProjectId.value].updatedAt = new Date().toISOString(); localStorage.setItem('ns318_projects', JSON.stringify(projects.value)); };
+            const debouncedSave = debounce(saveData, 1000);
+
+            const saveConfig = () => { 
+                localStorage.setItem('ns318_global_cfg', JSON.stringify({ theme: theme.value, isCustomFontActive: isCustomFontActive.value }));
+                if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, typewriter: typewriterMode.value }; saveData(); }
+            };
+
+            // Editor Logic
+            const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); const targetGoal = ref(5000);
+            const activeNode = computed(() => currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null);
+            const activeChildren = computed(() => activeNode.value && activeNode.value.type === 'folder' ? currentProject.value.nodes.filter(n => n.parent === activeNode.value.id) : []);
+            const nodeMap = computed(() => { const map = {}; if (currentProject.value) currentProject.value.nodes.forEach(node => map[node.id] = node); return map; });
+            const breadcrumbs = computed(() => { if (!activeNode.value || !currentProject.value) return []; let path = []; let curr = activeNode.value; while(curr) { path.unshift({ id: curr.id, title: curr.title, type: curr.type, iconType: curr.iconType }); if(!curr.parent) break; curr = nodeMap.value[curr.parent]; } return path; });
+            
+            const stats = computed(() => {
+                const txt = activeNode.value?.content || '';
+                return { total: txt.length, noSpace: txt.replace(/\s/g, '').length, words: txt.trim() ? txt.trim().split(/\s+/).length : 0, percent: targetGoal.value > 0 ? Math.floor((txt.length / targetGoal.value) * 100) : 100 };
+            });
+
+            // Methods
+            const applyTheme = () => document.documentElement.setAttribute('data-theme', theme.value);
+            const applyFontClass = () => document.body.classList.toggle('custom-font-active', isCustomFontActive.value);
+            
+            const loadAllData = () => {
+                const p = localStorage.getItem('ns318_projects'); if(p) projects.value = JSON.parse(p);
+                const c = localStorage.getItem('ns318_global_cfg'); if(c) { const cfg = JSON.parse(c); theme.value = cfg.theme || 'light'; isCustomFontActive.value = cfg.isCustomFontActive || false; }
+                applyTheme(); applyFontClass();
+            };
+
+            // Icon Picker Logic
+            const openPicker = (event, nodeId) => {
+                if (currentProject.value.nodes.find(n => n.id === nodeId)?.type === 'folder') return; 
+                const y = event.clientY + 200 > window.innerHeight ? event.clientY - 150 : event.clientY;
+                pickerPos.value = { x: event.clientX + 10, y: y };
+                pickingNodeId.value = nodeId;
+                pickerOpen.value = true;
+            };
+            const changeIcon = (iconType) => {
+                if (pickingNodeId.value) {
+                    const node = nodeMap.value[pickingNodeId.value];
+                    if (node) node.iconType = iconType;
+                    saveData();
+                }
+                pickerOpen.value = false;
+            };
+
+            // --- Breadcrumb & Helper for Icons ---
+            const getIconProperty = (item) => {
+                const node = nodeMap.value[item.id] || item;
+                const type = node.iconType || 'default';
+                const isFolder = node.type === 'folder';
+                
+                if (isFolder) return { class: 'ph-folder-open', color: '#F59E0B' };
+                
+                const map = {
+                    'default': { class: 'ph-file-text', color: '' },
+                    'flag-red': { class: 'ph-flag-banner', color: '#EF4444', weight: 'fill' },
+                    'flag-yellow': { class: 'ph-flag-banner', color: '#F59E0B', weight: 'fill' },
+                    'flag-green': { class: 'ph-flag-banner', color: '#10B981', weight: 'fill' },
+                    'flag-blue': { class: 'ph-flag-banner', color: '#3B82F6', weight: 'fill' },
+                    'char': { class: 'ph-user', color: '#8B5CF6' },
+                    'loc': { class: 'ph-map-pin', color: '#EC4899' },
+                    'item': { class: 'ph-key', color: '#F59E0B' },
+                    'idea': { class: 'ph-lightbulb', color: '#EAB308' },
+                    'fight': { class: 'ph-sword', color: '#64748B' },
+                    'love': { class: 'ph-heart', color: '#EF4444', weight: 'fill' },
+                    'magic': { class: 'ph-sparkle', color: '#A855F7' },
+                    'skull': { class: 'ph-skull', color: '#57534E' },
+                    'done': { class: 'ph-check-circle', color: '#10B981', weight: 'fill' },
+                    'time': { class: 'ph-clock', color: '' }
+                };
+                return map[type] || map['default'];
+            };
+
+            const updateTypewriter = (smooth = true) => {
+                if(!editorRef.value) return; 
+                const ta = editorRef.value; const mirror = document.getElementById('caret-mirror'); const workspace = document.getElementById('workspace-el');
+                mirror.className = mobileView.value ? 'mobile' : ''; mirror.textContent = ta.value.substring(0, ta.selectionStart);
+                const span = document.createElement('span'); span.textContent = '.'; mirror.appendChild(span);
+                const paddingTop = mobileView.value ? 40 : 60; const cursorY = span.offsetTop + paddingTop + 40; const viewportH = workspace.clientHeight;
+                const scrollAnchorRatio = typewriterMode.value ? 0.6 : 1; 
+                workspace.scrollTo({ top: cursorY - (viewportH * scrollAnchorRatio) + (18 * 1.8 / 2), behavior: smooth ? 'smooth' : 'auto' });
+            };
+
+            const autoResize = () => { if(editorRef.value) { editorRef.value.style.height = 'auto'; editorRef.value.style.height = editorRef.value.scrollHeight + 'px'; } };
+            const handleMainInput = () => { if (activeNode.value) activeNode.value.updatedAt = new Date().toISOString(); autoResize(); updateTypewriter(false); debouncedSave(); };
+            const handlePostitInput = (node) => { node.updatedAt = new Date().toISOString(); debouncedSave(); };
+            const handleNav = () => { updateTypewriter(true); };
+            const focusEditor = () => { if (editorRef.value) editorRef.value.focus(); };
+
+            // [추가된 함수] 엔터 키 입력 시 자동 들여쓰기 처리
+            const handleEnter = (e) => {
+                const ta = e.target;
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const val = activeNode.value.content || '';
+
+                // 들여쓰기 문자: 전각 공백(ㄱ+한자+1) -> '\u3000'
+                // 일반 공백을 원하면 '  '로 바꾸세요.
+                const indent = '\u3000'; 
+                
+                // 현재 커서 위치에 [개행 + 들여쓰기] 삽입
+                const newVal = val.substring(0, start) + '\n' + indent + val.substring(end);
+                
+                activeNode.value.content = newVal;
+
+                // Vue 데이터 반영 후 커서 위치 조정 및 높이 계산
+                nextTick(() => {
+                    ta.selectionStart = ta.selectionEnd = start + 1 + indent.length;
+                    autoResize();
+                    updateTypewriter(true);
+                    debouncedSave();
+                });
+            };
+
+            // CRUD & Tree
+            const editingProjectId = ref(null);
+            const createProject = () => { const title = prompt('새 프로젝트:', '새 소설'); if (title) { const newId = Date.now().toString(36); projects.value[newId] = { id: newId, title, updatedAt: new Date().toISOString(), nodes: [{id:'f1',type:'folder',title:'설정집',parent:null,closed:false,content:'',synopsis:''},{id:'c1',type:'chapter',title:'세계관',parent:'f1',content:'# 세계관\n',synopsis:''}], config:{target:5000} }; saveData(); loadProject(newId, 'c1'); } };
+            const deleteProject = (id) => { if(confirm('삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
+            const startEditProject = (id) => { currentProjectId.value = null; editingProjectId.value = id; };
+            const endEditProject = () => { if(editingProjectId.value) { if(!projects.value[editingProjectId.value].title.trim()) projects.value[editingProjectId.value].title='제목 없음'; saveData(); editingProjectId.value=null; } };
+            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter')?.id||p.nodes[0]?.id); targetGoal.value=p.config.target||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
+            const handleEditorExit = () => { saveData(); currentView.value = 'manager'; };
+
+            const editingId = ref(null);
+            const rootNodes = computed(() => currentProject.value ? currentProject.value.nodes.filter(n => !n.parent) : []);
+            const selectNode = (id) => { if(!editingId.value) activeId.value = id; };
+            const toggleNode = (id) => { const n = nodeMap.value[id]; if(n) n.closed=!n.closed; saveData(); };
+            const startEdit = (id) => editingId.value = id; 
+            const endEdit = () => { if(editingId.value && !nodeMap.value[editingId.value].title.trim()) nodeMap.value[editingId.value].title = '제목 없음'; editingId.value = null; saveData(); };
+            const addNode = (type) => { const nodes = currentProject.value.nodes; const cur = nodeMap.value[activeId.value]; let parent = cur ? (cur.type==='folder'?cur.id:cur.parent) : null; const n = { id: Date.now().toString(36), type, title: type==='folder'?'새 폴더':'새 챕터', parent, content:'', synopsis:'', closed:false, updatedAt: new Date().toISOString(), iconType: 'default' }; nodes.push(n); if(parent) { const p = nodeMap.value[parent]; if(p) p.closed = false; } activeId.value=n.id; editingId.value=n.id; saveData(); };
+            const deleteNode = (id) => { if(!confirm('삭제?')) return; const nodes = currentProject.value.nodes; const s = new Set([id]); const f=(p)=>nodes.filter(x=>x.parent===p).forEach(c=>{s.add(c.id);if(c.type==='folder')f(c.id)}); f(id); currentProject.value.nodes=nodes.filter(x=>!s.has(x.id)); if(s.has(activeId.value)) activeId.value=null; saveData(); };
+            const onDrop = ({ itemId, newParentId, newIndex }) => { const nodes = currentProject.value.nodes; const node = nodes.find(n => n.id === itemId); if (!node) return; nodes.splice(nodes.indexOf(node), 1); node.parent = newParentId; const siblings = nodes.filter(n => n.parent === newParentId); let insertIdx = siblings.length > 0 ? (newIndex >= siblings.length ? nodes.indexOf(siblings[siblings.length - 1]) + 1 : nodes.indexOf(siblings[newIndex])) : nodes.length; nodes.splice(insertIdx, 0, node); if(newParentId) { const p = nodes.find(n => n.id === newParentId); if(p) p.closed = false; } saveData(); };
+
+            // IO
+            const fileInput = ref(null);
+            const exportAllData = () => { saveData(); const b = new Blob([utf8_to_b64(JSON.stringify({ version: "3.27_Lite", timestamp: new Date(), projects: projects.value, globalConfig: { theme: theme.value, isCustomFontActive: isCustomFontActive.value } }))], {type: 'text/plain;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `Story_${new Date().toISOString().slice(0,10)}.vel`; a.click(); };
+            const triggerImportAll = () => { fileInput.value.click(); };
+            const handleImportAll = (e) => {
+                const f = e.target.files[0]; if (!f) return; const r = new FileReader();
+                r.onload = (evt) => {
+                    try { const data = JSON.parse(b64_to_utf8(evt.target.result));
+                        if (data.projects && confirm('덮어쓰시겠습니까?')) {
+                            projects.value = data.projects; theme.value = data.globalConfig?.theme || 'light'; isCustomFontActive.value = data.globalConfig?.isCustomFontActive || false;
+                            applyTheme(); applyFontClass(); saveData(); showInternalAlert('복구 완료'); currentView.value = 'manager';
+                        }
+                    } catch (err) { showInternalAlert('파일 오류', 'error'); }
+                }; r.readAsText(f); e.target.value = '';
+            };
+
+            watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
+            watch(mobileView, () => nextTick(() => updateTypewriter(false)));
+            watch(currentProjectId, () => { activeId.value = null; });
+            const toggleTheme = () => { theme.value = theme.value==='light'?'dark':'light'; applyTheme(); saveConfig(); };
+            const toggleMobile = () => { mobileView.value = !mobileView.value; nextTick(autoResize); };
+            const toggleTypewriter = () => { typewriterMode.value = !typewriterMode.value; saveConfig(); nextTick(() => updateTypewriter(true)); };
+            const toggleRidibatangFont = () => { isCustomFontActive.value = !isCustomFontActive.value; applyFontClass(); saveConfig(); showInternalAlert('폰트 변경됨'); };
+
+            // Init
+            onMounted(() => { 
+                loadAllData(); 
+                window.addEventListener('beforeunload', () => { saveData(); });
+            });
+
+            return {
+                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
+                loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
+                pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
+                handleEnter // [추가] 엔터키 처리 함수 리턴에 포함
+            };
+        }
+    });
+    
+    app.mount('#app');
+</script>
+</body>
+</html>
