@@ -564,7 +564,8 @@
                 const end = ta.selectionEnd;
                 const val = activeNode.value.content || '';
                 const indent = '\u3000'; 
-                const insertion = '\n\n' + indent; 
+                // [수정] 엔터 키 입력 시 줄바꿈을 두 번(\n\n) -> 한 번(\n)으로 변경
+                const insertion = '\n' + indent; 
                 const newVal = val.substring(0, start) + insertion + val.substring(end);
                 activeNode.value.content = newVal;
                 nextTick(() => {
