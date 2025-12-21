@@ -584,7 +584,13 @@
             const handleMainInput = () => { if (activeNode.value) activeNode.value.updatedAt = new Date().toISOString(); autoResize(); updateTypewriter(false); debouncedSave(); };
             const handlePostitInput = (node) => { node.updatedAt = new Date().toISOString(); debouncedSave(); };
             const handleNav = () => { updateTypewriter(true); };
-            const focusEditor = () => { if (editorRef.value) editorRef.value.focus(); };
+            
+            // [수정된 부분] focusEditor 함수: 에디터 영역 클릭 시 사이드바 닫기 추가
+            const focusEditor = () => { 
+                if (editorRef.value) editorRef.value.focus();
+                // 에디터/작업공간 영역을 클릭하면 사이드바를 닫습니다.
+                sidebarOpen.value = false;
+            };
 
             const handleEnter = (e) => {
                 const ta = e.target;
@@ -663,29 +669,12 @@
                 const p = projects.value[projId];
                 if (!p) return;
                 
-                // 순서대로 정렬하기 위한 재귀 함수
                 let fullText = `[ ${p.title} ]\n\n`;
                 
-                const buildText = (parentId, depth = 0) => {
-                    const children = p.nodes.filter(n => n.parent === parentId);
-                    // 트리 순서대로 정렬되어 있다고 가정 (배열 순서)
-                    children.forEach(node => {
-                        if (node.type === 'folder') {
-                            fullText += `\n${'='.repeat(10)} [${node.title}] ${'='.repeat(10)}\n\n`;
-                            buildText(node.id, depth + 1);
-                        } else {
-                            fullText += `[${node.title}]\n\n${node.content}\n\n`;
-                        }
-                    });
-                };
-                
-                // 루트 노드부터 시작 (parentId가 null인 것들)
-                // 하지만 nodes 배열 순서가 트리 순서와 일치한다고 보장할 수 없으므로,
-                // SortableTree가 렌더링하는 순서대로 하려면 parent 포인터만으로는 부족할 수 있음.
-                // 여기서는 nodes 배열 자체가 순서대로 저장된다고 가정함 (onDrop에서 배열 순서를 바꾸므로).
                 // 최상위 노드 찾기
                 const rootNodes = p.nodes.filter(n => !n.parent);
                 
+                // 재귀 함수로 하위 노드 탐색
                 const processNode = (node) => {
                     if (node.type === 'folder') {
                          fullText += `\n\n================ ${node.title} ================\n\n`;
