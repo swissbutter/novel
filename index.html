@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sagak Studio v1.2</title>
+    <title>Sagak Studio v1.1.3</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -29,6 +29,7 @@
             --postit-border: #FCD34D;
             --alert-success: #10B981; --alert-error: #EF4444;
             --active-color: #3F3F46; --active-bg: #E5E7EB;
+            --highlight: #FDE047; /* 검색 강조색 */
         }
 
         :root[data-theme="dark"] {
@@ -36,6 +37,7 @@
             --text-main: #FAFAFA; --text-mute: #A1A1AA; --accent: #60A5FA; --accent-bg: #27272A;
             --border: #27272A; --postit-bg: #422006; --postit-text: #FEF3C7; --postit-border: #78350F;
             --active-color: #FAFAFA; --active-bg: #3F3F46;
+            --highlight: #854D0E;
         }
 
         * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
@@ -68,21 +70,27 @@
         .global-action-icon:hover { background: var(--accent-bg); color: var(--accent); }
         .global-btn { background: var(--bg-paper); border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; font-weight: 600; cursor: pointer; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .global-btn:hover { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
-        .project-list { width: 100%; max-width: 800px; list-style: none; background: var(--bg-paper); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .project-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 25px; border-bottom: 1px solid var(--border); cursor: default; transition: background-color 0.2s; }
-        .project-item:hover { background: var(--accent-bg); }
-        .project-item-info { flex: 1; cursor: pointer; display: flex; align-items: baseline; gap: 12px; } 
-        .project-item-info:hover { color: var(--accent); } 
-        .project-item-title { font-size: 16px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; } 
-        .project-item-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 4px 6px; font-size: 16px; font-family: inherit; font-weight: 700; }
-        .project-item-date { font-size: 12px; color: var(--text-mute); font-weight: 400; flex-shrink: 0; }
-        .project-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .project-list { width: 100%; max-width: 800px; list-style: none; background: var(--bg-paper); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        .project-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 10px 12px 30px; border-bottom: 1px solid var(--border); background: var(--bg-paper); transition: background-color 0.2s; }
+        .project-item:last-child { border-bottom: none; }
+        .project-item:hover { background: var(--bg-app); }
+        
+        .drag-handle { cursor: grab; color: var(--text-mute); padding: 8px; margin-right: 4px; display: flex; align-items: center; }
+        .drag-handle:hover { color: var(--text-main); }
+        .drag-handle:active { cursor: grabbing; }
+
+        .project-item-info { flex: 1; cursor: pointer; display: flex; align-items: center; gap: 12px; overflow: hidden; min-width: 0; } 
+        .project-item-info:hover .project-item-title { color: var(--accent); }
+        .project-item-title { font-size: 16px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; transition: color 0.2s; } 
+        .project-item-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 4px 6px; font-size: 16px; font-family: inherit; font-weight: 700; border-radius: 4px; }
+        .project-item-date { font-size: 12px; color: var(--text-mute); font-weight: 400; flex-shrink: 0; margin-left: auto; margin-right: 16px; }
+        .project-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
         .manager-footer { margin-top: auto; padding-top: 2rem; padding-bottom: 1rem; color: var(--text-mute); font-size: 0.85rem; text-align: center; width: 100%; }
 
         @media (max-width: 768px) {
             .project-item-date { display: none; }
-            .project-item { padding: 12px 16px; }
+            .project-item { padding: 12px 10px; }
             .global-actions { width: 50%; }
         }
 
@@ -95,7 +103,26 @@
         }
         aside.closed { transform: translateX(-100%); width: var(--sidebar-width) !important; border: none; box-shadow: none; }
 
-        .side-head { height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-weight: 700; }
+        .side-head { height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-weight: 700; flex-shrink: 0; }
+        /* 사이드바 제목 편집 인풋 스타일 최적화 */
+        .project-title-input { 
+            flex: 1; 
+            font-family: inherit; 
+            font-weight: 800; 
+            font-size: 14.5px; 
+            padding: 4px; 
+            border: 1px solid var(--accent); 
+            background: var(--bg-app); 
+            color: var(--text-main); 
+            margin-right: 8px; 
+            border-radius: 4px; 
+            min-width: 0;
+        }
+        
+        .side-search { padding: 8px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .search-input { width: 100%; background: var(--bg-app); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; color: var(--text-main); font-size: 13px; }
+        .search-input:focus { border-color: var(--accent); }
+
         .tree-container { flex: 1; overflow-y: auto; padding: 10px 0; }
         .editor-footer { height: 40px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-sidebar); padding: 0 10px; gap: 4px; flex-shrink: 0; }
         .footer-icon-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; background: none; color: var(--text-mute); border-radius: 6px; border: none; transition: 0.2s; cursor: pointer; flex-shrink: 0; }
@@ -104,17 +131,21 @@
         
         .tree-list { list-style: none; padding-left: 20px; }
         .tree-list.root { padding-left: 0; }
-        .node-row { display: flex; align-items: center; padding: 8px 16px; cursor: pointer; color: var(--text-mute); border-left: 3px solid transparent; }
+        .node-row { display: flex; align-items: center; padding: 6px 12px; cursor: pointer; color: var(--text-mute); border-left: 3px solid transparent; font-size: 13.5px; }
         .node-row:hover { background: var(--accent-bg); color: var(--text-main); }
         .node-row.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
-        .node-icon-wrapper { width: 24px; display: flex; justify-content: center; cursor: pointer; border-radius: 4px; margin-right: 6px; }
+        .node-row.highlighted { color: var(--text-main); background-color: var(--highlight); }
+
+        .node-icon-wrapper { width: 24px; display: flex; justify-content: center; cursor: pointer; border-radius: 4px; margin-right: 4px; }
         .node-icon-wrapper:hover { background: rgba(0,0,0,0.05); }
         .node-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 2px 4px; }
         .node-actions { display: none; margin-left: auto; gap: 4px; }
         .node-row:hover .node-actions { display: flex; }
+        
+        .node-count-badge { margin-left: auto; font-size: 11px; opacity: 0.6; font-feature-settings: "tnum"; min-width: 30px; text-align: right; }
 
         /* Trash Row in Sidebar */
-        .trash-node { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .trash-node { margin-top: 15px; border-top: 1px solid var(--border);}
         .trash-node.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
 
         .icon-picker-popover { 
@@ -153,7 +184,7 @@
 
         /* Trash Workspace */
         .trash-workspace { width: 100%; padding: 40px; display:flex; flex-direction:column; align-items:center; max-width:800px; }
-        .trash-card { width:100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; }
+        .trash-card { width:100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 8px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; }
         .trash-card-info { display: flex; flex-direction: column; gap: 4px; }
         .trash-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
         
@@ -224,25 +255,28 @@
                 </div>
             </div>
             
-            <ul class="project-list">
-                <li v-for="proj in projects" :key="proj.id" class="project-item" :class="{ 'editing-mode': editingProjectId === proj.id }">
+            <ul class="project-list" ref="projectListRef">
+                <li v-for="proj in projects" :key="proj.id" class="project-item" :class="{ 'editing-mode': editingProjectId === proj.id }" :data-id="proj.id">
                     <div class="project-item-info" @click="editingProjectId !== proj.id && loadProject(proj.id)">
                         <div v-if="editingProjectId === proj.id" style="width: 100%;">
                             <input type="text" v-model="proj.title" class="project-item-input" @blur="endEditProject" @keydown.enter="endEditProject" @click.stop v-focus />
                         </div>
                         <template v-else>
                             <div class="project-item-title">{{ proj.title }}</div>
-                            <div class="project-item-date">수정: {{ formatDate(proj.updatedAt) }}</div>
                         </template>
                     </div>
-                    <div class="project-actions">
-                        <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:20px;"></i></button>
-<button class="btn" @click.stop="exportProjectZip(proj.id)" title="Word/ZIP 내보내기"><i class="ph ph-file-doc" style="font-size:20px; color:#2563EB;"></i></button>
-                        <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:20px;"></i></button>
+                    <div class="project-item-date">
+                        {{ formatDate(proj.updatedAt) }}
                     </div>
+                    <div class="project-actions">
+                        <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:18px;"></i></button>
+                        <button class="btn" @click.stop="exportProjectZip(proj.id)" title="Word/ZIP 내보내기"><i class="ph ph-file-doc" style="font-size:18px; color:#2563EB;"></i></button>
+                        <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:18px;"></i></button>
+                    </div>
+                    <div class="drag-handle" title="순서 변경"><i class="ph ph-dots-six-vertical"></i></div>
                 </li>
             </ul>
-            <div v-if="Object.keys(projects).length === 0" style="margin-top:20px; color:var(--text-mute);">새로운 프로젝트를 시작해 보세요!</div>
+            <div v-if="projects.length === 0" style="margin-top:20px; color:var(--text-mute);">새로운 프로젝트를 시작해 보세요!</div>
             
             <footer class="manager-footer">Copyright by Sagak</footer>
         </div>
@@ -251,13 +285,22 @@
     <template v-else-if="currentView === 'editor' && currentProject">
         <aside :class="{ closed: !sidebarOpen }">
             <div class="side-head">
-                <span style="font-weight:800; letter-spacing:-0.5px; overflow:hidden; text-overflow:ellipsis;">{{ currentProject.title }}</span>
-                <div style="display:flex; gap:4px; flex-shrink:0;">
+                <div v-if="!isEditingTitle" @dblclick="startTitleEdit" style="font-weight:800; letter-spacing:-0.5px; overflow:hidden; text-overflow:ellipsis; margin-right:8px; cursor:text; flex:1;" title="더블클릭하여 이름 변경">
+                    {{ currentProject.title }}
+                </div>
+                <input v-else v-model="currentProject.title" ref="titleInputRef" @blur="endTitleEdit" @keydown.enter="endTitleEdit" class="project-title-input" />
+
+                <div style="display:flex; gap:2px; flex-shrink:0;">
                     <button class="btn" @click="addNode('folder')" title="새 폴더"><i class="ph ph-folder-plus" style="font-size:18px;"></i></button>
                     <button class="btn" @click="addNode('chapter')" title="새 챕터"><i class="ph ph-file-plus" style="font-size:18px;"></i></button>
                     <button class="btn" @click="sidebarOpen = false" title="사이드바 닫기"><i class="ph ph-caret-left" style="font-size:18px;"></i></button>
                 </div>
             </div>
+            
+            <div class="side-search">
+                <input type="text" class="search-input" v-model="searchQuery" placeholder="챕터 제목 검색..." />
+            </div>
+
             <div class="tree-container" @click="pickerOpen = false">
                 <sortable-tree :items="rootNodes" :all-nodes="currentProject.nodes" parent-id="root" class="root" @item-drop="onDrop" @icon-click="openPicker"></sortable-tree>
                 
@@ -318,11 +361,10 @@
                                     <i class="ph" :class="node.type==='folder'?'ph-folder':'ph-file-text'" style="color:var(--accent);"></i> 
                                     {{ node.title }}
                                 </div>
-                                <div style="font-size:12px; color:var(--text-mute);">삭제된 날짜: {{ formatDate(node.updatedAt) }}</div>
                             </div>
                             <div style="display:flex; gap:8px;">
                                 <button class="global-btn" @click.stop="restoreNode(node.id)" title="복구"><i class="ph ph-arrow-u-up-left"></i></button>
-                                <button class="global-btn" style="color:#EF4444; border-color:#EF4444;" @click.stop="hardDeleteNode(node.id)" title="영구 삭제"><i class="ph ph-x"></i></button>
+                                <button class="global-btn" @click.stop="hardDeleteNode(node.id)" title="영구 삭제"><i class="ph ph-x"></i></button>
                             </div>
                         </div>
                     </div>
@@ -359,9 +401,8 @@
             </div>
             
             <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click="showStats = true" title="클릭하여 통계 보기">
-                 <i class="ph ph-book-open-text"></i>
                  <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
-                 <span class="status-text-content">{{ stats.total }} / {{ targetGoal }}자 ({{ stats.percent }}%)</span>
+                 <span class="status-text-content">{{ stats.total }}자 ({{ stats.percent }}%)</span>
             </div>
         </main>
     </template>
@@ -391,20 +432,40 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, nextTick, onMounted, watch } = Vue;
+    const { createApp, ref, computed, nextTick, onMounted, watch, provide, inject } = Vue;
 
     // --- Utils ---
     const utf8_to_b64 = (str) => { try { return btoa(unescape(encodeURIComponent(str))); } catch (e) { return btoa(str); } };
     const b64_to_utf8 = (str) => { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); } };
     const formatDate = (dateString) => {
         if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        const d = new Date(dateString);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        let hour = d.getHours();
+        const minute = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hour >= 12 ? '오후' : '오전';
+        
+        hour = hour % 12;
+        hour = hour ? hour : 12; 
+
+        return `${year}.${month}.${day} ${ampm} ${hour}:${minute}`;
     };
     const formatPostitDate = (dateString) => {
         if (!dateString) return '';
         const d = new Date(dateString);
-        return `수정 : ${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        let hour = d.getHours();
+        const minute = String(d.getMinutes()).padStart(2, '0');
+        const ampm = hour >= 12 ? '오후' : '오전';
+        
+        hour = hour % 12;
+        hour = hour ? hour : 12; 
+
+        return `수정: ${year}.${month}.${day} ${ampm} ${hour}:${minute}`;
     };
     const debounce = (fn, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => fn(...args), delay); }; };
 
@@ -412,6 +473,8 @@
     const NodeRow = {
         name: 'NodeRow', props: ['node'], emits: ['icon-click'],
         setup(props) {
+            const searchQuery = inject('searchQuery', ref(''));
+            
             const iconData = computed(() => {
                 const type = props.node.iconType || 'default';
                 const isFolder = props.node.type === 'folder';
@@ -435,10 +498,16 @@
                 };
                 return map[type] || map['default'];
             });
-            return { iconData };
+
+            const isMatch = computed(() => {
+                if (!searchQuery.value || !searchQuery.value.trim()) return false;
+                return props.node.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+            });
+
+            return { iconData, isMatch };
         },
         template: `
-            <div class="node-row" :class="{ active: $root.activeId === node.id }" @click.stop="$root.selectNode(node.id)" @dblclick.stop="$root.startEdit(node.id)">
+            <div class="node-row" :class="{ active: $root.activeId === node.id, highlighted: isMatch }" @click.stop="$root.selectNode(node.id)" @dblclick.stop="$root.startEdit(node.id)">
                 <span style="width:20px; display:flex; justify-content:center;" @click.stop="$root.toggleNode(node.id)">
                     <i class="ph" v-if="node.type==='folder'" :class="node.closed ? 'ph-caret-right' : 'ph-caret-down'" style="font-size:12px; opacity:0.7;"></i>
                 </span>
@@ -447,6 +516,11 @@
                 </div>
                 <div v-if="$root.editingId !== node.id" style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ node.title }}</div>
                 <input v-else v-model="node.title" class="node-input" @blur="$root.endEdit" @keydown.enter="$root.endEdit" @click.stop v-focus>
+                
+                <div v-if="node.type==='chapter' && $root.editingId !== node.id" class="node-count-badge">
+                   {{ (node.content||'').length.toLocaleString() }}
+                </div>
+                
                 <div class="node-actions" v-if="$root.editingId !== node.id"><i class="ph ph-trash" @click.stop="$root.deleteNode(node.id)" style="padding:4px; cursor:pointer;" title="삭제"></i></div>
             </div>
         `, directives: { focus: { mounted: (el) => el.focus() } }
@@ -491,6 +565,10 @@
             const currentView = ref('manager'); const sidebarOpen = ref(true); const theme = ref('light'); const isCustomFontActive = ref(false);
             const { showAlert, alertMessage, alertType, showInternalAlert } = useAlert();
             const showStats = ref(false);
+            const searchQuery = ref(''); // 검색어 상태
+            
+            // Provide search query to children (NodeRow)
+            provide('searchQuery', searchQuery);
 
             // Icon Picker State
             const pickerOpen = ref(false);
@@ -498,12 +576,19 @@
             const pickingNodeId = ref(null);
 
             // Data State
-            const projects = ref({});
+            const projects = ref([]);
             const currentProjectId = ref(null);
+            const projectListRef = ref(null);
 
-            const currentProject = computed(() => currentProjectId.value ? projects.value[currentProjectId.value] : null);
+            const currentProject = computed(() => currentProjectId.value ? projects.value.find(p => p.id === currentProjectId.value) : null);
             
-            const saveData = () => { if (currentProjectId.value && projects.value[currentProjectId.value]) projects.value[currentProjectId.value].updatedAt = new Date().toISOString(); localStorage.setItem('ns318_projects', JSON.stringify(projects.value)); };
+            const saveData = () => { 
+                if (currentProjectId.value) {
+                    const p = projects.value.find(p => p.id === currentProjectId.value);
+                    if(p) p.updatedAt = new Date().toISOString(); 
+                }
+                localStorage.setItem('ns318_projects', JSON.stringify(projects.value)); 
+            };
             const debouncedSave = debounce(saveData, 1000);
 
             const saveConfig = () => { 
@@ -515,6 +600,21 @@
             const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); 
             const targetGoal = ref(5000);
             
+            // Project Title Edit State
+            const isEditingTitle = ref(false);
+            const titleInputRef = ref(null);
+            const startTitleEdit = () => { 
+                isEditingTitle.value = true; 
+                nextTick(() => { if(titleInputRef.value) titleInputRef.value.focus(); });
+            };
+            const endTitleEdit = () => { 
+                if(currentProject.value) {
+                    if(!currentProject.value.title.trim()) currentProject.value.title = '제목 없음';
+                }
+                isEditingTitle.value = false; 
+                saveData(); 
+            };
+
             const activeNode = computed(() => {
                 if (activeId.value === 'TRASH_VIEW') return null;
                 return currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null;
@@ -524,16 +624,10 @@
             const nodeMap = computed(() => { const map = {}; if (currentProject.value) currentProject.value.nodes.forEach(node => map[node.id] = node); return map; });
             const breadcrumbs = computed(() => { if (!activeNode.value || !currentProject.value) return []; let path = []; let curr = activeNode.value; while(curr) { path.unshift({ id: curr.id, title: curr.title, type: curr.type, iconType: curr.iconType }); if(!curr.parent) break; curr = nodeMap.value[curr.parent]; } return path; });
             
-            // --- Stats Calculation (Simplified: Daily removed) ---
             const stats = computed(() => {
                 const txt = activeNode.value?.content || '';
                 const projPercent = targetGoal.value > 0 ? Math.floor((txt.length / targetGoal.value) * 100) : 100;
-                
-                return { 
-                    total: txt.length, 
-                    noSpace: txt.replace(/\s/g, '').length, 
-                    percent: projPercent
-                };
+                return { total: txt.length, noSpace: txt.replace(/\s/g, '').length, percent: projPercent };
             });
 
             // Methods
@@ -541,11 +635,37 @@
             const applyFontClass = () => document.body.classList.toggle('custom-font-active', isCustomFontActive.value);
             
             const loadAllData = () => {
-                const p = localStorage.getItem('ns318_projects'); if(p) projects.value = JSON.parse(p);
+                const p = localStorage.getItem('ns318_projects'); 
+                if(p) {
+                    const parsed = JSON.parse(p);
+                    if (Array.isArray(parsed)) { projects.value = parsed; } else { projects.value = Object.values(parsed); saveData(); }
+                }
                 const c = localStorage.getItem('ns318_global_cfg'); if(c) { const cfg = JSON.parse(c); theme.value = cfg.theme || 'light'; isCustomFontActive.value = cfg.isCustomFontActive || false; }
-                
                 applyTheme(); applyFontClass();
             };
+
+            // Search Auto-Expand Logic
+            watch(searchQuery, (newVal) => {
+                if (!newVal || !currentProject.value) return;
+                const lower = newVal.trim().toLowerCase();
+                if (!lower) return;
+                
+                const nodes = currentProject.value.nodes;
+                const matches = nodes.filter(n => !n.isDeleted && n.title.toLowerCase().includes(lower));
+                
+                matches.forEach(match => {
+                    let parentId = match.parent;
+                    while(parentId) {
+                        const p = nodeMap.value[parentId];
+                        if(p && p.type === 'folder') {
+                            p.closed = false;
+                            parentId = p.parent;
+                        } else {
+                            break;
+                        }
+                    }
+                });
+            });
 
             // Icon Picker Logic
             const openPicker = (event, nodeId) => {
@@ -621,19 +741,13 @@
 
             const handleEnter = (e) => {
                 if (e.isComposing) return;
-
                 const ta = e.target;
-                const indent = '\u3000'; // 전각 공백
+                const indent = '\u3000'; 
                 const insertion = '\n' + indent; 
-
                 ta.setRangeText(insertion, ta.selectionStart, ta.selectionEnd, 'end');
                 activeNode.value.content = ta.value;
-
                 nextTick(() => { 
-                    autoResize(); 
-                    updateTypewriter(true); 
-                    debouncedSave(); 
-                    lastContentLength = activeNode.value.content.length; 
+                    autoResize(); updateTypewriter(true); debouncedSave(); lastContentLength = activeNode.value.content.length; 
                 });
             };
 
@@ -643,25 +757,53 @@
                 const title = prompt('새 프로젝트:', '새 소설');
                 if (title) {
                     const newId = Date.now().toString(36);
-                    projects.value[newId] = {
+                    const newProj = {
                         id: newId, title, updatedAt: new Date().toISOString(),
                         nodes: [
                             { id: 'f1', type: 'folder', title: '설정집', parent: null, closed: false, content: '', synopsis: '', iconType: 'default', isDeleted: false },
                                 { id: 'c1', type: 'chapter', title: '세계관', parent: 'f1', closed: false, content: '# 세계관\n', synopsis: '', iconType: 'loc', isDeleted: false },
                                  { id: 'c2', type: 'chapter', title: '캐릭터', parent: 'f1', closed: false, content: '# 캐릭터\n', synopsis: '', iconType: 'char', isDeleted: false },
                             { id: 'f2', type: 'folder', title: '본문', parent: null, closed: false, content: '', synopsis: '', iconType: 'default', isDeleted: false },
-                                { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '대충 시작해야 완벽하게 끝난다.\n', synopsis: '', iconType: 'flag-red', isDeleted: false },
+                                { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '대충 시작해야 완벽하게 끝난다.', synopsis: '', iconType: 'flag-red', isDeleted: false },
                                 { id: 'c4', type: 'chapter', title: '제 1장', parent: 'f2', closed: false, content: '', synopsis: '', iconType: 'time', isDeleted: false },
                         ],
                         config: { target: 5000 }
                     };
+                    projects.value.push(newProj);
                     saveData(); loadProject(newId, 'c3'); 
                 }
             };
-            const deleteProject = (id) => { if(confirm('프로젝트를 완전히 삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
+            const deleteProject = (id) => { 
+                if(confirm('프로젝트를 완전히 삭제합니까?')) { 
+                    const idx = projects.value.findIndex(p => p.id === id);
+                    if (idx > -1) projects.value.splice(idx, 1);
+                    saveData(); 
+                    if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } 
+                } 
+            };
             const startEditProject = (id) => { currentProjectId.value = null; editingProjectId.value = id; };
-            const endEditProject = () => { if(editingProjectId.value) { if(!projects.value[editingProjectId.value].title.trim()) projects.value[editingProjectId.value].title='제목 없음'; saveData(); editingProjectId.value=null; } };
-            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter' && !n.isDeleted)?.id); targetGoal.value=p.config.target||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
+            const endEditProject = () => { 
+                if(editingProjectId.value) { 
+                    const p = projects.value.find(p => p.id === editingProjectId.value);
+                    if(p) {
+                        if(!p.title.trim()) p.title='제목 없음'; 
+                        saveData(); 
+                    }
+                    editingProjectId.value=null; 
+                } 
+            };
+            const loadProject = (id, defId = null) => { 
+                saveData(); 
+                const p = projects.value.find(p => p.id === id); 
+                if (!p) return; 
+                currentProjectId.value=id; 
+                activeId.value=defId||(p.nodes.find(n=>n.type==='chapter' && !n.isDeleted)?.id); 
+                targetGoal.value=p.config.target||5000; 
+                typewriterMode.value=p.config.typewriter||false; 
+                currentView.value='editor'; 
+                searchQuery.value = ''; 
+                nextTick(()=>{ autoResize(); updateTypewriter(false); }); 
+            };
             const handleEditorExit = () => { saveData(); currentView.value = 'manager'; };
 
             const editingId = ref(null);
@@ -725,7 +867,7 @@
                 return await Packer.toBlob(doc);
             };
             const exportProjectZip = async (projId) => {
-                const p = projects.value[projId]; if (!p) return;
+                const p = projects.value.find(p => p.id === projId); if (!p) return;
                 const zip = new JSZip();
                 const processNodes = (parentId, currentZipFolder) => {
                     const children = p.nodes.filter(n => n.parent === parentId && !n.isDeleted);
@@ -748,6 +890,20 @@
                 }; r.readAsText(f); e.target.value = '';
             };
 
+            const initSortable = () => {
+                 if (projectListRef.value) {
+                    new Sortable(projectListRef.value, {
+                        handle: '.drag-handle',
+                        animation: 150,
+                        onEnd: ({ oldIndex, newIndex }) => {
+                            const item = projects.value.splice(oldIndex, 1)[0];
+                            projects.value.splice(newIndex, 0, item);
+                            saveData();
+                        }
+                    });
+                }
+            };
+
             watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
             watch(mobileView, () => nextTick(() => updateTypewriter(false)));
             watch(currentProjectId, () => { activeId.value = null; });
@@ -756,18 +912,26 @@
             const toggleTypewriter = () => { typewriterMode.value = !typewriterMode.value; saveConfig(); nextTick(() => updateTypewriter(true)); };
             const toggleRidibatangFont = () => { isCustomFontActive.value = !isCustomFontActive.value; applyFontClass(); saveConfig(); showInternalAlert('폰트 변경됨'); };
 
+            // view가 변경될 때 Sortable 재연결
+            watch(currentView, (newVal) => {
+                if (newVal === 'manager') nextTick(initSortable);
+            });
+
             onMounted(() => { 
                 loadAllData(); 
                 window.addEventListener('beforeunload', () => { saveData(); });
                 if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { mobileView.value = true; typewriterMode.value = true; }
                 if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { document.body.style.height = window.visualViewport.height + 'px'; }); }
+                
+                initSortable();
             });
 
             return {
-                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive, deletedNodes,
+                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive, deletedNodes, searchQuery,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty, handleEnter, exportProjectZip,
-                restoreNode, hardDeleteNode, emptyTrash, selectTrashView
+                restoreNode, hardDeleteNode, emptyTrash, selectTrashView, projectListRef,
+                isEditingTitle, startTitleEdit, endTitleEdit, titleInputRef
             };
         }
     });
