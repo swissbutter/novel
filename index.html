@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sagak Studio v1.1</title>
+    <title>Sagak Studio v1.2</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -140,7 +140,8 @@
         .paper.mobile { max-width: 555px; padding: 15px 20px; }
         
         textarea.editor { width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; background: transparent; font-family: inherit; font-size: 18px; line-height: 2; color: var(--text-main); display: block; padding: 0; margin: 0; position: relative; z-index: 2; text-indent: 1em; }
-        #caret-mirror { position: absolute; top: -9999px; left: -9999px; visibility: hidden; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; font-family: inherit; font-size: 18px; line-height: 1.8; padding: 60px 80px; width: 800px; text-indent: 1em; }
+        #caret-mirror { position: absolute; top: -9999px; left: -9999px; visibility: hidden; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; font-family: inherit; font-size: 18px; line-height: 2; padding: 60px 80px; width: 800px; text-indent: 1em; }
+        #caret-mirror.mobile { padding: 15px 20px; width: 100%; max-width: 555px; }
         
         .corkboard { width: 100%; padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; align-content: flex-start; }
         .postit { background: var(--postit-bg); color: var(--postit-text); border: 1px solid var(--postit-border); height: 350px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; }
@@ -231,7 +232,7 @@
                         </div>
                         <template v-else>
                             <div class="project-item-title">{{ proj.title }}</div>
-                            <div class="project-item-date">최근 저장: {{ formatDate(proj.updatedAt) }}</div>
+                            <div class="project-item-date">수정: {{ formatDate(proj.updatedAt) }}</div>
                         </template>
                     </div>
                     <div class="project-actions">
@@ -357,18 +358,10 @@
                 <div v-else style="align-self:center; color:var(--text-mute);">챕터를 선택하세요.</div>
             </div>
             
-            <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click.stop="toggleStatsMode" title="클릭하여 목표 전환">
-                <template v-if="statsMode === 'project'">
-                    <i class="ph ph-book-open-text"></i>
-                    <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
-                    <span class="status-text-content">{{ stats.total }}자 ({{ stats.percent }}%)</span>
-                </template>
-                <template v-else>
-                    <i class="ph ph-target"></i>
-                    <div class="status-gauge" :style="{ width: Math.min(stats.dailyPercent, 100) + '%' }"></div>
-                    <span class="status-text-content">오늘: {{ stats.daily }}자 ({{ stats.dailyPercent }}%)</span>
-                </template>
-                <button class="btn" style="padding:0; margin-left:4px;" @click.stop="showStats = true"><i class="ph ph-gear"></i></button>
+            <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click="showStats = true" title="클릭하여 통계 보기">
+                 <i class="ph ph-book-open-text"></i>
+                 <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
+                 <span class="status-text-content">{{ stats.total }} / {{ targetGoal }}자 ({{ stats.percent }}%)</span>
             </div>
         </main>
     </template>
@@ -385,12 +378,7 @@
                 <span style="color:var(--text-mute)">챕터 목표치</span>
                 <input type="number" v-model="targetGoal" class="modal-input" @change="saveConfig">
             </div>
-             <div class="modal-row" style="align-items:center;">
-                <span style="color:var(--text-mute)">하루 집필 목표</span>
-                <input type="number" v-model="dailyTarget" class="modal-input" @change="saveConfig">
-            </div>
-            <div class="modal-divider"></div>
-            <div style="text-align:center; color:var(--text-mute); font-size:12px;">오늘 작성량: {{ stats.daily }}자</div>
+            <div class="modal-row"><span style="color:var(--text-mute)">달성율</span><strong>{{ stats.percent }} %</strong></div>
         </div>
     </div>
     
@@ -503,7 +491,6 @@
             const currentView = ref('manager'); const sidebarOpen = ref(true); const theme = ref('light'); const isCustomFontActive = ref(false);
             const { showAlert, alertMessage, alertType, showInternalAlert } = useAlert();
             const showStats = ref(false);
-            const statsMode = ref('project'); // 'project' or 'daily'
 
             // Icon Picker State
             const pickerOpen = ref(false);
@@ -513,24 +500,21 @@
             // Data State
             const projects = ref({});
             const currentProjectId = ref(null);
-            const dailyStats = ref({ date: '', count: 0 });
 
             const currentProject = computed(() => currentProjectId.value ? projects.value[currentProjectId.value] : null);
             
             const saveData = () => { if (currentProjectId.value && projects.value[currentProjectId.value]) projects.value[currentProjectId.value].updatedAt = new Date().toISOString(); localStorage.setItem('ns318_projects', JSON.stringify(projects.value)); };
-            const saveDaily = () => { localStorage.setItem('ns318_daily', JSON.stringify(dailyStats.value)); };
             const debouncedSave = debounce(saveData, 1000);
 
             const saveConfig = () => { 
                 localStorage.setItem('ns318_global_cfg', JSON.stringify({ theme: theme.value, isCustomFontActive: isCustomFontActive.value }));
-                if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, dailyTarget: dailyTarget.value, typewriter: typewriterMode.value }; saveData(); }
+                if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, typewriter: typewriterMode.value }; saveData(); }
             };
 
             // Editor Logic
             const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); 
-            const targetGoal = ref(5000); const dailyTarget = ref(5000);
+            const targetGoal = ref(5000);
             
-            // activeNode 계산 시 TRASH_VIEW일 경우 null 반환
             const activeNode = computed(() => {
                 if (activeId.value === 'TRASH_VIEW') return null;
                 return currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null;
@@ -540,18 +524,15 @@
             const nodeMap = computed(() => { const map = {}; if (currentProject.value) currentProject.value.nodes.forEach(node => map[node.id] = node); return map; });
             const breadcrumbs = computed(() => { if (!activeNode.value || !currentProject.value) return []; let path = []; let curr = activeNode.value; while(curr) { path.unshift({ id: curr.id, title: curr.title, type: curr.type, iconType: curr.iconType }); if(!curr.parent) break; curr = nodeMap.value[curr.parent]; } return path; });
             
-            // --- Stats Calculation ---
+            // --- Stats Calculation (Simplified: Daily removed) ---
             const stats = computed(() => {
                 const txt = activeNode.value?.content || '';
                 const projPercent = targetGoal.value > 0 ? Math.floor((txt.length / targetGoal.value) * 100) : 100;
-                const dailyP = dailyTarget.value > 0 ? Math.floor((dailyStats.value.count / dailyTarget.value) * 100) : 100;
                 
                 return { 
                     total: txt.length, 
                     noSpace: txt.replace(/\s/g, '').length, 
-                    percent: projPercent,
-                    daily: dailyStats.value.count,
-                    dailyPercent: dailyP
+                    percent: projPercent
                 };
             });
 
@@ -563,24 +544,14 @@
                 const p = localStorage.getItem('ns318_projects'); if(p) projects.value = JSON.parse(p);
                 const c = localStorage.getItem('ns318_global_cfg'); if(c) { const cfg = JSON.parse(c); theme.value = cfg.theme || 'light'; isCustomFontActive.value = cfg.isCustomFontActive || false; }
                 
-                // Load Daily Stats
-                const today = new Date().toDateString();
-                const d = localStorage.getItem('ns318_daily');
-                if(d) {
-                    const parsed = JSON.parse(d);
-                    if(parsed.date === today) dailyStats.value = parsed;
-                    else dailyStats.value = { date: today, count: 0 };
-                } else {
-                    dailyStats.value = { date: today, count: 0 };
-                }
-                
                 applyTheme(); applyFontClass();
             };
 
             // Icon Picker Logic
             const openPicker = (event, nodeId) => {
                 if (currentProject.value.nodes.find(n => n.id === nodeId)?.type === 'folder') return; 
-                const y = event.clientY + 200 > window.innerHeight ? event.clientY - 150 : event.clientY;
+                let y = event.clientY;
+                if (y + 200 > window.innerHeight) y = window.innerHeight - 220;
                 pickerPos.value = { x: event.clientX + 10, y: y };
                 pickingNodeId.value = nodeId;
                 pickerOpen.value = true;
@@ -630,19 +601,10 @@
 
             const autoResize = () => { if(editorRef.value) { editorRef.value.style.height = 'auto'; editorRef.value.style.height = editorRef.value.scrollHeight + 'px'; } };
             
-            // --- Editor Input & Daily Stats Logic ---
+            // --- Editor Input Logic ---
             let lastContentLength = 0;
             const handleMainInput = (e) => { 
                 if (activeNode.value) {
-                    const currentLen = activeNode.value.content.length;
-                    const diff = currentLen - lastContentLength;
-                    lastContentLength = currentLen;
-                    
-                    if (diff > 0) {
-                        dailyStats.value.count += diff;
-                        saveDaily();
-                    }
-
                     activeNode.value.updatedAt = new Date().toISOString(); 
                 }
                 autoResize(); updateTypewriter(false); debouncedSave(); 
@@ -658,15 +620,21 @@
             const focusEditor = () => { if (editorRef.value) editorRef.value.focus(); sidebarOpen.value = false; };
 
             const handleEnter = (e) => {
+                if (e.isComposing) return;
+
                 const ta = e.target;
-                const start = ta.selectionStart; const end = ta.selectionEnd;
-                const val = activeNode.value.content || '';
-                const indent = '\u3000'; const insertion = '\n' + indent; 
-                const newVal = val.substring(0, start) + insertion + val.substring(end);
-                activeNode.value.content = newVal;
-                dailyStats.value.count += 1; saveDaily();
-                
-                nextTick(() => { ta.selectionStart = ta.selectionEnd = start + insertion.length; autoResize(); updateTypewriter(true); debouncedSave(); lastContentLength = newVal.length; });
+                const indent = '\u3000'; // 전각 공백
+                const insertion = '\n' + indent; 
+
+                ta.setRangeText(insertion, ta.selectionStart, ta.selectionEnd, 'end');
+                activeNode.value.content = ta.value;
+
+                nextTick(() => { 
+                    autoResize(); 
+                    updateTypewriter(true); 
+                    debouncedSave(); 
+                    lastContentLength = activeNode.value.content.length; 
+                });
             };
 
             // CRUD & Tree
@@ -685,7 +653,7 @@
                                 { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '대충 시작해야 완벽하게 끝난다. - \n', synopsis: '', iconType: 'flag-red', isDeleted: false },
                                 { id: 'c4', type: 'chapter', title: '제 1장', parent: 'f2', closed: false, content: '', synopsis: '', iconType: 'time', isDeleted: false },
                         ],
-                        config: { target: 5000, dailyTarget: 10000 }
+                        config: { target: 5000 }
                     };
                     saveData(); loadProject(newId, 'c3'); 
                 }
@@ -693,19 +661,22 @@
             const deleteProject = (id) => { if(confirm('프로젝트를 완전히 삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
             const startEditProject = (id) => { currentProjectId.value = null; editingProjectId.value = id; };
             const endEditProject = () => { if(editingProjectId.value) { if(!projects.value[editingProjectId.value].title.trim()) projects.value[editingProjectId.value].title='제목 없음'; saveData(); editingProjectId.value=null; } };
-            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter' && !n.isDeleted)?.id); targetGoal.value=p.config.target||5000; dailyTarget.value=p.config.dailyTarget||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
+            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter' && !n.isDeleted)?.id); targetGoal.value=p.config.target||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
             const handleEditorExit = () => { saveData(); currentView.value = 'manager'; };
 
             const editingId = ref(null);
             const rootNodes = computed(() => currentProject.value ? currentProject.value.nodes.filter(n => !n.parent && !n.isDeleted) : []);
-            const selectNode = (id) => { if(!editingId.value) activeId.value = id; };
+            const selectNode = (id) => { 
+                if(!editingId.value) activeId.value = id; 
+                if (mobileView.value) sidebarOpen.value = false;
+            };
             const toggleNode = (id) => { const n = nodeMap.value[id]; if(n) n.closed=!n.closed; saveData(); };
             const startEdit = (id) => editingId.value = id; 
             const endEdit = () => { if(editingId.value && !nodeMap.value[editingId.value].title.trim()) nodeMap.value[editingId.value].title = '제목 없음'; editingId.value = null; saveData(); };
             const addNode = (type) => { const nodes = currentProject.value.nodes; const cur = nodeMap.value[activeId.value]; let parent = cur ? (cur.type==='folder'?cur.id:cur.parent) : null; const n = { id: Date.now().toString(36), type, title: type==='folder'?'새 폴더':'새 챕터', parent, content:'', synopsis:'', closed:false, updatedAt: new Date().toISOString(), iconType: 'default', isDeleted: false }; nodes.push(n); if(parent) { const p = nodeMap.value[parent]; if(p) p.closed = false; } activeId.value=n.id; editingId.value=n.id; saveData(); };
             
             // --- Trash Logic ---
-            const selectTrashView = () => { activeId.value = 'TRASH_VIEW'; };
+            const selectTrashView = () => { activeId.value = 'TRASH_VIEW'; if(mobileView.value) sidebarOpen.value = false; };
             const deleteNode = (id) => { 
                 const node = nodeMap.value[id];
                 if(node) {
@@ -724,7 +695,6 @@
                 const nodes = currentProject.value.nodes;
                 const idx = nodes.findIndex(n => n.id === id);
                 if(idx > -1) {
-                    // 자식 노드들도 영구 삭제
                     const children = nodes.filter(n => n.parent === id);
                     children.forEach(c => hardDeleteNode(c.id));
                     nodes.splice(idx, 1);
@@ -742,7 +712,10 @@
 
             // Export logic (Word/Zip)
             const generateDocxBlob = async (title, content) => {
-                const { Document, Packer, Paragraph, TextRun } = docx;
+                if (!window.docx) {
+                     throw new Error("DOCX 라이브러리가 로드되지 않았습니다.");
+                }
+                const { Document, Packer, Paragraph, TextRun } = window.docx;
                 const lines = (content || '').split('\n').map(line => line.replace(/^[\s\u3000]+/, ''));
                 const paragraphs = lines.map(line => new Paragraph({
                     children: [new TextRun({ text: line, size: 24, font: "Malgun Gothic" })],
@@ -762,7 +735,7 @@
                     });
                 };
                 showInternalAlert('압축 파일 생성 중...');
-                try { processNodes(null, zip); const content = await zip.generateAsync({ type: "blob" }); saveAs(content, `${p.title}.zip`); showInternalAlert('다운로드 완료!'); } catch (e) { showInternalAlert('오류 발생', 'error'); }
+                try { processNodes(null, zip); const content = await zip.generateAsync({ type: "blob" }); saveAs(content, `${p.title}.zip`); showInternalAlert('다운로드 완료!'); } catch (e) { console.error(e); showInternalAlert('오류 발생: ' + e.message, 'error'); }
             };
 
             const fileInput = ref(null);
@@ -775,8 +748,6 @@
                 }; r.readAsText(f); e.target.value = '';
             };
 
-            const toggleStatsMode = () => { statsMode.value = statsMode.value === 'project' ? 'daily' : 'project'; };
-
             watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
             watch(mobileView, () => nextTick(() => updateTypewriter(false)));
             watch(currentProjectId, () => { activeId.value = null; });
@@ -788,16 +759,15 @@
             onMounted(() => { 
                 loadAllData(); 
                 window.addEventListener('beforeunload', () => { saveData(); });
-                // 검색 단축키 리스너 제거됨
                 if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { mobileView.value = true; typewriterMode.value = true; }
                 if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { document.body.style.height = window.visualViewport.height + 'px'; }); }
             });
 
             return {
-                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, dailyTarget, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive, deletedNodes, statsMode,
+                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive, deletedNodes,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty, handleEnter, exportProjectZip,
-                restoreNode, hardDeleteNode, emptyTrash, toggleStatsMode, selectTrashView
+                restoreNode, hardDeleteNode, emptyTrash, selectTrashView
             };
         }
     });
