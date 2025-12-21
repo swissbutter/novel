@@ -13,9 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
 
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client"></script>
-
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📑</text></svg>">
     
     <style>
@@ -169,7 +166,7 @@
         .paper-wrapper { width: 100%; max-width: 880px; padding: 20px 0 50vh; display: flex; justify-content: center; position: relative; z-index: 5; }
         .paper-wrapper.typewriter { padding-bottom: 150vh; }
         
-        /* 배경 투명화 */
+        /* [수정됨] 배경 투명화 및 테두리/그림자 제거 */
         .paper { 
             width: 100%; 
             background: transparent; 
@@ -180,7 +177,7 @@
             height: fit-content; 
             position: relative; 
         }
-        .paper.mobile { max-width: 555px; padding: 15px 20px; }
+        .paper.mobile { max-width: 555px; padding: 15px 20px; /* mobile은 이미 투명 설정 상속됨 */ }
         
         textarea.editor { 
             width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
@@ -264,17 +261,6 @@
                 <div class="project-header-top">
                     <h2><i class="ph ph-books" style="font-size: 24px; margin-right: 8px;"></i> 프로젝트 목록</h2>
                     <div class="global-actions">
-                        <template v-if="!isGoogleSignedIn">
-                            <button class="global-btn" @click="handleAuthClick" title="구글 드라이브 연동"><i class="ph ph-google-logo" style="font-weight:bold;"></i> Google 로그인</button>
-                        </template>
-                        <template v-else>
-                            <button class="global-action-icon" @click="saveToDrive" title="구글 드라이브에 저장"><i class="ph ph-cloud-arrow-up" style="font-size:20px; color:var(--accent);"></i></button>
-                            <button class="global-action-icon" @click="loadFromDrive" title="구글 드라이브에서 불러오기"><i class="ph ph-cloud-arrow-down" style="font-size:20px; color:var(--accent);"></i></button>
-                            <button class="global-action-icon" @click="handleSignoutClick" title="로그아웃"><i class="ph ph-sign-out" style="font-size:20px;"></i></button>
-                        </template>
-
-                        <div style="width:1px; height:20px; background:var(--border); margin:0 8px;"></div>
-
                         <button class="global-action-icon" @click="exportAllData" title="전체 백업"><i class="ph ph-floppy-disk" style="font-size:20px;"></i></button>
                         <button class="global-action-icon" @click="triggerImportAll" title="불러오기"><i class="ph ph-upload-simple" style="font-size:20px;"></i></button>
                         <button class="global-btn" style="color:var(--accent); border-color:var(--accent);" @click="createProject"><i class="ph ph-plus" style="font-size:18px;"></i> 새 프로젝트</button>
@@ -409,12 +395,6 @@
 <script>
     const { createApp, ref, computed, nextTick, onMounted, watch } = Vue;
 
-    // --- Google API Config ---
-    const API_KEY = 'YOUR_API_KEY'; // 여기에 API 키 입력
-    const CLIENT_ID = 'YOUR_CLIENT_ID'; // 여기에 클라이언트 ID 입력
-    const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
-    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
     // --- Utils ---
     const utf8_to_b64 = (str) => { try { return btoa(unescape(encodeURIComponent(str))); } catch (e) { return btoa(str); } };
     const b64_to_utf8 = (str) => { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return atob(str); } };
@@ -536,12 +516,6 @@
                 if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, typewriter: typewriterMode.value }; saveData(); }
             };
 
-            // Google Auth State
-            const isGoogleSignedIn = ref(false);
-            let tokenClient;
-            let gapiInited = false;
-            let gisInited = false;
-
             // Editor Logic
             const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); const targetGoal = ref(5000);
             const activeNode = computed(() => currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null);
@@ -562,113 +536,6 @@
                 const p = localStorage.getItem('ns318_projects'); if(p) projects.value = JSON.parse(p);
                 const c = localStorage.getItem('ns318_global_cfg'); if(c) { const cfg = JSON.parse(c); theme.value = cfg.theme || 'light'; isCustomFontActive.value = cfg.isCustomFontActive || false; }
                 applyTheme(); applyFontClass();
-            };
-
-            // Google API Init
-            const initializeGoogleApi = () => {
-                gapi.load('client', async () => {
-                    await gapi.client.init({ apiKey: API_KEY, discoveryDocs: DISCOVERY_DOCS });
-                    gapiInited = true;
-                    maybeEnableButtons();
-                });
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID,
-                    scope: SCOPES,
-                    callback: (resp) => {
-                        if (resp.error !== undefined) throw (resp);
-                        isGoogleSignedIn.value = true;
-                        showInternalAlert('구글 로그인 완료');
-                    },
-                });
-                gisInited = true;
-                maybeEnableButtons();
-            };
-            
-            const maybeEnableButtons = () => { if (gapiInited && gisInited) { /* Ready */ } };
-            
-            const handleAuthClick = () => {
-                if (window.location.protocol === 'file:') {
-                    alert('보안상의 이유로 file:// 프로토콜에서는 구글 로그인이 작동하지 않습니다.\n웹 서버(localhost 또는 GitHub Pages)에서 실행해주세요.');
-                    return;
-                }
-                tokenClient.requestAccessToken({ prompt: 'consent' });
-            };
-            
-            const handleSignoutClick = () => {
-                const token = gapi.client.getToken();
-                if (token !== null) {
-                    google.accounts.oauth2.revoke(token.access_token);
-                    gapi.client.setToken('');
-                    isGoogleSignedIn.value = false;
-                    showInternalAlert('로그아웃 완료');
-                }
-            };
-
-            // Cloud Save & Load
-            const saveToDrive = async () => {
-                saveData();
-                showInternalAlert('구글 드라이브 업로드 중...');
-                
-                const content = JSON.stringify({ version: "3.27_Lite", timestamp: new Date(), projects: projects.value, globalConfig: { theme: theme.value, isCustomFontActive: isCustomFontActive.value } });
-                const fileName = `Sagak_Backup_${new Date().toISOString().slice(0,10)}.vel`;
-                
-                const metadata = {
-                    'name': fileName,
-                    'mimeType': 'application/json'
-                };
-
-                const accessToken = gapi.client.getToken().access_token;
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', new Blob([content], { type: 'application/json' }));
-
-                try {
-                    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST',
-                        headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-                        body: form
-                    });
-                    showInternalAlert('업로드 성공!');
-                } catch (err) {
-                    console.error(err);
-                    showInternalAlert('업로드 실패', 'error');
-                }
-            };
-
-            const loadFromDrive = async () => {
-                showInternalAlert('백업 파일 검색 중...');
-                try {
-                    // Sagak_Backup 으로 시작하는 최신 파일 검색
-                    const res = await gapi.client.drive.files.list({
-                        'pageSize': 1,
-                        'fields': "nextPageToken, files(id, name)",
-                        'q': "name contains 'Sagak_Backup' and trashed=false",
-                        'orderBy': 'createdTime desc'
-                    });
-                    
-                    const files = res.result.files;
-                    if (files && files.length > 0) {
-                        const file = files[0];
-                        if(confirm(`최신 백업 파일 발견: ${file.name}\n불러오시겠습니까? (현재 데이터는 덮어씌워집니다)`)) {
-                             const resp = await gapi.client.drive.files.get({ fileId: file.id, alt: 'media' });
-                             const data = resp.result;
-                             
-                             if (data.projects) {
-                                projects.value = data.projects;
-                                theme.value = data.globalConfig?.theme || 'light';
-                                isCustomFontActive.value = data.globalConfig?.isCustomFontActive || false;
-                                applyTheme(); applyFontClass(); saveData();
-                                showInternalAlert('복구 완료');
-                                currentView.value = 'manager';
-                             }
-                        }
-                    } else {
-                        showInternalAlert('백업 파일을 찾을 수 없습니다.', 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    showInternalAlert('불러오기 실패', 'error');
-                }
             };
 
             // Icon Picker Logic
@@ -901,18 +768,13 @@
                         document.body.style.height = window.visualViewport.height + 'px';
                     });
                 }
-
-                // Google Init
-                initializeGoogleApi();
             });
 
             return {
                 currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
-                handleEnter, exportProjectZip,
-                // Google Auth
-                isGoogleSignedIn, handleAuthClick, handleSignoutClick, saveToDrive, loadFromDrive
+                handleEnter, exportProjectZip
             };
         }
     });
