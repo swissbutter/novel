@@ -19,7 +19,8 @@
         :root {
             --bg-app: #F4F4F5; --bg-sidebar: #FFFFFF; --bg-paper: #FFFFFF; --bg-modal: #FFFFFF;
             --text-main: #18181B; --text-mute: #71717A; --accent: #3B82F6; --accent-bg: #EFF6FF;
-            --border: #E4E4E7; --sidebar-width: 260px; --postit-bg: #FEF3C7; --postit-text: #78350F;
+            --border: #E4E4E7; --sidebar-width: 280px; /* 사이드바 너비 살짝 키움 */
+            --postit-bg: #FEF3C7; --postit-text: #78350F;
             --postit-border: #FCD34D;
             --alert-success: #10B981; --alert-error: #EF4444;
             --active-color: #3F3F46; --active-bg: #E5E7EB;
@@ -34,20 +35,15 @@
 
         * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
 
-        /* [수정] 모바일 100vh 문제 해결 및 스크롤 튀는 현상 방지 */
         body { 
             font-family: sans-serif; 
             background-color: var(--bg-app); 
             color: var(--text-main); 
-            
-            /* 모바일 브라우저 UI 대응 */
             height: 100vh; 
             height: 100dvh; 
-            
             overflow: hidden; 
-            position: fixed; /* 전체 고정 */
+            position: fixed; 
             width: 100%;
-            
             font-size: 14px; 
             transition: background-color 0.3s, color 0.3s; 
         }
@@ -55,13 +51,12 @@
         body.custom-font-active { font-family: 'Ridibatang', sans-serif !important; }
         input, textarea, button { font-family: inherit; }
 
-        /* [수정] 앱 컨테이너 절대 위치 고정 */
         #app { 
             display: flex; 
             width: 100%; 
             height: 100%; 
-            position: absolute;
-            inset: 0;
+            position: relative; /* 오버레이를 위해 relative 변경 */
+            overflow: hidden;
         }
 
         /* Project Manager */
@@ -84,9 +79,42 @@
         .project-item-date { font-size: 12px; color: var(--text-mute); font-weight: 400; flex-shrink: 0; }
         .project-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-        /* Sidebar & Layout */
-        aside { width: var(--sidebar-width); background: var(--bg-sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: width 0.3s ease; overflow: hidden; white-space: nowrap; z-index: 50; }
-        aside.closed { width: 0 !important; min-width: 0 !important; border: none; }
+        /* [수정] 모바일에서 날짜 숨기기 */
+        @media (max-width: 768px) {
+            .project-item-date { display: none; }
+            .project-item { padding: 12px 16px; }
+        }
+
+        /* [수정] Sidebar Overlay 스타일 */
+        aside { 
+            width: var(--sidebar-width); 
+            height: 100%;
+            background: var(--bg-sidebar); 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            overflow: hidden; 
+            white-space: nowrap; 
+            
+            /* Overlay 설정 */
+            position: absolute; 
+            top: 0; left: 0; 
+            z-index: 100; /* Main보다 위에 위치 */
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1); /* 그림자 추가 */
+            
+            /* 애니메이션 */
+            transition: transform 0.3s ease; 
+            transform: translateX(0);
+        }
+        
+        aside.closed { 
+            transform: translateX(-100%); /* 왼쪽으로 숨김 */
+            width: var(--sidebar-width) !important; /* 너비 유지 (애니메이션 위해) */
+            border: none;
+            box-shadow: none;
+        }
+
         .side-head { height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-weight: 700; }
         .tree-container { flex: 1; overflow-y: auto; padding: 10px 0; }
         .manager-footer { margin-top: auto; width: 100%; max-width: 800px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-mute); }
@@ -98,7 +126,6 @@
         .tree-list { list-style: none; padding-left: 20px; }
         .tree-list.root { padding-left: 0; }
         
-        /* [수정] 터치 영역 확대를 위한 패딩 조정 */
         .node-row { display: flex; align-items: center; padding: 8px 16px; cursor: pointer; color: var(--text-mute); border-left: 3px solid transparent; }
         .node-row:hover { background: var(--accent-bg); color: var(--text-main); }
         .node-row.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
@@ -120,7 +147,13 @@
         .node-row:hover .node-actions { display: flex; }
 
         /* Main & Editor */
-        main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        main { 
+            width: 100%; 
+            height: 100%;
+            display: flex; flex-direction: column; 
+            position: relative; 
+            /* 사이드바가 덮을 것이므로 여백 조정 없음 */
+        }
         .toolbar { height: 50px; flex-shrink: 0; background: var(--bg-app); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; z-index: 60; }
         .toolbar-left-group { display: flex; align-items: center; gap: 12px; overflow: hidden; }
         .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-mute); overflow: hidden; white-space: nowrap; }
@@ -134,7 +167,6 @@
         .paper { width: 100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 60px 80px; min-height: 90vh; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
         .paper.mobile { max-width: 555px; padding: 35px 30px; }
         
-        /* 문단 첫 줄 들여쓰기 */
         textarea.editor { 
             width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
             background: transparent; font-family: inherit; font-size: 18px; line-height: 2; 
@@ -236,6 +268,7 @@
                         </template>
                     </div>
                     <div class="project-actions">
+                        <button class="btn" @click.stop="exportProjectText(proj.id)" title="TXT 내보내기"><i class="ph ph-file-txt" style="font-size:20px;"></i></button>
                         <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:20px;"></i></button>
                         <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:20px;"></i></button>
                     </div>
@@ -250,10 +283,11 @@
     <template v-else-if="currentView === 'editor' && currentProject">
         <aside :class="{ closed: !sidebarOpen }">
             <div class="side-head">
-                <span style="font-weight:800; letter-spacing:-0.5px;">{{ currentProject.title }}</span>
-                <div style="display:flex; gap:4px;">
+                <span style="font-weight:800; letter-spacing:-0.5px; overflow:hidden; text-overflow:ellipsis;">{{ currentProject.title }}</span>
+                <div style="display:flex; gap:4px; flex-shrink:0;">
                     <button class="btn" @click="addNode('folder')" title="새 폴더"><i class="ph ph-folder-plus" style="font-size:18px;"></i></button>
                     <button class="btn" @click="addNode('chapter')" title="새 챕터"><i class="ph ph-file-plus" style="font-size:18px;"></i></button>
+                    <button class="btn" @click="sidebarOpen = false" title="사이드바 닫기"><i class="ph ph-caret-left" style="font-size:18px;"></i></button>
                 </div>
             </div>
             <div class="tree-container" @click="pickerOpen = false">
@@ -271,7 +305,7 @@
         <main @click="pickerOpen = false">
             <div class="toolbar">
                 <div class="toolbar-left-group">
-                    <button class="btn" @click="sidebarOpen = !sidebarOpen"><i class="ph" :class="sidebarOpen ? 'ph-caret-left' : 'ph-list'" style="font-size:20px;"></i></button>
+                    <button class="btn" @click="sidebarOpen = !sidebarOpen"><i class="ph" :class="sidebarOpen ? 'ph-list' : 'ph-list'" style="font-size:20px;"></i></button>
                     <div class="breadcrumb">
                         <template v-for="(item, index) in breadcrumbs" :key="index">
                             <span v-if="index > 0" class="crumb-divider"><i class="ph ph-caret-right"></i></span>
@@ -419,12 +453,7 @@
             onMounted(() => {
                 if(listRef.value) new Sortable(listRef.value, { 
                     group: 'nested', animation: 150, fallbackOnBody: true, swapThreshold: 0.65, 
-                    
-                    // [수정] 모바일 드래그/클릭 구분 옵션
-                    delay: 200,             // 0.2초 꾹 누르면 드래그
-                    delayOnTouchOnly: true, // 터치에서만 딜레이 적용 (마우스는 즉시)
-                    touchStartThreshold: 5, // 5px 이내 움직임은 클릭 허용
-
+                    delay: 200, delayOnTouchOnly: true, touchStartThreshold: 5,
                     onEnd: (evt) => {
                         const itemId = evt.item.dataset.id; 
                         const newParentId = evt.to.dataset.pid === 'root' ? null : evt.to.dataset.pid; 
@@ -514,14 +543,11 @@
                 pickerOpen.value = false;
             };
 
-            // --- Breadcrumb & Helper for Icons ---
             const getIconProperty = (item) => {
                 const node = nodeMap.value[item.id] || item;
                 const type = node.iconType || 'default';
                 const isFolder = node.type === 'folder';
-                
                 if (isFolder) return { class: 'ph-folder-open', color: '#F59E0B' };
-                
                 const map = {
                     'default': { class: 'ph-file-text', color: '' },
                     'flag-red': { class: 'ph-flag-banner', color: '#EF4444', weight: 'fill' },
@@ -564,7 +590,6 @@
                 const end = ta.selectionEnd;
                 const val = activeNode.value.content || '';
                 const indent = '\u3000'; 
-                // [수정] 엔터 키 입력 시 줄바꿈을 두 번(\n\n) -> 한 번(\n)으로 변경
                 const insertion = '\n' + indent; 
                 const newVal = val.substring(0, start) + insertion + val.substring(end);
                 activeNode.value.content = newVal;
@@ -579,24 +604,18 @@
             // CRUD & Tree
             const editingProjectId = ref(null);
             
-            // 템플릿 적용 프로젝트 생성
             const createProject = () => {
                 const title = prompt('새 프로젝트:', '새 소설');
                 if (title) {
                     const newId = Date.now().toString(36);
                     projects.value[newId] = {
-                        id: newId,
-                        title,
-                        updatedAt: new Date().toISOString(),
+                        id: newId, title, updatedAt: new Date().toISOString(),
                         nodes: [
                             { id: 'f1', type: 'folder', title: '설정집', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
                                 { id: 'c1', type: 'chapter', title: '세계관', parent: 'f1', closed: false, content: '# 세계관\n\n　', synopsis: '', iconType: 'loc' },
                                 { id: 'c2', type: 'chapter', title: '캐릭터', parent: 'f1', closed: false, content: '# 캐릭터 설정\n\n　', synopsis: '', iconType: 'char' },
-                            
                             { id: 'f2', type: 'folder', title: '본문', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
                                 { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '여기에 초안을 작성하세요.\n\n　', synopsis: '', iconType: 'flag-red' },
-                                { id: 'c4', type: 'chapter', title: '제 1장', parent: 'f2', closed: false, content: '제 1장 본문 시작.\n\n　', synopsis: '', iconType: 'idea' },
-                                { id: 'c5', type: 'chapter', title: '제 2장', parent: 'f2', closed: false, content: '제 2장 본문 시작.\n\n　', synopsis: '', iconType: 'default' }
                         ],
                         config: { target: 5000 }
                     };
@@ -636,6 +655,53 @@
                     } catch (err) { showInternalAlert('파일 오류', 'error'); }
                 }; r.readAsText(f); e.target.value = '';
             };
+            
+            // [New] TXT Export Function
+            const exportProjectText = (projId) => {
+                const p = projects.value[projId];
+                if (!p) return;
+                
+                // 순서대로 정렬하기 위한 재귀 함수
+                let fullText = `[ ${p.title} ]\n\n`;
+                
+                const buildText = (parentId, depth = 0) => {
+                    const children = p.nodes.filter(n => n.parent === parentId);
+                    // 트리 순서대로 정렬되어 있다고 가정 (배열 순서)
+                    children.forEach(node => {
+                        if (node.type === 'folder') {
+                            fullText += `\n${'='.repeat(10)} [${node.title}] ${'='.repeat(10)}\n\n`;
+                            buildText(node.id, depth + 1);
+                        } else {
+                            fullText += `[${node.title}]\n\n${node.content}\n\n`;
+                        }
+                    });
+                };
+                
+                // 루트 노드부터 시작 (parentId가 null인 것들)
+                // 하지만 nodes 배열 순서가 트리 순서와 일치한다고 보장할 수 없으므로,
+                // SortableTree가 렌더링하는 순서대로 하려면 parent 포인터만으로는 부족할 수 있음.
+                // 여기서는 nodes 배열 자체가 순서대로 저장된다고 가정함 (onDrop에서 배열 순서를 바꾸므로).
+                // 최상위 노드 찾기
+                const rootNodes = p.nodes.filter(n => !n.parent);
+                
+                const processNode = (node) => {
+                    if (node.type === 'folder') {
+                         fullText += `\n\n================ ${node.title} ================\n\n`;
+                         const children = p.nodes.filter(n => n.parent === node.id);
+                         children.forEach(processNode);
+                    } else {
+                         fullText += `\n### ${node.title}\n\n${node.content || ''}\n\n`;
+                    }
+                };
+                
+                rootNodes.forEach(processNode);
+                
+                const b = new Blob([fullText], {type: 'text/plain;charset=utf-8'});
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(b);
+                a.download = `${p.title}.txt`;
+                a.click();
+            };
 
             watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
             watch(mobileView, () => nextTick(() => updateTypewriter(false)));
@@ -649,13 +715,19 @@
             onMounted(() => { 
                 loadAllData(); 
                 window.addEventListener('beforeunload', () => { saveData(); });
+                // [New] Mobile Keyboard Fix
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', () => {
+                        document.body.style.height = window.visualViewport.height + 'px';
+                    });
+                }
             });
 
             return {
                 currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
-                handleEnter 
+                handleEnter, exportProjectText
             };
         }
     });
