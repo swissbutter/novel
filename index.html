@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sagak Studio</title>
+    <title>Sagak Studio v1.1</title>
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📑</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
     
     <style>
         @font-face {
@@ -42,7 +41,7 @@
         * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
 
         body { 
-            font-family: sans-serif; 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; 
             background-color: var(--bg-app); 
             color: var(--text-main); 
             height: 100vh; 
@@ -57,13 +56,7 @@
         body.custom-font-active { font-family: 'Ridibatang', sans-serif !important; }
         input, textarea, button { font-family: inherit; }
 
-        #app { 
-            display: flex; 
-            width: 100%; 
-            height: 100%; 
-            position: relative; 
-            overflow: hidden;
-        }
+        #app { display: flex; width: 100%; height: 100%; position: relative; overflow: hidden; }
 
         /* Project Manager */
         .project-manager { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; overflow-y: auto; }
@@ -85,41 +78,25 @@
         .project-item-date { font-size: 12px; color: var(--text-mute); font-weight: 400; flex-shrink: 0; }
         .project-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
+        .manager-footer { margin-top: auto; padding-top: 2rem; padding-bottom: 1rem; color: var(--text-mute); font-size: 0.85rem; text-align: center; width: 100%; }
+
         @media (max-width: 768px) {
             .project-item-date { display: none; }
             .project-item { padding: 12px 16px; }
             .global-actions { width: 50%; }
         }
 
-        /* Sidebar Overlay */
+        /* Sidebar */
         aside { 
-            width: var(--sidebar-width); 
-            height: 100%;
-            background: var(--bg-sidebar); 
-            border-right: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-            flex-shrink: 0; 
-            overflow: hidden; 
-            white-space: nowrap; 
-            position: absolute; 
-            top: 0; left: 0; 
-            z-index: 100; 
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
-            transition: transform 0.3s ease; 
-            transform: translateX(0);
+            width: var(--sidebar-width); height: 100%; background: var(--bg-sidebar); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; white-space: nowrap; 
+            position: absolute; top: 0; left: 0; z-index: 100; box-shadow: 4px 0 15px rgba(0,0,0,0.1); 
+            transition: transform 0.3s ease; transform: translateX(0);
         }
-        
-        aside.closed { 
-            transform: translateX(-100%); 
-            width: var(--sidebar-width) !important; 
-            border: none;
-            box-shadow: none;
-        }
+        aside.closed { transform: translateX(-100%); width: var(--sidebar-width) !important; border: none; box-shadow: none; }
 
         .side-head { height: 50px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); font-weight: 700; }
         .tree-container { flex: 1; overflow-y: auto; padding: 10px 0; }
-        .manager-footer { margin-top: auto; width: 100%; max-width: 800px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-mute); }
         .editor-footer { height: 40px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: var(--bg-sidebar); padding: 0 10px; gap: 4px; flex-shrink: 0; }
         .footer-icon-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; background: none; color: var(--text-mute); border-radius: 6px; border: none; transition: 0.2s; cursor: pointer; flex-shrink: 0; }
         .footer-icon-btn:hover { background: var(--active-bg); color: var(--text-main); }
@@ -127,34 +104,28 @@
         
         .tree-list { list-style: none; padding-left: 20px; }
         .tree-list.root { padding-left: 0; }
-        
         .node-row { display: flex; align-items: center; padding: 8px 16px; cursor: pointer; color: var(--text-mute); border-left: 3px solid transparent; }
         .node-row:hover { background: var(--accent-bg); color: var(--text-main); }
         .node-row.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
-        
         .node-icon-wrapper { width: 24px; display: flex; justify-content: center; cursor: pointer; border-radius: 4px; margin-right: 6px; }
         .node-icon-wrapper:hover { background: rgba(0,0,0,0.05); }
-        
-        .icon-picker-popover { 
-            position: fixed; background: var(--bg-paper); border: 1px solid var(--border); 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; padding: 8px; 
-            display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-            z-index: 9999; 
-        }
-        .icon-option { width: 32px; height: 32px; border: none; background: none; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--text-mute); transition: 0.2s; }
-        .icon-option:hover { background: var(--active-bg); color: var(--text-main); transform: scale(1.1); }
-        
         .node-input { width: 100%; background: var(--bg-app); border: 1px solid var(--accent); color: var(--text-main); padding: 2px 4px; }
         .node-actions { display: none; margin-left: auto; gap: 4px; }
         .node-row:hover .node-actions { display: flex; }
 
-        /* Main & Editor */
-        main { 
-            width: 100%; 
-            height: 100%;
-            display: flex; flex-direction: column; 
-            position: relative; 
+        /* Trash Row in Sidebar */
+        .trash-node { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 12px; }
+        .trash-node.active { background: var(--accent-bg); color: var(--accent); font-weight: 600; border-left-color: var(--accent); }
+
+        .icon-picker-popover { 
+            position: fixed; background: var(--bg-paper); border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 6px; padding: 8px; 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; z-index: 9999; 
         }
+        .icon-option { width: 32px; height: 32px; border: none; background: none; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--text-mute); transition: 0.2s; }
+        .icon-option:hover { background: var(--active-bg); color: var(--text-main); transform: scale(1.1); }
+
+        /* Main & Editor */
+        main { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; }
         .toolbar { height: 50px; flex-shrink: 0; background: var(--bg-app); border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; z-index: 60; }
         .toolbar-left-group { display: flex; align-items: center; gap: 12px; overflow: hidden; }
         .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-mute); overflow: hidden; white-space: nowrap; }
@@ -165,35 +136,11 @@
         
         .paper-wrapper { width: 100%; max-width: 880px; padding: 20px 0 50vh; display: flex; justify-content: center; position: relative; z-index: 5; }
         .paper-wrapper.typewriter { padding-bottom: 150vh; }
+        .paper { width: 100%; background: transparent; border: none; box-shadow: none; padding: 60px 80px; min-height: 90vh; height: fit-content; position: relative; }
+        .paper.mobile { max-width: 555px; padding: 15px 20px; }
         
-        /* [수정됨] 배경 투명화 및 테두리/그림자 제거 */
-        .paper { 
-            width: 100%; 
-            background: transparent; 
-            border: none; 
-            box-shadow: none;
-            padding: 60px 80px; 
-            min-height: 90vh; 
-            height: fit-content; 
-            position: relative; 
-        }
-        .paper.mobile { max-width: 555px; padding: 15px 20px; /* mobile은 이미 투명 설정 상속됨 */ }
-        
-        textarea.editor { 
-            width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
-            background: transparent; font-family: inherit; font-size: 18px; line-height: 2; 
-            color: var(--text-main); display: block; padding: 0; margin: 0; 
-            position: relative; z-index: 2; 
-            text-indent: 1em; 
-        }
-        
-        #caret-mirror { 
-            position: absolute; top: -9999px; left: -9999px; visibility: hidden; 
-            white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; 
-            font-family: inherit; font-size: 18px; line-height: 1.8; 
-            padding: 60px 80px; width: 800px; 
-            text-indent: 1em; 
-        }
+        textarea.editor { width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; background: transparent; font-family: inherit; font-size: 18px; line-height: 2; color: var(--text-main); display: block; padding: 0; margin: 0; position: relative; z-index: 2; text-indent: 1em; }
+        #caret-mirror { position: absolute; top: -9999px; left: -9999px; visibility: hidden; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; font-family: inherit; font-size: 18px; line-height: 1.8; padding: 60px 80px; width: 800px; text-indent: 1em; }
         
         .corkboard { width: 100%; padding: 40px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; align-content: flex-start; }
         .postit { background: var(--postit-bg); color: var(--postit-text); border: 1px solid var(--postit-border); height: 350px; display: flex; flex-direction: column; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: 0.2s; }
@@ -203,18 +150,26 @@
         .postit-textarea { width: 100%; height: 100%; resize: none; border: none; background: transparent; font-family: inherit; font-size: 14px; line-height: 1.6; color: inherit; }
         .postit-footer { padding: 6px 12px; font-size: 12px; text-align: right; opacity: 0.8; border-top: 1px dashed rgba(0,0,0,0.1); margin-top: auto; font-feature-settings: "tnum"; }
 
+        /* Trash Workspace */
+        .trash-workspace { width: 100%; padding: 40px; display:flex; flex-direction:column; align-items:center; max-width:800px; }
+        .trash-card { width:100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 16px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px; }
+        .trash-card-info { display: flex; flex-direction: column; gap: 4px; }
+        .trash-title { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        
         /* Status Bar Gauge */
-        .status-bar { position: absolute; bottom: 0; right: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding: 8px 16px; font-size: 12px; color: var(--text-mute); cursor: pointer; z-index: 60; position: absolute; overflow: hidden; }
+        .status-bar { position: absolute; bottom: 0; right: 0; background: var(--bg-sidebar); border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding: 8px 16px; font-size: 12px; color: var(--text-mute); cursor: pointer; z-index: 60; position: absolute; overflow: hidden; display: flex; align-items: center; gap: 8px; }
         .status-bar:hover { color: var(--text-main); border-color: var(--accent); }
         .status-gauge { position: absolute; top: 0; left: 0; height: 100%; background: var(--accent); opacity: 0.2; transition: width 0.3s ease; z-index: 0; pointer-events: none; }
-        .status-text-content { position: relative; z-index: 1; }
+        .status-text-content { position: relative; z-index: 1; display:flex; gap:6px; align-items:center; }
         
         /* Modal & Alert */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 999; display: flex; align-items: center; justify-content: center; }
         .modal-box { background: var(--bg-modal); width: 320px; padding: 24px; border: 1px solid var(--border); box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 8px; }
         .modal-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; }
         .modal-divider { height: 1px; background: var(--border); margin: 16px 0; }
-        .modal-input { width: 80px; text-align: right; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); padding: 2px 4px; border-radius: 4px; font-family: inherit; }
+        .modal-input { width: 100px; text-align: right; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); padding: 2px 4px; border-radius: 4px; font-family: inherit; }
+        .modal-input-full { width: 100%; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); padding: 8px; border-radius: 4px; font-family: inherit; margin-bottom: 12px; }
+        .modal-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
         
         .toast-alert { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100%); z-index: 1000; background: var(--bg-sidebar); padding: 10px 18px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; }
         .toast-alert.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -280,15 +235,15 @@
                         </template>
                     </div>
                     <div class="project-actions">
-                        <button class="btn" @click.stop="exportProjectZip(proj.id)" title="Word/ZIP 내보내기"><i class="ph ph-file-doc" style="font-size:20px; color:#2563EB;"></i></button>
                         <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:20px;"></i></button>
+<button class="btn" @click.stop="exportProjectZip(proj.id)" title="Word/ZIP 내보내기"><i class="ph ph-file-doc" style="font-size:20px; color:#2563EB;"></i></button>
                         <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:20px;"></i></button>
                     </div>
                 </li>
             </ul>
             <div v-if="Object.keys(projects).length === 0" style="margin-top:20px; color:var(--text-mute);">새로운 프로젝트를 시작해 보세요!</div>
             
-            <div class="manager-footer">Copyright by Sagak</div>
+            <footer class="manager-footer">Copyright by Sagak</footer>
         </div>
     </template>
     
@@ -304,13 +259,21 @@
             </div>
             <div class="tree-container" @click="pickerOpen = false">
                 <sortable-tree :items="rootNodes" :all-nodes="currentProject.nodes" parent-id="root" class="root" @item-drop="onDrop" @icon-click="openPicker"></sortable-tree>
+                
+                <div class="node-row trash-node" :class="{ active: activeId === 'TRASH_VIEW' }" @click="selectTrashView">
+                    <span style="width:20px;"></span>
+                    <div class="node-icon-wrapper">
+                        <i class="ph ph-trash" style="font-size:18px; color:var(--text-mute);"></i>
+                    </div>
+                    <div>휴지통 ({{ deletedNodes.length }})</div>
+                </div>
             </div>
             <div class="editor-footer">
-                <button class="footer-icon-btn" @click="handleEditorExit"><i class="ph ph-house-line"></i></button>
-                 <button class="footer-icon-btn" :class="{active: mobileView}" @click="toggleMobile"><i class="ph ph-device-mobile"></i></button>
-                <button class="footer-icon-btn" :class="{active: typewriterMode}" @click="toggleTypewriter"><i class="ph ph-crosshair"></i></button>
-                <button class="footer-icon-btn" :class="{active: isCustomFontActive}" @click="toggleRidibatangFont"><i class="ph ph-text-aa"></i></button>
-                <button class="footer-icon-btn" :class="{active: theme === 'dark'}" @click="toggleTheme"><i class="ph" :class="theme==='dark' ? 'ph-moon' : 'ph-sun'"></i></button>
+                <button class="footer-icon-btn" @click="handleEditorExit" title="홈으로"><i class="ph ph-house-line"></i></button>
+                <button class="footer-icon-btn" :class="{active: mobileView}" @click="toggleMobile" title="모바일 보기 (너비 조절)"><i class="ph ph-device-mobile"></i></button>
+                <button class="footer-icon-btn" :class="{active: typewriterMode}" @click="toggleTypewriter" title="타자기 모드"><i class="ph ph-crosshair"></i></button>
+                <button class="footer-icon-btn" :class="{active: isCustomFontActive}" @click="toggleRidibatangFont" title="리디바탕 폰트"><i class="ph ph-text-aa"></i></button>
+                <button class="footer-icon-btn" :class="{active: theme === 'dark'}" @click="toggleTheme" title="테마 변경"><i class="ph" :class="theme==='dark' ? 'ph-moon' : 'ph-sun'"></i></button>
             </div>
         </aside>
 
@@ -319,7 +282,11 @@
                 <div class="toolbar-left-group">
                     <button class="btn" @click="sidebarOpen = !sidebarOpen"><i class="ph" :class="sidebarOpen ? 'ph-list' : 'ph-list'" style="font-size:20px;"></i></button>
                     <div class="breadcrumb">
-                        <template v-for="(item, index) in breadcrumbs" :key="index">
+                         <div v-if="activeId === 'TRASH_VIEW'" class="crumb-item" style="cursor:default;">
+                            <i class="ph ph-trash" style="font-size:16px;"></i>
+                            <span class="crumb-text crumb-current">휴지통</span>
+                        </div>
+                        <template v-else v-for="(item, index) in breadcrumbs" :key="index">
                             <span v-if="index > 0" class="crumb-divider"><i class="ph ph-caret-right"></i></span>
                             <div class="crumb-item" @click="selectNode(item.id)">
                                 <i class="ph" :class="getIconProperty(item).class" :style="{ color: getIconProperty(item).color, fontWeight: getIconProperty(item).weight || 'normal' }" style="font-size:16px;"></i>
@@ -328,10 +295,39 @@
                         </template>
                     </div>
                 </div>
+                <div>
+                </div>
             </div>
 
             <div class="workspace" id="workspace-el" @click="focusEditor">
-                <div v-if="activeNode && activeNode.type === 'chapter'" class="paper-wrapper" :class="{typewriter: typewriterMode}">
+                
+                <div v-if="activeId === 'TRASH_VIEW'" class="trash-workspace">
+                    <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h3>휴지통 목록</h3>
+                        <button v-if="deletedNodes.length > 0" class="global-btn" style="padding:4px 10px; font-size:13px; color:#EF4444; border-color:#EF4444;" @click="emptyTrash">
+                            <i class="ph ph-trash"></i> 전체 비우기
+                        </button>
+                    </div>
+                    
+                    <div v-if="deletedNodes.length === 0" style="color:var(--text-mute); margin-top:20px;">휴지통이 비어있습니다.</div>
+                    <div v-else style="width:100%;">
+                        <div v-for="node in deletedNodes" :key="node.id" class="trash-card">
+                            <div class="trash-card-info">
+                                <div class="trash-title">
+                                    <i class="ph" :class="node.type==='folder'?'ph-folder':'ph-file-text'" style="color:var(--accent);"></i> 
+                                    {{ node.title }}
+                                </div>
+                                <div style="font-size:12px; color:var(--text-mute);">삭제된 날짜: {{ formatDate(node.updatedAt) }}</div>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <button class="global-btn" @click.stop="restoreNode(node.id)" title="복구"><i class="ph ph-arrow-u-up-left"></i></button>
+                                <button class="global-btn" style="color:#EF4444; border-color:#EF4444;" @click.stop="hardDeleteNode(node.id)" title="영구 삭제"><i class="ph ph-x"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else-if="activeNode && activeNode.type === 'chapter'" class="paper-wrapper" :class="{typewriter: typewriterMode}">
                     <div class="paper" :class="{mobile: mobileView}">
                         <textarea 
                             class="editor" 
@@ -361,9 +357,18 @@
                 <div v-else style="align-self:center; color:var(--text-mute);">챕터를 선택하세요.</div>
             </div>
             
-            <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click.stop="showStats = true">
-                <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
-                <span class="status-text-content">{{ stats.total }}자 ({{ stats.percent }}%)</span>
+            <div v-if="activeNode && activeNode.type === 'chapter'" class="status-bar" @click.stop="toggleStatsMode" title="클릭하여 목표 전환">
+                <template v-if="statsMode === 'project'">
+                    <i class="ph ph-book-open-text"></i>
+                    <div class="status-gauge" :style="{ width: Math.min(stats.percent, 100) + '%' }"></div>
+                    <span class="status-text-content">{{ stats.total }}자 ({{ stats.percent }}%)</span>
+                </template>
+                <template v-else>
+                    <i class="ph ph-target"></i>
+                    <div class="status-gauge" :style="{ width: Math.min(stats.dailyPercent, 100) + '%' }"></div>
+                    <span class="status-text-content">오늘: {{ stats.daily }}자 ({{ stats.dailyPercent }}%)</span>
+                </template>
+                <button class="btn" style="padding:0; margin-left:4px;" @click.stop="showStats = true"><i class="ph ph-gear"></i></button>
             </div>
         </main>
     </template>
@@ -377,10 +382,15 @@
             <div class="modal-row"><span style="color:var(--text-mute)">공백 제외</span><strong>{{ stats.noSpace }} 자</strong></div>
             <div class="modal-divider"></div>
             <div class="modal-row" style="align-items:center;">
-                <span style="color:var(--text-mute)">목표치</span>
+                <span style="color:var(--text-mute)">챕터 목표치</span>
                 <input type="number" v-model="targetGoal" class="modal-input" @change="saveConfig">
             </div>
-            <div class="modal-row"><span style="color:var(--text-mute)">성취율</span><strong style="color:var(--accent)">{{ stats.percent }}%</strong></div>
+             <div class="modal-row" style="align-items:center;">
+                <span style="color:var(--text-mute)">하루 집필 목표</span>
+                <input type="number" v-model="dailyTarget" class="modal-input" @change="saveConfig">
+            </div>
+            <div class="modal-divider"></div>
+            <div style="text-align:center; color:var(--text-mute); font-size:12px;">오늘 작성량: {{ stats.daily }}자</div>
         </div>
     </div>
     
@@ -417,9 +427,7 @@
             const iconData = computed(() => {
                 const type = props.node.iconType || 'default';
                 const isFolder = props.node.type === 'folder';
-                
                 if (isFolder) return { class: props.node.closed ? 'ph-folder' : 'ph-folder-open', color: '#F59E0B' };
-                
                 const map = {
                     'default': { class: 'ph-file-text', color: '' },
                     'flag-red': { class: 'ph-flag-banner', color: '#EF4444', weight: 'fill' },
@@ -439,7 +447,6 @@
                 };
                 return map[type] || map['default'];
             });
-
             return { iconData };
         },
         template: `
@@ -475,7 +482,7 @@
             });
             return { listRef };
         },
-        template: `<ul ref="listRef" :data-pid="parentId" class="tree-list"><li v-for="node in items" :key="node.id" :data-id="node.id"><node-row :node="node" @icon-click="(e, id) => $emit('icon-click', e, id)"></node-row><sortable-tree v-if="node.type === 'folder' && !node.closed" :items="allNodes.filter(n => n.parent === node.id)" :all-nodes="allNodes" :parent-id="node.id" @item-drop="$emit('item-drop', $event)" @icon-click="(e, id) => $emit('icon-click', e, id)"></sortable-tree></li></ul>`
+        template: `<ul ref="listRef" :data-pid="parentId" class="tree-list"><li v-for="node in items" :key="node.id" :data-id="node.id"><node-row :node="node" @icon-click="(e, id) => $emit('icon-click', e, id)"></node-row><sortable-tree v-if="node.type === 'folder' && !node.closed" :items="allNodes.filter(n => n.parent === node.id && !n.isDeleted)" :all-nodes="allNodes" :parent-id="node.id" @item-drop="$emit('item-drop', $event)" @icon-click="(e, id) => $emit('icon-click', e, id)"></sortable-tree></li></ul>`
     };
 
     function useAlert() {
@@ -496,7 +503,8 @@
             const currentView = ref('manager'); const sidebarOpen = ref(true); const theme = ref('light'); const isCustomFontActive = ref(false);
             const { showAlert, alertMessage, alertType, showInternalAlert } = useAlert();
             const showStats = ref(false);
-            
+            const statsMode = ref('project'); // 'project' or 'daily'
+
             // Icon Picker State
             const pickerOpen = ref(false);
             const pickerPos = ref({ x: 0, y: 0 });
@@ -505,27 +513,46 @@
             // Data State
             const projects = ref({});
             const currentProjectId = ref(null);
+            const dailyStats = ref({ date: '', count: 0 });
 
             const currentProject = computed(() => currentProjectId.value ? projects.value[currentProjectId.value] : null);
             
             const saveData = () => { if (currentProjectId.value && projects.value[currentProjectId.value]) projects.value[currentProjectId.value].updatedAt = new Date().toISOString(); localStorage.setItem('ns318_projects', JSON.stringify(projects.value)); };
+            const saveDaily = () => { localStorage.setItem('ns318_daily', JSON.stringify(dailyStats.value)); };
             const debouncedSave = debounce(saveData, 1000);
 
             const saveConfig = () => { 
                 localStorage.setItem('ns318_global_cfg', JSON.stringify({ theme: theme.value, isCustomFontActive: isCustomFontActive.value }));
-                if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, typewriter: typewriterMode.value }; saveData(); }
+                if (currentProject.value) { currentProject.value.config = { target: targetGoal.value, dailyTarget: dailyTarget.value, typewriter: typewriterMode.value }; saveData(); }
             };
 
             // Editor Logic
-            const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); const targetGoal = ref(5000);
-            const activeNode = computed(() => currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null);
-            const activeChildren = computed(() => activeNode.value && activeNode.value.type === 'folder' ? currentProject.value.nodes.filter(n => n.parent === activeNode.value.id) : []);
+            const activeId = ref(null); const editorRef = ref(null); const mobileView = ref(false); const typewriterMode = ref(false); 
+            const targetGoal = ref(5000); const dailyTarget = ref(5000);
+            
+            // activeNode 계산 시 TRASH_VIEW일 경우 null 반환
+            const activeNode = computed(() => {
+                if (activeId.value === 'TRASH_VIEW') return null;
+                return currentProject.value ? currentProject.value.nodes.find(n => n.id === activeId.value) : null;
+            });
+            const activeChildren = computed(() => activeNode.value && activeNode.value.type === 'folder' ? currentProject.value.nodes.filter(n => n.parent === activeNode.value.id && !n.isDeleted) : []);
+            const deletedNodes = computed(() => currentProject.value ? currentProject.value.nodes.filter(n => n.isDeleted) : []);
             const nodeMap = computed(() => { const map = {}; if (currentProject.value) currentProject.value.nodes.forEach(node => map[node.id] = node); return map; });
             const breadcrumbs = computed(() => { if (!activeNode.value || !currentProject.value) return []; let path = []; let curr = activeNode.value; while(curr) { path.unshift({ id: curr.id, title: curr.title, type: curr.type, iconType: curr.iconType }); if(!curr.parent) break; curr = nodeMap.value[curr.parent]; } return path; });
             
+            // --- Stats Calculation ---
             const stats = computed(() => {
                 const txt = activeNode.value?.content || '';
-                return { total: txt.length, noSpace: txt.replace(/\s/g, '').length, words: txt.trim() ? txt.trim().split(/\s+/).length : 0, percent: targetGoal.value > 0 ? Math.floor((txt.length / targetGoal.value) * 100) : 100 };
+                const projPercent = targetGoal.value > 0 ? Math.floor((txt.length / targetGoal.value) * 100) : 100;
+                const dailyP = dailyTarget.value > 0 ? Math.floor((dailyStats.value.count / dailyTarget.value) * 100) : 100;
+                
+                return { 
+                    total: txt.length, 
+                    noSpace: txt.replace(/\s/g, '').length, 
+                    percent: projPercent,
+                    daily: dailyStats.value.count,
+                    dailyPercent: dailyP
+                };
             });
 
             // Methods
@@ -535,6 +562,18 @@
             const loadAllData = () => {
                 const p = localStorage.getItem('ns318_projects'); if(p) projects.value = JSON.parse(p);
                 const c = localStorage.getItem('ns318_global_cfg'); if(c) { const cfg = JSON.parse(c); theme.value = cfg.theme || 'light'; isCustomFontActive.value = cfg.isCustomFontActive || false; }
+                
+                // Load Daily Stats
+                const today = new Date().toDateString();
+                const d = localStorage.getItem('ns318_daily');
+                if(d) {
+                    const parsed = JSON.parse(d);
+                    if(parsed.date === today) dailyStats.value = parsed;
+                    else dailyStats.value = { date: today, count: 0 };
+                } else {
+                    dailyStats.value = { date: today, count: 0 };
+                }
+                
                 applyTheme(); applyFontClass();
             };
 
@@ -554,7 +593,6 @@
                 }
                 pickerOpen.value = false;
             };
-
             const getIconProperty = (item) => {
                 const node = nodeMap.value[item.id] || item;
                 const type = node.iconType || 'default';
@@ -586,43 +624,53 @@
                 mirror.className = mobileView.value ? 'mobile' : ''; mirror.textContent = ta.value.substring(0, ta.selectionStart);
                 const span = document.createElement('span'); span.textContent = '.'; mirror.appendChild(span);
                 const paddingTop = mobileView.value ? 40 : 60; const cursorY = span.offsetTop + paddingTop + 40; const viewportH = workspace.clientHeight;
-                
-                // 타자기 모드가 아닐 때는 90% 지점에 위치 (하단에서 10% 띄움)
                 const scrollAnchorRatio = typewriterMode.value ? 0.5 : 0.9; 
-                
                 workspace.scrollTo({ top: cursorY - (viewportH * scrollAnchorRatio) + (18 * 1.8 / 2), behavior: smooth ? 'smooth' : 'auto' });
             };
 
             const autoResize = () => { if(editorRef.value) { editorRef.value.style.height = 'auto'; editorRef.value.style.height = editorRef.value.scrollHeight + 'px'; } };
-            const handleMainInput = () => { if (activeNode.value) activeNode.value.updatedAt = new Date().toISOString(); autoResize(); updateTypewriter(false); debouncedSave(); };
+            
+            // --- Editor Input & Daily Stats Logic ---
+            let lastContentLength = 0;
+            const handleMainInput = (e) => { 
+                if (activeNode.value) {
+                    const currentLen = activeNode.value.content.length;
+                    const diff = currentLen - lastContentLength;
+                    lastContentLength = currentLen;
+                    
+                    if (diff > 0) {
+                        dailyStats.value.count += diff;
+                        saveDaily();
+                    }
+
+                    activeNode.value.updatedAt = new Date().toISOString(); 
+                }
+                autoResize(); updateTypewriter(false); debouncedSave(); 
+            };
+            
+            watch(activeId, (newId) => {
+                 if(newId && activeNode.value) lastContentLength = activeNode.value.content.length;
+            });
+
             const handlePostitInput = (node) => { node.updatedAt = new Date().toISOString(); debouncedSave(); };
             const handleNav = () => { updateTypewriter(true); };
             
-            const focusEditor = () => { 
-                if (editorRef.value) editorRef.value.focus();
-                sidebarOpen.value = false;
-            };
+            const focusEditor = () => { if (editorRef.value) editorRef.value.focus(); sidebarOpen.value = false; };
 
             const handleEnter = (e) => {
                 const ta = e.target;
-                const start = ta.selectionStart;
-                const end = ta.selectionEnd;
+                const start = ta.selectionStart; const end = ta.selectionEnd;
                 const val = activeNode.value.content || '';
-                const indent = '\u3000'; 
-                const insertion = '\n' + indent; 
+                const indent = '\u3000'; const insertion = '\n' + indent; 
                 const newVal = val.substring(0, start) + insertion + val.substring(end);
                 activeNode.value.content = newVal;
-                nextTick(() => {
-                    ta.selectionStart = ta.selectionEnd = start + insertion.length;
-                    autoResize();
-                    updateTypewriter(true);
-                    debouncedSave();
-                });
+                dailyStats.value.count += 1; saveDaily();
+                
+                nextTick(() => { ta.selectionStart = ta.selectionEnd = start + insertion.length; autoResize(); updateTypewriter(true); debouncedSave(); lastContentLength = newVal.length; });
             };
 
             // CRUD & Tree
             const editingProjectId = ref(null);
-            
             const createProject = () => {
                 const title = prompt('새 프로젝트:', '새 소설');
                 if (title) {
@@ -630,120 +678,104 @@
                     projects.value[newId] = {
                         id: newId, title, updatedAt: new Date().toISOString(),
                         nodes: [
-                            { id: 'f1', type: 'folder', title: '설정집', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
-                                { id: 'c1', type: 'chapter', title: '세계관', parent: 'f1', closed: false, content: '# 세계관\n\n　', synopsis: '', iconType: 'loc' },
-                                { id: 'c2', type: 'chapter', title: '캐릭터', parent: 'f1', closed: false, content: '# 캐릭터 설정\n\n　', synopsis: '', iconType: 'char' },
-                            { id: 'f2', type: 'folder', title: '본문', parent: null, closed: false, content: '', synopsis: '', iconType: 'default' },
-                                { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '여기에 초안을 작성하세요.\n\n　', synopsis: '', iconType: 'flag-red' },
+                            { id: 'f1', type: 'folder', title: '설정집', parent: null, closed: false, content: '', synopsis: '', iconType: 'default', isDeleted: false },
+                                { id: 'c1', type: 'chapter', title: '세계관', parent: 'f1', closed: false, content: '# 세계관\n', synopsis: '', iconType: 'loc', isDeleted: false },
+                                 { id: 'c2', type: 'chapter', title: '캐릭터', parent: 'f1', closed: false, content: '# 캐릭터\n', synopsis: '', iconType: 'char', isDeleted: false },
+                            { id: 'f2', type: 'folder', title: '본문', parent: null, closed: false, content: '', synopsis: '', iconType: 'default', isDeleted: false },
+                                { id: 'c3', type: 'chapter', title: '초안', parent: 'f2', closed: false, content: '대충 시작해야 완벽하게 끝난다. - \n', synopsis: '', iconType: 'flag-red', isDeleted: false },
+                                { id: 'c4', type: 'chapter', title: '제 1장', parent: 'f2', closed: false, content: '', synopsis: '', iconType: 'time', isDeleted: false },
                         ],
-                        config: { target: 5000 }
+                        config: { target: 5000, dailyTarget: 10000 }
                     };
-                    saveData();
-                    loadProject(newId, 'c3'); 
+                    saveData(); loadProject(newId, 'c3'); 
                 }
             };
-
-            const deleteProject = (id) => { if(confirm('삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
+            const deleteProject = (id) => { if(confirm('프로젝트를 완전히 삭제합니까?')) { delete projects.value[id]; saveData(); if(currentProjectId.value===id) { currentProjectId.value=null; currentView.value='manager'; } } };
             const startEditProject = (id) => { currentProjectId.value = null; editingProjectId.value = id; };
             const endEditProject = () => { if(editingProjectId.value) { if(!projects.value[editingProjectId.value].title.trim()) projects.value[editingProjectId.value].title='제목 없음'; saveData(); editingProjectId.value=null; } };
-            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter')?.id||p.nodes[0]?.id); targetGoal.value=p.config.target||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
+            const loadProject = (id, defId = null) => { saveData(); const p = projects.value[id]; if (!p) return; currentProjectId.value=id; activeId.value=defId||(p.nodes.find(n=>n.type==='chapter' && !n.isDeleted)?.id); targetGoal.value=p.config.target||5000; dailyTarget.value=p.config.dailyTarget||5000; typewriterMode.value=p.config.typewriter||false; currentView.value='editor'; nextTick(()=>{ autoResize(); updateTypewriter(false); }); };
             const handleEditorExit = () => { saveData(); currentView.value = 'manager'; };
 
             const editingId = ref(null);
-            const rootNodes = computed(() => currentProject.value ? currentProject.value.nodes.filter(n => !n.parent) : []);
+            const rootNodes = computed(() => currentProject.value ? currentProject.value.nodes.filter(n => !n.parent && !n.isDeleted) : []);
             const selectNode = (id) => { if(!editingId.value) activeId.value = id; };
             const toggleNode = (id) => { const n = nodeMap.value[id]; if(n) n.closed=!n.closed; saveData(); };
             const startEdit = (id) => editingId.value = id; 
             const endEdit = () => { if(editingId.value && !nodeMap.value[editingId.value].title.trim()) nodeMap.value[editingId.value].title = '제목 없음'; editingId.value = null; saveData(); };
-            const addNode = (type) => { const nodes = currentProject.value.nodes; const cur = nodeMap.value[activeId.value]; let parent = cur ? (cur.type==='folder'?cur.id:cur.parent) : null; const n = { id: Date.now().toString(36), type, title: type==='folder'?'새 폴더':'새 챕터', parent, content:'', synopsis:'', closed:false, updatedAt: new Date().toISOString(), iconType: 'default' }; nodes.push(n); if(parent) { const p = nodeMap.value[parent]; if(p) p.closed = false; } activeId.value=n.id; editingId.value=n.id; saveData(); };
-            const deleteNode = (id) => { if(!confirm('삭제?')) return; const nodes = currentProject.value.nodes; const s = new Set([id]); const f=(p)=>nodes.filter(x=>x.parent===p).forEach(c=>{s.add(c.id);if(c.type==='folder')f(c.id)}); f(id); currentProject.value.nodes=nodes.filter(x=>!s.has(x.id)); if(s.has(activeId.value)) activeId.value=null; saveData(); };
-            const onDrop = ({ itemId, newParentId, newIndex }) => { const nodes = currentProject.value.nodes; const node = nodes.find(n => n.id === itemId); if (!node) return; nodes.splice(nodes.indexOf(node), 1); node.parent = newParentId; const siblings = nodes.filter(n => n.parent === newParentId); let insertIdx = siblings.length > 0 ? (newIndex >= siblings.length ? nodes.indexOf(siblings[siblings.length - 1]) + 1 : nodes.indexOf(siblings[newIndex])) : nodes.length; nodes.splice(insertIdx, 0, node); if(newParentId) { const p = nodes.find(n => n.id === newParentId); if(p) p.closed = false; } saveData(); };
+            const addNode = (type) => { const nodes = currentProject.value.nodes; const cur = nodeMap.value[activeId.value]; let parent = cur ? (cur.type==='folder'?cur.id:cur.parent) : null; const n = { id: Date.now().toString(36), type, title: type==='folder'?'새 폴더':'새 챕터', parent, content:'', synopsis:'', closed:false, updatedAt: new Date().toISOString(), iconType: 'default', isDeleted: false }; nodes.push(n); if(parent) { const p = nodeMap.value[parent]; if(p) p.closed = false; } activeId.value=n.id; editingId.value=n.id; saveData(); };
+            
+            // --- Trash Logic ---
+            const selectTrashView = () => { activeId.value = 'TRASH_VIEW'; };
+            const deleteNode = (id) => { 
+                const node = nodeMap.value[id];
+                if(node) {
+                    node.isDeleted = true; // Soft Delete
+                    if(activeId.value === id) activeId.value = null;
+                    saveData();
+                    showInternalAlert('휴지통으로 이동됨');
+                }
+            };
+            const restoreNode = (id) => {
+                const node = nodeMap.value[id];
+                if(node) { node.isDeleted = false; saveData(); showInternalAlert('복구되었습니다.'); }
+            };
+            const hardDeleteNode = (id) => {
+                if(!confirm('영구 삭제하시겠습니까? 복구할 수 없습니다.')) return;
+                const nodes = currentProject.value.nodes;
+                const idx = nodes.findIndex(n => n.id === id);
+                if(idx > -1) {
+                    // 자식 노드들도 영구 삭제
+                    const children = nodes.filter(n => n.parent === id);
+                    children.forEach(c => hardDeleteNode(c.id));
+                    nodes.splice(idx, 1);
+                    saveData();
+                }
+            };
+            const emptyTrash = () => {
+                if(!confirm('휴지통을 비우시겠습니까?')) return;
+                currentProject.value.nodes = currentProject.value.nodes.filter(n => !n.isDeleted);
+                saveData();
+                showInternalAlert('휴지통을 비웠습니다.');
+            };
 
-            // IO
+            const onDrop = ({ itemId, newParentId, newIndex }) => { const nodes = currentProject.value.nodes; const node = nodes.find(n => n.id === itemId); if (!node) return; nodes.splice(nodes.indexOf(node), 1); node.parent = newParentId; const siblings = nodes.filter(n => n.parent === newParentId && !n.isDeleted); let insertIdx = siblings.length > 0 ? (newIndex >= siblings.length ? nodes.indexOf(siblings[siblings.length - 1]) + 1 : nodes.indexOf(siblings[newIndex])) : nodes.length; nodes.splice(insertIdx, 0, node); if(newParentId) { const p = nodes.find(n => n.id === newParentId); if(p) p.closed = false; } saveData(); };
+
+            // Export logic (Word/Zip)
+            const generateDocxBlob = async (title, content) => {
+                const { Document, Packer, Paragraph, TextRun } = docx;
+                const lines = (content || '').split('\n').map(line => line.replace(/^[\s\u3000]+/, ''));
+                const paragraphs = lines.map(line => new Paragraph({
+                    children: [new TextRun({ text: line, size: 24, font: "Malgun Gothic" })],
+                    spacing: { after: 200 }, indent: { firstLine: 240 }
+                }));
+                const doc = new Document({ sections: [{ children: [ new Paragraph({ children: [new TextRun({ text: title, size: 32, bold: true })], spacing: { after: 400 } }), ...paragraphs ] }] });
+                return await Packer.toBlob(doc);
+            };
+            const exportProjectZip = async (projId) => {
+                const p = projects.value[projId]; if (!p) return;
+                const zip = new JSZip();
+                const processNodes = (parentId, currentZipFolder) => {
+                    const children = p.nodes.filter(n => n.parent === parentId && !n.isDeleted);
+                    children.forEach(node => {
+                        if (node.type === 'folder') { const newFolder = currentZipFolder.folder(node.title); processNodes(node.id, newFolder); } 
+                        else { const docBlobPromise = generateDocxBlob(node.title, node.content); currentZipFolder.file(`${node.title}.docx`, docBlobPromise); }
+                    });
+                };
+                showInternalAlert('압축 파일 생성 중...');
+                try { processNodes(null, zip); const content = await zip.generateAsync({ type: "blob" }); saveAs(content, `${p.title}.zip`); showInternalAlert('다운로드 완료!'); } catch (e) { showInternalAlert('오류 발생', 'error'); }
+            };
+
             const fileInput = ref(null);
-            const exportAllData = () => { saveData(); const b = new Blob([utf8_to_b64(JSON.stringify({ version: "3.27_Lite", timestamp: new Date(), projects: projects.value, globalConfig: { theme: theme.value, isCustomFontActive: isCustomFontActive.value } }))], {type: 'text/plain;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `Story_${new Date().toISOString().slice(0,10)}.vel`; a.click(); };
+            const exportAllData = () => { saveData(); const b = new Blob([utf8_to_b64(JSON.stringify({ version: "3.6", timestamp: new Date(), projects: projects.value, globalConfig: { theme: theme.value, isCustomFontActive: isCustomFontActive.value } }))], {type: 'text/plain;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `Story_${new Date().toISOString().slice(0,10)}.vel`; a.click(); };
             const triggerImportAll = () => { fileInput.value.click(); };
             const handleImportAll = (e) => {
                 const f = e.target.files[0]; if (!f) return; const r = new FileReader();
                 r.onload = (evt) => {
-                    try { const data = JSON.parse(b64_to_utf8(evt.target.result));
-                        if (data.projects && confirm('덮어쓰시겠습니까?')) {
-                            projects.value = data.projects; theme.value = data.globalConfig?.theme || 'light'; isCustomFontActive.value = data.globalConfig?.isCustomFontActive || false;
-                            applyTheme(); applyFontClass(); saveData(); showInternalAlert('복구 완료'); currentView.value = 'manager';
-                        }
-                    } catch (err) { showInternalAlert('파일 오류', 'error'); }
+                    try { const data = JSON.parse(b64_to_utf8(evt.target.result)); if (data.projects && confirm('덮어쓰시겠습니까?')) { projects.value = data.projects; theme.value = data.globalConfig?.theme || 'light'; isCustomFontActive.value = data.globalConfig?.isCustomFontActive || false; applyTheme(); applyFontClass(); saveData(); showInternalAlert('복구 완료'); currentView.value = 'manager'; } } catch (err) { showInternalAlert('파일 오류', 'error'); }
                 }; r.readAsText(f); e.target.value = '';
             };
-            
-            // --- Word/ZIP 내보내기 로직 ---
-            const generateDocxBlob = async (title, content) => {
-                const { Document, Packer, Paragraph, TextRun } = docx;
-                
-                // 줄바꿈 기준으로 문단 나누기
-                const lines = (content || '').split('\n');
-                const paragraphs = lines.map(line => new Paragraph({
-                    children: [new TextRun({ 
-                        text: line, 
-                        size: 24, // 12pt (docx 단위는 반포인트)
-                        font: "Malgun Gothic" // 한글 폰트 지정
-                    })],
-                    spacing: { after: 200 }, // 문단 간격
-                    indent: { firstLine: 240 } // [수정됨] 첫 줄 들여쓰기 (약 1글자)
-                }));
 
-                const doc = new Document({
-                    sections: [{
-                        properties: {},
-                        children: [
-                            new Paragraph({ 
-                                children: [new TextRun({ text: title, size: 32, bold: true })], // 제목
-                                spacing: { after: 400 }
-                            }),
-                            ...paragraphs
-                        ],
-                    }],
-                });
-
-                return await Packer.toBlob(doc);
-            };
-
-            const exportProjectZip = async (projId) => {
-                const p = projects.value[projId];
-                if (!p) return;
-
-                const zip = new JSZip();
-                
-                // 재귀적으로 폴더/파일 탐색
-                const processNodes = (parentId, currentZipFolder) => {
-                    const children = p.nodes.filter(n => n.parent === parentId);
-                    
-                    children.forEach(node => {
-                        if (node.type === 'folder') {
-                            // 폴더 생성
-                            const newFolder = currentZipFolder.folder(node.title);
-                            processNodes(node.id, newFolder);
-                        } else {
-                            // 챕터 -> Word 파일 생성 (Promise를 zip에 추가)
-                            const docBlobPromise = generateDocxBlob(node.title, node.content);
-                            currentZipFolder.file(`${node.title}.docx`, docBlobPromise);
-                        }
-                    });
-                };
-
-                showInternalAlert('압축 파일 생성 중...');
-                
-                try {
-                    // 루트 노드(parent가 null인 것)부터 시작
-                    processNodes(null, zip); 
-
-                    const content = await zip.generateAsync({ type: "blob" });
-                    saveAs(content, `${p.title}.zip`);
-                    showInternalAlert('다운로드 완료!');
-                } catch (e) {
-                    console.error(e);
-                    showInternalAlert('오류 발생', 'error');
-                }
-            };
+            const toggleStatsMode = () => { statsMode.value = statsMode.value === 'project' ? 'daily' : 'project'; };
 
             watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
             watch(mobileView, () => nextTick(() => updateTypewriter(false)));
@@ -753,28 +785,19 @@
             const toggleTypewriter = () => { typewriterMode.value = !typewriterMode.value; saveConfig(); nextTick(() => updateTypewriter(true)); };
             const toggleRidibatangFont = () => { isCustomFontActive.value = !isCustomFontActive.value; applyFontClass(); saveConfig(); showInternalAlert('폰트 변경됨'); };
 
-            // Init
             onMounted(() => { 
                 loadAllData(); 
                 window.addEventListener('beforeunload', () => { saveData(); });
-                
-                if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                    mobileView.value = true;
-                    typewriterMode.value = true;
-                }
-
-                if (window.visualViewport) {
-                    window.visualViewport.addEventListener('resize', () => {
-                        document.body.style.height = window.visualViewport.height + 'px';
-                    });
-                }
+                // 검색 단축키 리스너 제거됨
+                if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) { mobileView.value = true; typewriterMode.value = true; }
+                if (window.visualViewport) { window.visualViewport.addEventListener('resize', () => { document.body.style.height = window.visualViewport.height + 'px'; }); }
             });
 
             return {
-                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
+                currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, dailyTarget, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive, deletedNodes, statsMode,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
-                pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
-                handleEnter, exportProjectZip
+                pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty, handleEnter, exportProjectZip,
+                restoreNode, hardDeleteNode, emptyTrash, toggleStatsMode, selectTrashView
             };
         }
     });
