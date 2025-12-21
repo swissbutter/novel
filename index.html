@@ -8,6 +8,11 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📑</text></svg>">
     
     <style>
@@ -84,7 +89,6 @@
             .project-item-date { display: none; }
             .project-item { padding: 12px 16px; }
             .global-actions { width: 50%; }
-            .paper-wrapper { background: #18181b ; }
         }
 
         /* Sidebar Overlay */
@@ -162,7 +166,7 @@
         .paper-wrapper { width: 100%; max-width: 880px; padding: 20px 0 50vh; display: flex; justify-content: center; position: relative; z-index: 5; }
         .paper-wrapper.typewriter { padding-bottom: 150vh; }
         .paper { width: 100%; background: var(--bg-paper); border: 1px solid var(--border); padding: 60px 80px; min-height: 90vh; height: fit-content; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: relative; }
-        .paper.mobile { max-width: 555px; padding: 30px 25px; border: 0; }
+        .paper.mobile { max-width: 555px; padding: 15px 20px; background: none; border: 0; }
         
         textarea.editor { 
             width: 100%; min-height: 600px; border: none; resize: none; overflow: hidden; 
@@ -265,7 +269,7 @@
                         </template>
                     </div>
                     <div class="project-actions">
-                        <button class="btn" @click.stop="exportProjectText(proj.id)" title="TXT 내보내기"><i class="ph ph-file-txt" style="font-size:20px;"></i></button>
+                        <button class="btn" @click.stop="exportProjectZip(proj.id)" title="Word/ZIP 내보내기"><i class="ph ph-file-doc" style="font-size:20px; color:#2563EB;"></i></button>
                         <button class="btn" @click.stop="startEditProject(proj.id)" title="수정"><i class="ph ph-pencil" style="font-size:20px;"></i></button>
                         <button class="btn" @click.stop="deleteProject(proj.id)" title="삭제" style="color:#EF4444;"><i class="ph ph-trash" style="font-size:20px;"></i></button>
                     </div>
@@ -572,9 +576,8 @@
                 const span = document.createElement('span'); span.textContent = '.'; mirror.appendChild(span);
                 const paddingTop = mobileView.value ? 40 : 60; const cursorY = span.offsetTop + paddingTop + 40; const viewportH = workspace.clientHeight;
                 
-                // [FIXED] 타자기 모드 OFF일 때 90% 지점에 위치 (0.9 = 90% 지점, 즉 하단에 10% 여유)
-                // 타자기 모드 ON일 때는 중앙(0.5)에 위치
-                const scrollAnchorRatio = typewriterMode.value ? 0.5 : 0.85; 
+                // 타자기 모드가 아닐 때는 90% 지점에 위치 (하단에서 10% 띄움)
+                const scrollAnchorRatio = typewriterMode.value ? 0.5 : 0.9; 
                 
                 workspace.scrollTo({ top: cursorY - (viewportH * scrollAnchorRatio) + (18 * 1.8 / 2), behavior: smooth ? 'smooth' : 'auto' });
             };
@@ -661,31 +664,73 @@
                 }; r.readAsText(f); e.target.value = '';
             };
             
-            const exportProjectText = (projId) => {
+            // --- Word/ZIP 내보내기 로직 ---
+            const generateDocxBlob = async (title, content) => {
+                const { Document, Packer, Paragraph, TextRun } = docx;
+                
+                // 줄바꿈 기준으로 문단 나누기
+                const lines = (content || '').split('\n');
+                const paragraphs = lines.map(line => new Paragraph({
+                    children: [new TextRun({ 
+                        text: line, 
+                        size: 24, // 12pt (docx 단위는 반포인트)
+                        font: "Malgun Gothic" // 한글 폰트 지정
+                    })],
+                    spacing: { after: 200 } // 문단 간격
+                }));
+
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: [
+                            new Paragraph({ 
+                                children: [new TextRun({ text: title, size: 32, bold: true })], // 제목
+                                spacing: { after: 400 }
+                            }),
+                            ...paragraphs
+                        ],
+                    }],
+                });
+
+                return await Packer.toBlob(doc);
+            };
+
+            const exportProjectZip = async (projId) => {
                 const p = projects.value[projId];
                 if (!p) return;
+
+                const zip = new JSZip();
                 
-                let fullText = `[ ${p.title} ]\n\n`;
-                
-                const rootNodes = p.nodes.filter(n => !n.parent);
-                
-                const processNode = (node) => {
-                    if (node.type === 'folder') {
-                         fullText += `\n\n================ ${node.title} ================\n\n`;
-                         const children = p.nodes.filter(n => n.parent === node.id);
-                         children.forEach(processNode);
-                    } else {
-                         fullText += `\n### ${node.title}\n\n${node.content || ''}\n\n`;
-                    }
+                // 재귀적으로 폴더/파일 탐색
+                const processNodes = (parentId, currentZipFolder) => {
+                    const children = p.nodes.filter(n => n.parent === parentId);
+                    
+                    children.forEach(node => {
+                        if (node.type === 'folder') {
+                            // 폴더 생성
+                            const newFolder = currentZipFolder.folder(node.title);
+                            processNodes(node.id, newFolder);
+                        } else {
+                            // 챕터 -> Word 파일 생성 (Promise를 zip에 추가)
+                            const docBlobPromise = generateDocxBlob(node.title, node.content);
+                            currentZipFolder.file(`${node.title}.docx`, docBlobPromise);
+                        }
+                    });
                 };
+
+                showInternalAlert('압축 파일 생성 중...');
                 
-                rootNodes.forEach(processNode);
-                
-                const b = new Blob([fullText], {type: 'text/plain;charset=utf-8'});
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(b);
-                a.download = `${p.title}.txt`;
-                a.click();
+                try {
+                    // 루트 노드(parent가 null인 것)부터 시작
+                    processNodes(null, zip); 
+
+                    const content = await zip.generateAsync({ type: "blob" });
+                    saveAs(content, `${p.title}.zip`);
+                    showInternalAlert('다운로드 완료!');
+                } catch (e) {
+                    console.error(e);
+                    showInternalAlert('오류 발생', 'error');
+                }
             };
 
             watch(activeId, () => nextTick(() => { autoResize(); updateTypewriter(false); }));
@@ -701,13 +746,11 @@
                 loadAllData(); 
                 window.addEventListener('beforeunload', () => { saveData(); });
                 
-                // [수정됨] 모바일 기기 또는 좁은 화면 접속 시 모바일 뷰 자동 활성화
                 if (window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                     mobileView.value = true;
                     typewriterMode.value = true;
                 }
 
-                // [New] Mobile Keyboard Fix
                 if (window.visualViewport) {
                     window.visualViewport.addEventListener('resize', () => {
                         document.body.style.height = window.visualViewport.height + 'px';
@@ -719,7 +762,7 @@
                 currentView, projects, currentProject, currentProjectId, editingProjectId, activeId, editingId, sidebarOpen, theme, mobileView, typewriterMode, activeNode, rootNodes, activeChildren, breadcrumbs, stats, showStats, targetGoal, editorRef, fileInput, showAlert, alertMessage, alertType, isCustomFontActive,
                 loadProject, createProject, deleteProject, startEditProject, endEditProject, exportAllData, triggerImportAll, handleImportAll, selectNode, toggleNode, startEdit, endEdit, addNode, deleteNode, onDrop, toggleTheme, toggleMobile, toggleTypewriter, toggleRidibatangFont, handleEditorExit, handleMainInput, handlePostitInput, handleNav, focusEditor, saveConfig, formatDate, formatPostitDate,
                 pickerOpen, pickerPos, openPicker, changeIcon, getIconProperty,
-                handleEnter, exportProjectText
+                handleEnter, exportProjectZip
             };
         }
     });
