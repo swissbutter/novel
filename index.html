@@ -676,7 +676,8 @@
                         size: 24, // 12pt (docx 단위는 반포인트)
                         font: "Malgun Gothic" // 한글 폰트 지정
                     })],
-                    spacing: { after: 200 } // 문단 간격
+                    spacing: { after: 200 }, // 문단 간격
+                    indent: { firstLine: 240 } // [수정됨] 첫 줄 들여쓰기 (약 1글자)
                 }));
 
                 const doc = new Document({
