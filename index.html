@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사각 스튜디오 v1.2</title>
+    <title>사각 스튜디오 - Zen Edition (Auto Layout)</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -905,7 +905,7 @@
                                                 {['초고', '수정', '완료'].map(status => ( <button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, status} : p))} className={`px-3 py-1 text-[10px] font-black Galmuri14-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button> ))}
                                             </div>
                                         </div>
-                                        <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
+                                        <input className="w-full text-3xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
                                     </div>
                                     <textarea ref={textareaRef} className="editor-textarea custom-scroll" value={activeProject.content || ""} onChange={handleDocInput} onKeyDown={handleDocKeyDown} onMouseMove={handleDocMouseMove} onMouseOut={() => setHoverInfo({ ...hoverInfo, visible: false })} placeholder="이곳에 웹소설 내용을 작성하세요... (@인물 또는 #사건 입력)" />
                                     <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
@@ -1204,7 +1204,7 @@
                     <div className="flex-1 overflow-y-auto custom-scroll p-10"> 
                         <div className="max-w-7xl mx-auto"> 
                             <div className="mb-8 flex items-end justify-between"> <div> <h2 className="text-3xl font-black text-slate-900 mb-2 dark:text-zinc-100">내 서재</h2> <p className="text-sm text-slate-500 font-medium dark:text-zinc-400">총 {books.length}개의 작품이 있습니다.</p> </div> </div> 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"> 
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-10"> 
                                 {books.map(book => ( <BookCover key={book.id} book={book} onClick={() => onSelectBook(book.id)} onDelete={onDeleteBook} onEdit={(target) => setModalConfig({ isOpen: true, mode: 'edit', targetBook: target })} /> ))} 
                                 <button onClick={() => setModalConfig({ isOpen: true, mode: 'create', targetBook: null })} className="group flex flex-col items-center justify-center gap-4 aspect-[2/3] Galmuri14-[3px] border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800/50"> 
                                     <div className="w-12 h-12 Galmuri14-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all dark:bg-zinc-800 dark:text-zinc-500"> <IconPlus className="w-6 h-6" /> </div> 
