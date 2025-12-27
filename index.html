@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사각 스튜디오</title>
+    <title>사각 스튜디오 K Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script>
         tailwind.config = {
@@ -1236,39 +1237,90 @@
             const fileInputRef = useRef(null); 
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
 
+            // [수정됨] 내보내기 함수 (암호화 + .vel 확장자)
             const handleExport = () => { 
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books)); 
-                const downloadAnchorNode = document.createElement('a'); 
-                downloadAnchorNode.setAttribute("href", dataStr); 
-                downloadAnchorNode.setAttribute("download", "sagak_library.json"); 
-                document.body.appendChild(downloadAnchorNode); 
-                downloadAnchorNode.click(); 
-                downloadAnchorNode.remove(); 
+                const password = prompt("파일을 암호화하시겠습니까?\n비밀번호를 입력하면 [.vel]로, 취소하면 일반 [.json]으로 저장됩니다.");
+                
+                // 1. 암호화 저장 (.vel)
+                if (password) {
+                    try {
+                        const jsonString = JSON.stringify(books);
+                        // AES 암호화
+                        const encrypted = CryptoJS.AES.encrypt(jsonString, password).toString();
+                        
+                        const blob = new Blob([encrypted], { type: "text/plain;charset=utf-8" });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = "sagak_library_secured.vel"; // .vel 확장자
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                    } catch (e) {
+                        alert("암호화 저장 중 오류가 발생했습니다.");
+                        console.error(e);
+                    }
+                } 
+                // 2. 일반 저장 (.json) - 비밀번호 입력창에서 취소 또는 빈값 입력 시
+                else {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books)); 
+                    const downloadAnchorNode = document.createElement('a'); 
+                    downloadAnchorNode.setAttribute("href", dataStr); 
+                    downloadAnchorNode.setAttribute("download", "sagak_library.json"); 
+                    document.body.appendChild(downloadAnchorNode); 
+                    downloadAnchorNode.click(); 
+                    downloadAnchorNode.remove(); 
+                }
             }; 
 
+            // [수정됨] 불러오기 함수 (암호화 해독 로직 추가)
             const handleFileChange = (e) => { 
                 const file = e.target.files[0]; 
                 if (!file) return; 
+                
                 const reader = new FileReader(); 
                 reader.onload = (e) => { 
-                    try { 
-                        const importedBooks = JSON.parse(e.target.result); 
-                        if (Array.isArray(importedBooks)) {
-                            // 추가된 선택 로직
-                            if (confirm("기존 서재를 비우고 불러온 파일로 대체하시겠습니까? \n('취소'를 누르면 기존 목록 뒤에 추가됩니다.)")) {
-                                onImport(importedBooks, true); // true 인자를 넘겨 초기화 신호 보냄
-                            } else {
-                                onImport(importedBooks, false); 
+                    const fileContent = e.target.result;
+                    let parsedData = null;
+
+                    try {
+                        // 1. 일반 JSON으로 시도
+                        parsedData = JSON.parse(fileContent);
+                    } catch (jsonError) {
+                        // 2. JSON 파싱 실패 시 암호화된 파일로 간주
+                        const password = prompt("암호화된 파일(.vel)입니다. 비밀번호를 입력하세요:");
+                        if (password) {
+                            try {
+                                const bytes = CryptoJS.AES.decrypt(fileContent, password);
+                                const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+                                if (!decryptedData) throw new Error("Decryption failed");
+                                parsedData = JSON.parse(decryptedData);
+                            } catch (decryptError) {
+                                alert("비밀번호가 틀리거나 손상된 파일입니다.");
+                                return;
                             }
                         } else {
-                            alert("올바르지 않은 파일 형식입니다.");
+                            return; // 비밀번호 입력 취소
                         }
-                    } catch (err) { alert("파일을 읽는 중 오류가 발생했습니다."); } 
+                    }
+
+                    // 데이터 로드 로직 (기존과 동일)
+                    if (parsedData && Array.isArray(parsedData)) { 
+                        if (confirm("기존 서재를 비우고 불러온 파일로 대체하시겠습니까? \n('취소'를 누르면 기존 목록 뒤에 추가됩니다.)")) {
+                            onImport(parsedData, true); 
+                        } else {
+                            onImport(parsedData, false); 
+                        }
+                    } else { 
+                        alert("올바르지 않은 데이터 형식입니다."); 
+                    } 
                 }; 
                 reader.readAsText(file); 
-            };
+                // 같은 파일을 다시 불러올 수 있도록 초기화
+                e.target.value = '';
+            }; 
 
+            // ... 나머지 코드는 기존과 동일 ...
             const handleConfirmModal = (title, author, color) => {
+                // (기존 코드 유지)
                 if (modalConfig.mode === 'create') {
                     const newId = generateUUID();
                     const defaultProjectId = generateUUID();
@@ -1295,16 +1347,17 @@
                             </button>
                             <button onClick={toggleDarkMode} className="p-2 text-slate-400 hover:text-slate-800 transition-colors bg-slate-100 Galmuri14-[3px] hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-700" title="다크 모드 토글"> {isDarkMode ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />} </button> 
                             <div className="h-4 w-px bg-slate-300 mx-1 dark:bg-zinc-700"></div> 
-                            <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-2 py-2 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold Galmuri14-[3px] hover:bg-slate-50 transition-all shadow-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-700"><IconUpload className="w-3 h-3" /></button> 
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".json" /> 
-                            <button onClick={handleExport} className="flex items-center gap-2 px-2 py-2 bg-slate-900 text-white text-[11px] font-bold Galmuri14-[3px] hover:bg-slate-800 transition-all shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"><IconSave className="w-3 h-3" /></button> 
+                            
+                            {/* 불러오기 버튼 (accept에 .vel 추가) */}
+                            <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-2 px-2 py-2 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold Galmuri14-[3px] hover:bg-slate-50 transition-all shadow-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-700" title="파일 불러오기"><IconUpload className="w-3 h-3" /></button> 
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".json,.vel" /> 
+                            
+                            {/* 저장 버튼 */}
+                            <button onClick={handleExport} className="flex items-center gap-2 px-2 py-2 bg-slate-900 text-white text-[11px] font-bold Galmuri14-[3px] hover:bg-slate-800 transition-all shadow-sm dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200" title="전체 저장"><IconSave className="w-3 h-3" /></button> 
                         </div> 
                     </header> 
-                        <div className="flex-1 overflow-y-auto custom-scroll"> 
-                        {/* 이 div가 최소 높이를 화면 전체로 잡고 푸터를 바닥으로 밉니다 */}
+                    <div className="flex-1 overflow-y-auto custom-scroll"> 
                         <div className="max-w-7xl mx-auto p-10 min-h-full flex flex-col">
-                            
-                            {/* 메인 콘텐츠 영역 (flex-1로 설정하여 남은 공간을 다 차지함) */}
                             <div className="flex-1">
                                 <div className="mb-8 flex items-end justify-between"> 
                                     <div> 
@@ -1321,7 +1374,6 @@
                                 </div> 
                             </div>
 
-                            {/* 최하단 Copyright (항상 바닥에 위치) */}
                             <footer className="mt-20 pb-6 flex flex-col items-center justify-center gap-1 opacity-30 hover:opacity-100 transition-opacity duration-500">
                                 <div className="flex items-center gap-1.5">
                                     <div className="w-3 h-3 bg-slate-400 Galmuri14-[1px] dark:bg-zinc-600 opacity-50"></div>
