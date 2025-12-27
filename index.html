@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사각 스튜디오 - Zen Edition</title>
+    <title>사각 스튜디오 v1.2</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -129,6 +130,7 @@
         const IconMoon = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>);
         const IconZen = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>);
         const IconFont = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>);
+        const IconLayout = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><line x1="10" x2="14" y1="6.5" y2="6.5" /><line x1="10" x2="14" y1="17.5" y2="17.5" /><line x1="6.5" x2="6.5" y1="10" y2="14" /><line x1="17.5" x2="17.5" y1="10" y2="14" /></svg>);
 
         // Utility
         const getCaretCoordinates = (element, position) => { const div = document.createElement('div'); const style = window.getComputedStyle(element); const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'padding', 'border', 'width', 'boxSizing', 'whiteSpace', 'wordWrap']; props.forEach(prop => div.style[prop] = style[prop]); div.style.position = 'absolute'; div.style.visibility = 'hidden'; div.textContent = element.value.substring(0, position); const span = document.createElement('span'); span.textContent = element.value.substring(position) || '.'; div.appendChild(span); document.body.appendChild(div); const rect = element.getBoundingClientRect(); const coordinates = { top: rect.top + span.offsetTop + element.scrollTop, left: rect.left + span.offsetLeft }; document.body.removeChild(div); return coordinates; };
@@ -365,8 +367,8 @@
                     if (p.id !== activeProjectId) return p;
                     return {
                         ...p,
-                        nodes: nodeUpdater ? nodeUpdater(p.nodes || []) : (p.nodes || []),
-                        edges: edgeUpdater ? edgeUpdater(p.edges || []) : (p.edges || [])
+                        nodes: nodeUpdater ? (typeof nodeUpdater === 'function' ? nodeUpdater(p.nodes || []) : nodeUpdater) : (p.nodes || []),
+                        edges: edgeUpdater ? (typeof edgeUpdater === 'function' ? edgeUpdater(p.edges || []) : edgeUpdater) : (p.edges || [])
                     };
                 }));
             }, [activeProjectId]);
@@ -487,6 +489,172 @@
             const handleDocKeyDown = (e) => { if (e.nativeEvent.isComposing) return; if (mention.active) { if (e.key === 'ArrowDown') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % filteredMentionNodes.length })); } else if (e.key === 'ArrowUp') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + filteredMentionNodes.length) % filteredMentionNodes.length })); } else if (e.key === 'Enter') { e.preventDefault(); if (filteredMentionNodes[mention.selectedIndex]) insertMention(filteredMentionNodes[mention.selectedIndex]); } else if (e.key === 'Escape') setMention({ ...mention, active: false }); } else if (e.key === 'Enter') { e.preventDefault(); const start = e.target.selectionStart; const end = e.target.selectionEnd; const value = e.target.value; const newValue = value.substring(0, start) + "\n　" + value.substring(end); updateDocContent(newValue); setTimeout(() => { if(textareaRef.current) { textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2; } }, 0); } };
             const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
 
+            const handleAutoLayout = useCallback(() => {
+                if (!activeProject || activeProject.type !== 'board') return;
+                saveHistory();
+
+                const GAP_BETWEEN_GROUPS = 400; // 그룹 간 간격
+
+                // 1. 그룹핑
+                const groups = {
+                    '인물': activeProject.nodes.filter(n => n.type === '인물'),
+                    '사건': activeProject.nodes.filter(n => n.type === '사건'),
+                    '메모': activeProject.nodes.filter(n => n.type !== '인물' && n.type !== '사건')
+                };
+
+                // 헬퍼: 특정 그룹 내부의 엣지들만 가져오기
+                const getInternalEdges = (groupNodes) => {
+                    const ids = new Set(groupNodes.map(n => n.id));
+                    return activeProject.edges.filter(e => ids.has(e.from) && ids.has(e.to));
+                };
+
+                // 헬퍼: 일반적인 Dagre 레이아웃 (사건/메모용)
+                const layoutStandardGroup = (groupNodes, groupEdges) => {
+                    if (groupNodes.length === 0) return { nodes: [], width: 0, minX: 0 };
+                    const g = new dagre.graphlib.Graph();
+                    g.setGraph({ rankdir: 'TB', ranksep: 100, nodesep: 60 });
+                    g.setDefaultEdgeLabel(() => ({}));
+                    groupNodes.forEach(node => g.setNode(node.id, { width: CARD_W, height: CARD_H }));
+                    groupEdges.forEach(edge => g.setEdge(edge.from, edge.to));
+                    dagre.layout(g);
+                    
+                    let minX = Infinity, maxX = -Infinity;
+                    const positioned = groupNodes.map(node => {
+                        const pos = g.node(node.id);
+                        const x = pos.x - CARD_W / 2;
+                        const y = pos.y - CARD_H / 2;
+                        if (x < minX) minX = x;
+                        if (x + CARD_W > maxX) maxX = x + CARD_W;
+                        return { ...node, x, y };
+                    });
+                    // 0부터 시작하도록 보정
+                    return { 
+                        nodes: positioned.map(n => ({ ...n, x: n.x - minX })), 
+                        width: maxX - minX 
+                    };
+                };
+
+                // =========================================================
+                // [핵심] 인물 그룹 특수 레이아웃 (상단: 1촌 독신 / 하단: 트리)
+                // =========================================================
+                const layoutPersonGroup = (groupNodes, groupEdges) => {
+                    if (groupNodes.length === 0) return { nodes: [], width: 0 };
+
+                    // 1. 주인공(Root) 식별
+                    const rootNode = groupNodes.find(n => n.data?.role === '주인공') || groupNodes[0];
+                    
+                    // 2. 상단으로 보낼 노드(UpNodes)와 하단 트리로 보낼 노드(DownNodes) 분류
+                    const upNodes = [];
+                    const downNodes = [rootNode]; // 주인공은 하단 트리 계산의 기준점이 됨
+                    const downNodeIds = new Set([rootNode.id]);
+
+                    groupNodes.forEach(node => {
+                        if (node.id === rootNode.id) return; // 주인공 제외
+
+                        // 이 노드의 연결 관계 확인
+                        const myEdges = groupEdges.filter(e => e.from === node.id || e.to === node.id);
+                        const degree = myEdges.length;
+                        const isConnectedToRoot = myEdges.some(e => e.from === rootNode.id || e.to === rootNode.id);
+
+                        // 조건: 주인공과 연결되어 있고(1촌), 연결이 그거 하나뿐(자식 없음)이면 -> 상단
+                        if (isConnectedToRoot && degree === 1) {
+                            upNodes.push(node);
+                        } else {
+                            // 그 외(자식이 있거나, 주인공과 멀거나 등) -> 하단 트리
+                            downNodes.push(node);
+                            downNodeIds.add(node.id);
+                        }
+                    });
+
+                    // 3. 하단 노드들(주인공 포함)만 Dagre로 트리 정렬
+                    const downEdges = groupEdges.filter(e => downNodeIds.has(e.from) && downNodeIds.has(e.to));
+                    
+                    // 하단 트리 계산
+                    const g = new dagre.graphlib.Graph();
+                    g.setGraph({ rankdir: 'TB', ranksep: 120, nodesep: 80 }); // 간격 넉넉히
+                    g.setDefaultEdgeLabel(() => ({}));
+                    
+                    downNodes.forEach(n => g.setNode(n.id, { width: CARD_W, height: CARD_H }));
+                    downEdges.forEach(e => g.setEdge(e.from, e.to));
+                    
+                    dagre.layout(g); // 주인공이 가장 위에 오고, 자식들이 아래로 배치됨
+
+                    // 4. 좌표 정리
+                    // 하단 트리 좌표 적용
+                    let minX = Infinity, maxX = -Infinity;
+                    let rootPos = { x: 0, y: 0 };
+
+                    const positionedDownNodes = downNodes.map(node => {
+                        const pos = g.node(node.id);
+                        const x = pos.x - CARD_W / 2;
+                        const y = pos.y - CARD_H / 2; // 주인공이 y=0 근처에 옴
+
+                        if (node.id === rootNode.id) rootPos = { x, y }; // 주인공 위치 기억
+                        if (x < minX) minX = x;
+                        if (x + CARD_W > maxX) maxX = x + CARD_W;
+                        
+                        return { ...node, x, y };
+                    });
+
+                    // 5. 상단 노드들 강제 배치 (주인공 머리 위로)
+                    const positionedUpNodes = [];
+                    if (upNodes.length > 0) {
+                        const gap = CARD_W + 20;
+                        const totalUpWidth = (upNodes.length - 1) * gap;
+                        // 주인공의 X좌표를 기준으로 중앙 정렬
+                        const startX = rootPos.x + (CARD_W / 2) - (CARD_W / 2) - (totalUpWidth / 2); // (주인공중심) - (카드반) - (전체폭반)
+                        
+                        upNodes.forEach((node, idx) => {
+                            positionedUpNodes.push({
+                                ...node,
+                                x: startX + (idx * gap),
+                                y: rootPos.y - 150 - CARD_H // 주인공 위로 150px 띄우기
+                            });
+                            
+                            // 범위 갱신 (전체 너비 계산용)
+                            const nx = startX + (idx * gap);
+                            if (nx < minX) minX = nx;
+                            if (nx + CARD_W > maxX) maxX = nx + CARD_W;
+                        });
+                    }
+
+                    const allPositioned = [...positionedDownNodes, ...positionedUpNodes];
+
+                    // 6. 전체 그룹 정규화 (x=0 부터 시작하도록)
+                    return {
+                        nodes: allPositioned.map(n => ({ ...n, x: n.x - minX })),
+                        width: maxX - minX
+                    };
+                };
+
+
+                // --- 실행 ---
+
+                // 1. 각 그룹 레이아웃 계산
+                const personResult = layoutPersonGroup(groups['인물'], getInternalEdges(groups['인물']));
+                const eventResult = layoutStandardGroup(groups['사건'], getInternalEdges(groups['사건']));
+                const memoResult = layoutStandardGroup(groups['메모'], getInternalEdges(groups['메모']));
+
+                // 2. 가로로 나란히 배치 (Offset 적용)
+                let currentOffset = 0;
+
+                const finalPersonNodes = personResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
+                if (personResult.nodes.length > 0) currentOffset += personResult.width + GAP_BETWEEN_GROUPS;
+
+                const finalEventNodes = eventResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
+                if (eventResult.nodes.length > 0) currentOffset += eventResult.width + GAP_BETWEEN_GROUPS;
+
+                const finalMemoNodes = memoResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
+
+                // 3. 업데이트
+                const newNodes = [...finalPersonNodes, ...finalEventNodes, ...finalMemoNodes];
+                updateActiveProject(newNodes);
+                showToast("인물(상/하단 분리) 및 전체 정렬 완료");
+                setTimeout(() => fitToScreen(newNodes), 100);
+
+            }, [activeProject, saveHistory, updateActiveProject, showToast, fitToScreen]);
+
+
             const activeNode = useMemo(() => (activeProject?.nodes || []).find(n => n.id === selectedNodeId), [activeProject, selectedNodeId]);
             const activeEdge = useMemo(() => (activeProject?.edges || []).find(e => e.id === selectedEdgeId), [activeProject, selectedEdgeId]);
             const visibleNodes = useMemo(() => { if (activeProject?.type !== 'board') return []; const viewportW = window.innerWidth; const viewportH = window.innerHeight; const buffer = 300; return nodes.filter(node => { const screenX = node.x * scale + pan.x; const screenY = node.y * scale + pan.y; const screenW = CARD_W * scale; const screenH = CARD_H * scale; return (screenX + screenW + buffer > 0 && screenX - buffer < viewportW && screenY + screenH + buffer > 0 && screenY - buffer < viewportH); }); }, [nodes, scale, pan, activeProject?.type]);
@@ -509,11 +677,11 @@
                                 <span onClick={(e) => !isDoc && toggleProjectFolder(project.id, e)} className={`${isDoc ? 'text-sm opacity-50' : 'text-base'} shrink-0 dark:text-zinc-300`}>{isDoc ? '📄' : (isExpanded ? '📂' : '📁')}</span>
                                 {editingProjectId === project.id ? ( <input autoFocus className="w-full bg-white border border-indigo-400 Galmuri14-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white" defaultValue={project.name} onBlur={(e) => handleProjectRename(project.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)} /> ) : (
                                     <div className="flex items-center min-w-0 flex-1 justify-between">
-                                        <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
-                                        <div className="flex items-center shrink-0">
-                                            {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
-                                            <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
-                                        </div>
+                                            <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
+                                            <div className="flex items-center shrink-0">
+                                                {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
+                                                <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
+                                            </div>
                                     </div>
                                 )}
                             </div>
@@ -530,9 +698,45 @@
                                                             <div className="text-[9px] font-black text-slate-400 mb-1.5 px-2 uppercase tracking-tighter flex items-center gap-2"><span className="w-1 h-1 bg-slate-300 Galmuri14-[3px] dark:bg-zinc-600"></span>{type}</div>
                                                             <Reorder.Group axis="y" values={filtered} onReorder={(newOrder) => handleReorderNodes(type, newOrder)} className="space-y-1">
                                                                 {filtered.map(n => (
-                                                                    <Reorder.Item key={n.id} value={n} onClick={(e) => { e.stopPropagation(); handleSelectProject(project.id); setPan({ x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2, y: -(n.y + CARD_H/2)*scale + window.innerHeight/2 }); }} className={`py-1.5 px-3 bg-white hover:border-indigo-300 border border-slate-200 Galmuri14-[3px] flex items-center justify-between gap-2 cursor-pointer shadow-sm transition-all border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)}`}>
-                                                                        <div className="flex items-center gap-2 min-w-0"><span className="text-xs shrink-0">{n.data.emoji}</span><span className="text-[11px] font-bold text-slate-600 truncate dark:text-zinc-300">{n.label}</span></div>
-                                                                        {n.type === '인물' && <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>{n.data.role}</span>}
+                                                                    <Reorder.Item 
+                                                                        key={n.id} 
+                                                                        value={n} 
+                                                                        onClick={(e) => { 
+                                                                            e.stopPropagation(); 
+                                                                            handleSelectProject(project.id); 
+                                                                            setPan({ 
+                                                                                x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2, 
+                                                                                y: -(n.y + CARD_H/2)*scale + window.innerHeight/2 
+                                                                            }); 
+                                                                        }} 
+                                                                        className={`group/node py-1.5 px-3 bg-white hover:border-indigo-300 border border-slate-200 Galmuri14-[3px] flex items-center justify-between gap-2 cursor-pointer shadow-sm transition-all border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)}`}
+                                                                    >
+                                                                        {/* 좌측 영역: 이모지 + 이름 */}
+                                                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                            <span className="text-xs shrink-0">{n.data.emoji}</span>
+                                                                            <span className="text-[11px] font-bold text-slate-600 truncate dark:text-zinc-300">{n.label}</span>
+                                                                        </div>
+                                                                        
+                                                                        {/* 우측 영역: 뱃지 + 휴지통 (문서 리스트와 동일한 '밀기' 로직) */}
+                                                                        <div className="flex items-center shrink-0">
+                                                                            {/* 인물일 경우 역할 뱃지 표시 (사라지지 않고 유지됨) */}
+                                                                            {n.type === '인물' && (
+                                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
+                                                                                    {n.data.role}
+                                                                                </span>
+                                                                            )}
+                                                                            
+                                                                            {/* 휴지통 버튼: 평소엔 w-0/opacity-0 이다가 호버 시 w-5로 늘어나며 왼쪽 요소들을 밀어냄 */}
+                                                                            <button 
+                                                                                onClick={(e) => { 
+                                                                                    e.stopPropagation(); 
+                                                                                    if(confirm(`'${n.label}'을(를) 삭제하시겠습니까?`)) deleteNode(n.id); 
+                                                                                }} 
+                                                                                className="w-0 opacity-0 group-hover/node:w-5 group-hover/node:opacity-100 group-hover/node:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"
+                                                                            >
+                                                                                <IconTrash className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
                                                                     </Reorder.Item>
                                                                 ))}
                                                             </Reorder.Group>
@@ -629,8 +833,14 @@
                                     </div>
                                 </div>
 
-                                {/* [부활된 UI] 줌 및 화면 중앙 맞춤 컨트롤러 */}
                                 <div className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 Galmuri14-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
+                                    <button 
+                                        onClick={() => handleAutoLayout()} 
+                                        className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
+                                        title="자동 정렬 (Auto Layout)"
+                                    >
+                                        <IconLayout className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
+                                    </button>
                                     <button 
                                         onClick={() => fitToScreen()} 
                                         className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
@@ -743,20 +953,43 @@
                                             <div key={node.id} 
                                                 onClick={() => insertMention(node)} 
                                                 onMouseEnter={() => setMention(prev => ({...prev, selectedIndex: i}))}
-                                                className={`flex items-center px-3 py-2 cursor-pointer transition-colors ${mention.selectedIndex === i ? 'mention-item-active' : 'hover:bg-slate-50 dark:hover:bg-zinc-800'}`}>
-                                                <span className="text-sm shrink-0 mr-2">{node.data.emoji}</span>
-                                                <div className="flex-1 min-w-0 flex items-center justify-between gap-2 overflow-hidden">
-                                                    <div className="flex items-center gap-1.5 truncate">
-                                                        <span className="font-black text-xs text-slate-800 dark:text-zinc-100 truncate">{node.label}</span>
-                                                        <span className="text-[8px] text-slate-300 shrink-0">/</span>
-                                                        <span className="text-[9px] text-slate-500 font-bold truncate opacity-70">{node.projectName}</span>
+                                                className={`flex items-center px-3 h-[38px] cursor-pointer transition-colors border-l-4 ${
+                                                    mention.selectedIndex === i 
+                                                    ? 'mention-item-active' 
+                                                    : 'hover:bg-slate-50 dark:hover:bg-zinc-800 border-l-transparent'
+                                                }`}
+                                            >
+                                                {/* 좌측: 이모지 및 이름 (높이 고정으로 인해 세로 중앙 자동 정렬) */}
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <span className="text-sm shrink-0 leading-none">{node.data.emoji}</span>
+                                                    <div className="flex items-baseline gap-2 truncate">
+                                                        <span className="font-black text-xs text-slate-800 dark:text-zinc-100 shrink-0">
+                                                            {node.label}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-400 font-bold truncate opacity-80">
+                                                            / {node.projectName}
+                                                        </span>
                                                     </div>
                                                 </div>
+
+                                                {/* 우측: 인물일 경우 배지 표시, 사건일 경우 빈 공간 유지 (높이 뒤틀림 방지) */}
+                                                <div className="shrink-0 ml-2 flex items-center h-full">
+                                                    {node.type === '인물' ? (
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[2px] rounded-sm shadow-sm leading-none ${getRoleBadgeStyle(node.data.role)}`}>
+                                                            {node.data.role}
+                                                        </span>
+                                                    ) : (
+                                                        /* 사건일 때는 배지가 없어도 높이를 유지하도록 빈 공간 확보 */
+                                                        <div className="w-1 h-4"></div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )) : <div className="p-4 text-[10px] text-slate-400 italic text-center">결과 없음</div>}
+                                        )) : (
+                                            <div className="p-4 text-[10px] text-slate-400 italic text-center">결과 없음</div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 p-4 overflow-hidden Galmuri14-r-[3px]">
+                                <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 p-5 overflow-hidden Galmuri14-r-[3px]">
                                     {filteredMentionNodes[mention.selectedIndex] ? (
                                         <>
                                             <div className="flex items-center gap-3 mb-2">
@@ -765,17 +998,18 @@
                                                     <div className="font-black text-slate-800 dark:text-zinc-100">{filteredMentionNodes[mention.selectedIndex].label}</div>
                                                 </div>
                                             </div>
-                                            <div className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed overflow-y-auto custom-scroll pr-2">
+                                            <div className="text-2xs text-slate-500 dark:text-zinc-400 leading-relaxed overflow-y-auto custom-scroll pr-2">
                                                 {filteredMentionNodes[mention.selectedIndex].type === '인물' && (
-                                                    <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold uppercase text-indigo-500">
+                                                    <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-bold uppercase text-indigo-500">
                                                         <span>성별: {filteredMentionNodes[mention.selectedIndex].data.gender}</span>
-                                                        <span>나이: {filteredMentionNodes[mention.selectedIndex].data.age}세</span>
+                                                        <span>나이: {filteredMentionNodes[mention.selectedIndex].data.age || '미정'}</span>
+                                                        <span>직업: {filteredMentionNodes[mention.selectedIndex].data.job || '미정'}</span>
                                                         <span>종족: {filteredMentionNodes[mention.selectedIndex].data.race || '인간'}</span>
                                                     </div>
                                                 )}
                                                 
                                                 {filteredMentionNodes[mention.selectedIndex].type === '사건' && (
-                                                    <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold uppercase text-rose-500">
+                                                    <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-bold uppercase text-rose-500">
                                                         <span>장소: {filteredMentionNodes[mention.selectedIndex].data.place || '미정'}</span>
                                                         <span>시기: {filteredMentionNodes[mention.selectedIndex].data.year || '미정'}</span>
                                                     </div>
