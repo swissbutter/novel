@@ -419,9 +419,8 @@
                             </div>
                             <div className="text-left mt-8">
                                 {isEditingTitle ? ( <input ref={titleInputRef} className="w-full text-[25px] font-black text-slate-900 tracking-tighter leading-none bg-slate-100 outline-none border-b-2 border-indigo-500 dark:bg-darkpanel dark:text-white" value={currentBook.title} onChange={(e) => onUpdateBook({...currentBook, title: e.target.value})} onBlur={() => setIsEditingTitle(false)} onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)} /> ) : ( <h1 onDoubleClick={() => setIsEditingTitle(true)} className="text-[25px] font-black text-slate-900 tracking-tighter leading-none cursor-pointer hover:text-indigo-600 transition-colors dark:text-white" title="더블클릭하여 제목 수정">{currentBook.title}</h1> )}
-                                {/* Novel Project by 작가이름 표시 변경 부분 */}
                                 <span className="text-[10px] font-bold text-slate-400 mt-2 tracking-widest block dark:text-zinc-500">
-                                <span className="font-black ml-1">by {currentBook.author || '미상'}</span>
+                                <span className="font-black">by {currentBook.author || '미상'}</span>
                                 </span>
                             </div>
                         </div>
