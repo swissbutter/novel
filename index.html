@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사각 스튜디오 K Edition</title>
+    <title>사각 스튜디오</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
@@ -12,7 +12,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script>
         tailwind.config = {
@@ -37,9 +37,10 @@
             font-display: swap;
         }
         @font-face {
-            font-family: 'NanumMyeongjo';
-            src: url(https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjoYetHangul/NanumMyeongjo-YetHangul.eot);
-            src: url(https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjoYetHangul/NanumMyeongjo-YetHangul.eot?#iefix) format("embedded-opentype"), url(https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjoYetHangul/NanumMyeongjo-YetHangul.woff2) format("woff2"), url(https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjoYetHangul/NanumMyeongjo-YetHangul.woff) format("woff"), url(https://hangeul.pstatic.net/hangeul_static/webfont/NanumMyeongjoYetHangul/NanumMyeongjo-YetHangul.ttf) format("truetype");
+            font-family: 'Ridibatang';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_twelve@1.0/RIDIBatang.woff') format('woff');
+            font-weight: normal;
+            font-display: swap;
         }
         @font-face {
             font-family: 'Galmuri14';
@@ -56,12 +57,12 @@
 
         /* 폰트 클래스 강제 적용 */
         body.font-maruburi, body.font-maruburi * { font-family: 'MaruBuri', serif !important; }
-        body.font-NanumMyeongjo, body.font-NanumMyeongjo * { font-family: 'NanumMyeongjo', sans-serif !important; }
+        body.font-Ridibatang, body.font-Ridibatang * { font-family: 'Ridibatang', sans-serif !important; }
         body.font-Galmuri14, body.font-Galmuri14 * { font-family: 'Galmuri14', serif !important; }
         body.font-pretendard, body.font-pretendard * { font-family: 'Pretendard', sans-serif !important; }
 
         body { background: #f1f5f9; overflow: hidden; user-select: none; transition: background-color 0.3s, color 0.3s; }
-        .dark body { background: #09090b; color: #e4e4e7; }
+        .dark body { background: #242464; color: #e4e4e7; }
         .grid-background { background-color: #f8fafc; background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px); background-size: 20px 20px; }
         .dark .grid-background { background-color: #09090b; background-image: linear-gradient(#141416 1px, transparent 1px), linear-gradient(90deg, #141416 1px, transparent 1px); }
         .dot-background { background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1px, transparent 0) !important; background-size: 20px 20px !important; background-position: 0 0; }
@@ -173,16 +174,16 @@
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{node.type}</span>
                                 {node.type === '인물' && <span className={`text-[9px] font-bold px-2 py-0.5 Galmuri14-[3px] ${getRoleBadgeStyle(node.data.role)}`}>{node.data.role}</span>}
                             </div>
-                            <div className={`text-base font-black truncate mb-1 ${isIdea ? 'text-slate-900 dark:text-yellow-50' : 'text-slate-800 dark:text-zinc-200'}`}><span className="mr-1.5">{node.data.emoji || (node.type === '인물' ? '👤' : node.type === '사건' ? '🔥' : '💡')}</span>{node.label}</div>
-                            
+                            <div className={`text-lg font-black truncate mb-1.5 tracking-tight ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
+                                <span className="mr-2 drop-shadow-sm">{node.data.emoji || (node.type === '인물' ? '👤' : node.type === '사건' ? '🔥' : '💡')}</span>
+                                {node.label}
+                            </div>  
                             {node.type === '인물' && <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2">{node.data.gender} · {node.data.age ? `${node.data.age}세` : '나이 미상'} · {node.data.job || '직업 없음'} · {node.data.race || '인간'}</div>}
-                            
                             {node.type === '사건' && (
                                 <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2 truncate">
                                     📍 {node.data.place || '장소 미상'} · 📅 {node.data.year || '시기 미상'}
                                 </div>
                             )}
-
                             <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 Galmuri14-[3px] border border-slate-100 italic dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
                         </div>
                     </div>
@@ -194,10 +195,10 @@
         const BookCover = memo(({ book, onClick, onDelete, onEdit }) => {
             return (
                 <div className="group perspective-1000 relative" style={{ perspective: '1200px' }} onClick={onClick}>
-                    <div className="absolute top-[8px] bottom-[8px] left-0 w-full bg-white Galmuri14-r-[3px] shadow-sm transform translate-x-[9px] z-[1] border border-slate-200 opacity-40"></div>
-                    <div className="absolute top-[6px] bottom-[6px] left-0 w-full bg-white Galmuri14-r-[3px] shadow-sm transform translate-x-[6px] z-[2] border border-slate-200 opacity-70"></div>
-                    <div className="absolute top-[4px] bottom-[4px] left-0 w-full bg-white Galmuri14-r-[3px] shadow-sm transform translate-x-[3px] z-[3] border border-slate-200 opacity-90"></div>
-                    <div className="absolute top-[2px] bottom-[2px] left-[-1px] w-full page-bg Galmuri14-r-[3px] shadow-sm transform translate-x-[1px] z-[4] border-l border-slate-200"></div>
+                    <div className="absolute top-[8px] bottom-[8px] left-0 w-full bg-white shadow-sm transform translate-x-[9px] z-[1] border border-slate-200 opacity-40"></div>
+                    <div className="absolute top-[6px] bottom-[6px] left-0 w-full bg-white shadow-sm transform translate-x-[6px] z-[2] border border-slate-200 opacity-70"></div>
+                    <div className="absolute top-[4px] bottom-[4px] left-0 w-full bg-white shadow-sm transform translate-x-[3px] z-[3] border border-slate-200 opacity-90"></div>
+                    <div className="absolute top-[2px] bottom-[3px] left-[-1px] w-full page-bg shadow-sm transform translate-x-[1px] z-[4] border-l border-slate-200"></div>
                     
                     <motion.div initial={{ rotateY: 0 }} whileHover={{ rotateY: -20 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="book-card relative Galmuri14-[3px] shadow-lg cursor-pointer flex flex-col overflow-hidden origin-left z-10 h-full" style={{ backgroundColor: book.color || '#475569', aspectRatio: '2 / 3' }}>
                         <div className="absolute inset-0 book-spine pointer-events-none z-10"></div>
@@ -514,7 +515,7 @@
             const findNode = (id) => nodes.find(n => n.id === id);
             
             const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 프로젝트', nodes: [], edges: [] }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
-            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: "　", status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
+            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: " ", status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
             const deleteProject = (id, e) => { if (e) e.stopPropagation(); if (confirm("삭제하시겠습니까?")) { saveHistory(); let newProjects = projects.filter(p => p.id !== id); if (newProjects.length === 0) { const dummyId = generateUUID(); newProjects = [{ id: dummyId, type: 'board', name: '새 프로젝트', nodes: [], edges: [] }]; handleSelectProject(dummyId); } else if (activeProjectId === id) handleSelectProject(newProjects[0].id); setProjects(newProjects); } };
             const handleProjectRename = (id, newName) => { saveHistory(); setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p)); setEditingProjectId(null); };
 
@@ -1412,14 +1413,14 @@
 
             // 폰트 변경 효과
             useEffect(() => {
-                const fonts = ['font-maruburi', 'font-NanumMyeongjo', 'font-Galmuri14', 'font-pretendard'];
+                const fonts = ['font-maruburi', 'font-Ridibatang', 'font-Galmuri14', 'font-pretendard'];
                 document.body.classList.remove(...fonts);
                 document.body.classList.add(`font-${fontMode}`);
                 localStorage.setItem('sagak_font', fontMode);
             }, [fontMode]);
 
             const toggleFont = () => {
-                const modes = ['maruburi', 'NanumMyeongjo', 'Galmuri14', 'pretendard'];
+                const modes = ['maruburi', 'Ridibatang', 'Galmuri14', 'pretendard'];
                 const nextIndex = (modes.indexOf(fontMode) + 1) % modes.length;
                 const nextFont = modes[nextIndex];
                 setFontMode(nextFont);
