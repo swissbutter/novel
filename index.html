@@ -593,16 +593,19 @@
             );
         };
 
-    const NameGenerator = ({ onConfirm, onClose }) => {
-            const [genre, setGenre] = useState('korean');
-            const [role, setRole] = useState('modern');
-            const [gender, setGender] = useState('random');
+       const NameGenerator = ({ onConfirm, onClose, settings, onSettingsChange }) => {
+            // 부모로부터 받은 settings가 있으면 그것을 초기값으로 사용
+            const [genre, setGenre] = useState(settings?.genre || 'korean');
+            const [role, setRole] = useState(settings?.role || 'modern');
+            const [gender, setGender] = useState(settings?.gender || 'random');
             const [generatedName, setGeneratedName] = useState(null);
+
+            // 설정이 변경될 때마다 부모(Workspace)에 저장 (기억하기)
             useEffect(() => {
-                if (NAME_ROLES[genre] && NAME_ROLES[genre].length > 0) {
-                    setRole(NAME_ROLES[genre][0].id);
+                if (onSettingsChange) {
+                    onSettingsChange({ genre, role, gender });
                 }
-            }, [genre]);
+            }, [genre, role, gender]);
 
             const handleGenerate = () => {
                 const dataSet = NAME_DB[genre][role];
@@ -638,6 +641,18 @@
                 }
                 setGeneratedName(fullName);
             };
+
+            // 장르 변경 핸들러 (장르를 바꿀 때만 역할을 첫 번째 항목으로 초기화)
+            const handleGenreChange = (e) => {
+                const newGenre = e.target.value;
+                setGenre(newGenre);
+                
+                // 장르가 바뀌면 해당 장르의 첫 번째 역할로 자동 변경
+                if (NAME_ROLES[newGenre] && NAME_ROLES[newGenre].length > 0) {
+                    setRole(NAME_ROLES[newGenre][0].id);
+                }
+            };
+
             useEffect(() => {
                 if(!generatedName) handleGenerate();
             }, []);
@@ -656,8 +671,8 @@
                         </div>
                         
                         <div className="grid grid-cols-2 gap-2 mb-3">
-                            {/* 2. 드롭다운 옵션 순서 변경: 한국 -> 판타지 -> 무협 */}
-                            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="p-2 text-xs font-bold rounded-[3px] border border-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 outline-none">
+                            {/* onChange 핸들러 교체 */}
+                            <select value={genre} onChange={handleGenreChange} className="p-2 text-xs font-bold rounded-[3px] border border-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 outline-none">
                                 <option value="korean">🏙️ 현대 한국</option>
                                 <option value="fantasy">⚔️ 판타지</option>
                                 <option value="wuxia">🐉 무협</option>
@@ -1172,6 +1187,7 @@
             const titleInputRef = useRef(null);
             const workspaceTimerRef = useRef(null);
             const [isNameGenOpen, setIsNameGenOpen] = useState(false); // 이름 생성기 토글 상태
+            const [nameGenSettings, setNameGenSettings] = useState({ genre: 'korean', role: 'modern', gender: 'random' });
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
                 if (!targetNodes || targetNodes.length === 0) {
                     setPan({ x: 0, y: 0 });
@@ -2076,7 +2092,7 @@
                                                 </g>
                                             );
                                         })}
-                                        {tempEdge && <line x1={findNode(tempEdge.fromId).x + CARD_W/2} y1={findNode(tempEdge.fromId).y + CARD_H/2} x2={tempEdge.toX} y2={tempEdge.toY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4,4" />}
+                                        {tempEdge && findNode(tempEdge.fromId) && <line x1={findNode(tempEdge.fromId).x + CARD_W/2} y1={findNode(tempEdge.fromId).y + CARD_H/2} x2={tempEdge.toX} y2={tempEdge.toY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4,4" />}
                                     </svg>
                                     {visibleNodes.map(node => (
                                         <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { e.stopPropagation(); setDraggingNodeId(id); setTopNodeId(id); }} onMouseDown={(e, id) => { if (e.button === 2) { const c = getCanvasCoords(e.clientX, e.clientY); setTempEdge({ fromId: id, toX: c.x, toY: c.y }); } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
@@ -2351,24 +2367,21 @@
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모 및 세부 설정</label>
                                                 <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="메모를 입력하세요..." />
-                                                
-                                                {/* 이름 생성기 컴포넌트 위치 */}
                                                 <AnimatePresence>
-                                                    {/* 여기에 activeNode.type === '인물' 조건을 추가했습니다 */}
                                                     {activeNode.type === '인물' && isNameGenOpen && (
                                                         <NameGenerator 
                                                             onClose={() => setIsNameGenOpen(false)}
                                                             onConfirm={(name) => {
                                                                 updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: name} : n));
                                                             }}
+                                                            settings={nameGenSettings}
+                                                            onSettingsChange={setNameGenSettings}
                                                         />
                                                     )}
                                                 </AnimatePresence>
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* 푸터 */}
                                     <div className="p-6 border-t border-slate-200 dark:border-zinc-700 shrink-0">
                                         <button onClick={() => { saveHistory(); setSelectedNodeId(null); showToast("설정이 저장되었습니다"); }} className="w-full py-4 bg-slate-900 text-white font-black hover:bg-indigo-600 transition-all uppercase text-xs tracking-widest rounded-[3px] shadow-lg dark:bg-indigo-600 dark:hover:bg-indigo-500">
                                             저장 후 닫기
