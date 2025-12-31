@@ -32,7 +32,6 @@
         }
     </script>
     <style>
-        /* 폰트 정의 목록 */
         @font-face {
             font-family: 'MaruBuri';
             src: url(https://hangeul.pstatic.net/hangeul_static/webfont/MaruBuri/MaruBuri-Regular.woff2);
@@ -57,8 +56,6 @@
             font-weight: 400;
             font-display: swap;
         }
-
-        /* 폰트 클래스 강제 적용 */
         body.font-maruburi, body.font-maruburi * { font-family: 'MaruBuri', serif !important; }
         body.font-Ridibatang, body.font-Ridibatang * { font-family: 'Ridibatang', sans-serif !important; }
         body.font-Galmuri14, body.font-Galmuri14 * { font-family: 'Galmuri14', serif !important; }
@@ -86,7 +83,13 @@
         .node-postit { background-color: #fef9c3; border-radius: 3px; box-shadow: 5px 5px 15px rgba(0,0,0,0.1); border: 1px solid #fde047; }
         .dark .node-postit { background-color: #4e4932; border: 1px solid #6b654b; color: #e2dfc7; }
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        .zoom-container { transform-origin: 0 0; will-change: transform; transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1); }
+        .zoom-container { 
+            transform-origin: 0 0; 
+            will-change: transform; 
+            transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+            backface-visibility: hidden;
+            transform: translateZ(0); 
+        }
         .is-dragging .zoom-container { transition: none; }
         .node-protagonist { outline: 8px solid rgba(37, 99, 235, 0.2); background: #d7e7fc; }
         .dark .node-protagonist { outline: 8px solid rgba(37, 99, 235, 0.2); background: #172554; }
@@ -122,12 +125,9 @@
     <script type="text/babel">
         const { useState, useCallback, useRef, useMemo, useEffect, memo } = React;
         const { motion, AnimatePresence, Reorder } = window.Motion;
-
         const CARD_W = 250; 
         const CARD_H = 200;
         const BOOK_COLORS = ['#18181b', '#3c3c3c', '#881337', '#7c2d12', '#424034', '#73734e', '#2e3b36', '#134e4a', '#1e3a8a', '#33272c', '#4c1d95', '#451a03'];
-
-        // --- 이름 생성기 데이터 (DB) ---
         const NAME_DB = {
             fantasy: {
                 royalty: {
@@ -186,7 +186,6 @@
                 }
             }
         };
-
         const NAME_ROLES = {
             fantasy: [
                 {id: 'royalty', text: '👑 왕족 / 고위 귀족'},
@@ -205,7 +204,6 @@
                 {id: 'classic', text: '📺 전통적 / 중후함'}
             ]
         };
-
         const generateUUID = () => {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -213,8 +211,6 @@
                 return v.toString(16);
             });
         };
-
-        // Icons
         const IconPlus = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>);
         const IconTrash = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>);
         const IconSettings = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>);
@@ -226,8 +222,6 @@
         const IconZen = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>);
         const IconFont = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>);
         const IconLayout = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><line x1="10" x2="14" y1="6.5" y2="6.5" /><line x1="10" x2="14" y1="17.5" y2="17.5" /><line x1="6.5" x2="6.5" y1="10" y2="14" /><line x1="17.5" x2="17.5" y1="10" y2="14" /></svg>);
-
-        // Utility
         const getCaretCoordinates = (element, position) => { const div = document.createElement('div'); const style = window.getComputedStyle(element); const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'padding', 'border', 'width', 'boxSizing', 'whiteSpace', 'wordWrap']; props.forEach(prop => div.style[prop] = style[prop]); div.style.position = 'absolute'; div.style.visibility = 'hidden'; div.textContent = element.value.substring(0, position); const span = document.createElement('span'); span.textContent = element.value.substring(position) || '.'; div.appendChild(span); document.body.appendChild(div); const rect = element.getBoundingClientRect(); const coordinates = { top: rect.top + span.offsetTop + element.scrollTop, left: rect.left + span.offsetLeft }; document.body.removeChild(div); return coordinates; };
         const getWordAtPos = (text, pos) => { if (!text) return ""; const left = text.slice(0, pos).search(/[^\s#@]*$/); const right = text.slice(pos).search(/[\s\n\r]/); const word = text.slice(left, right === -1 ? undefined : right + pos); return word.replace(/[#@]/g, '').trim(); };
         const getBezierPath = (x1, y1, x2, y2) => { const dx = x2 - x1; const dy = y2 - y1; const curvature = 0.5; const cx1 = x1 + dx * curvature; const cy1 = y1; const cx2 = x2 - dx * curvature; const cy2 = y2; return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`; };
@@ -535,8 +529,6 @@
                         onClick={e => e.stopPropagation()}
                     >
                         <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">파일 저장</h2>
-
-                        {/* 파일명 + 저장 형식 (한 줄) */}
                         <div className="mb-6">
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">파일명</label>
                             <div className="flex gap-2">
@@ -558,8 +550,6 @@
                                 </select>
                             </div>
                         </div>
-
-                        {/* 암호 입력 (vel 선택 시만 표시) */}
                         {exportType === 'vel' && (
                             <div className="mb-6 space-y-4">
                                 <div>
@@ -584,8 +574,6 @@
                                 </div>
                             </div>
                         )}
-
-                        {/* 버튼 */}
                         <div className="flex gap-2">
                             <button 
                                 onClick={onClose}
@@ -605,17 +593,12 @@
             );
         };
 
-    // NameGenerator 컴포넌트 (한국 이름 우선)
     const NameGenerator = ({ onConfirm, onClose }) => {
-            // 1. 초기값을 'korean'과 그에 맞는 역할 'modern'으로 설정
             const [genre, setGenre] = useState('korean');
             const [role, setRole] = useState('modern');
             const [gender, setGender] = useState('random');
             const [generatedName, setGeneratedName] = useState(null);
-
-            // 장르 변경 시 역할(Role) 초기화
             useEffect(() => {
-                // 해당 장르의 첫 번째 역할로 자동 선택
                 if (NAME_ROLES[genre] && NAME_ROLES[genre].length > 0) {
                     setRole(NAME_ROLES[genre][0].id);
                 }
@@ -655,8 +638,6 @@
                 }
                 setGeneratedName(fullName);
             };
-
-            // 처음 렌더링 시 자동 생성
             useEffect(() => {
                 if(!generatedName) handleGenerate();
             }, []);
@@ -711,7 +692,6 @@
             );
         };
 
-        // ImportModal
         const ImportModal = ({ onClose, onConfirm, fileData, isEncrypted }) => {
             const [password, setPassword] = useState('');
             const [importMode, setImportMode] = useState('replace'); // 'replace' 또는 'append'
@@ -937,7 +917,6 @@
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                     className="fixed top-0 right-0 h-full w-[420px] bg-white dark:bg-darkpanel shadow-2xl z-[100] flex flex-col border-l border-slate-200 dark:border-zinc-700"
                 >
-                    {/* 헤더 */}
                     <div className="h-16 px-6 flex items-center justify-between border-b border-slate-200 dark:border-zinc-700 shrink-0">
                         <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100">
                             {mode === 'save' ? '파일 저장' : '파일 불러오기'}
@@ -952,7 +931,6 @@
                         </button>
                     </div>
 
-                    {/* 컨텐츠 */}
                     <div className="flex-1 overflow-y-auto p-6">
                         {mode === 'save' ? (
                             <div className="space-y-6">
@@ -1030,7 +1008,6 @@
                                     )}
                                 </AnimatePresence>
 
-                                {/* 저장 정보 */}
                                 <div className="p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-sm border border-slate-200 dark:border-zinc-700">
                                     <div className="text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-2">저장 정보</div>
                                     <div className="text-sm font-medium text-slate-700 dark:text-zinc-300">
@@ -1160,7 +1137,6 @@
                         )}
                     </div>
 
-                    {/* 푸터 버튼 */}
                     <div className="p-6 border-t border-slate-200 dark:border-zinc-700 shrink-0">
                         {mode === 'save' ? (
                             <button
@@ -1196,8 +1172,6 @@
             const titleInputRef = useRef(null);
             const workspaceTimerRef = useRef(null);
             const [isNameGenOpen, setIsNameGenOpen] = useState(false); // 이름 생성기 토글 상태
-
-            // [추가된 기능] 화면 중앙 맞춤 함수 (fitToScreen)
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
                 if (!targetNodes || targetNodes.length === 0) {
                     setPan({ x: 0, y: 0 });
@@ -1251,7 +1225,7 @@
                 return () => window.removeEventListener('keydown', handleZenShortcut);
             }, [activeProjectId, projects, isZenMode, showToast]);
 
-            const [editingProjectId, setEditingProjectId] = useState(null); // eslint-disable-line no-unused-vars
+            const [editingProjectId, setEditingProjectId] = useState(null);
             const [mention, setMention] = useState({ active: false, type: '', search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
             const [hoverInfo, setHoverInfo] = useState({ visible: false, node: null, x: 0, y: 0 });
             const textareaRef = useRef(null);
@@ -1263,7 +1237,6 @@
                 ));
             };
 
-            // 멘션 창 외부 클릭 시 닫기
             useEffect(() => {
                 const handleClickOutside = (e) => {
                     if (!mention.active) return;
@@ -1316,8 +1289,6 @@
             const [topNodeId, setTopNodeId] = useState(null);
             const lastMousePos = useRef({ x: 0, y: 0 });
             const hasConnectedRef = useRef(false);
-
-            // 사이드바 노드 드래그용 상태
             const [sidebarDrag, setSidebarDrag] = useState({ active: false, nodeId: null, type: null, startIdx: null, currentIdx: null, x: 0, y: 0 });
             const sidebarDragRef = useRef(null);
 
@@ -1379,16 +1350,9 @@
             const handleReorderNodes = (type, newOrder) => {
                 saveHistory();
                 updateActiveProject(allNodes => {
-                    // 새 순서의 ID 배열
                     const newOrderIds = newOrder.map(n => n.id);
-
-                    // 해당 타입이 아닌 노드들
                     const otherNodes = allNodes.filter(n => n.type !== type);
-
-                    // 해당 타입의 노드들을 새 순서로 정렬
                     const reorderedNodes = newOrderIds.map(id => allNodes.find(n => n.id === id)).filter(Boolean);
-
-                    // 타입 순서 유지: 인물 → 사건 → 메모
                     const persons = type === '인물' ? reorderedNodes : otherNodes.filter(n => n.type === '인물');
                     const events = type === '사건' ? reorderedNodes : otherNodes.filter(n => n.type === '사건');
                     const memos = type === '메모' ? reorderedNodes : otherNodes.filter(n => n.type === '메모');
@@ -1499,20 +1463,46 @@
                 }
             }, [sidebarDrag.active, handleSidebarDragMove, handleSidebarDragEnd]);
 
-            const handleGlobalMouseMove = (e) => { 
-                if (activeProject.type === 'doc') return; 
-                const dx = e.clientX - lastMousePos.current.x;
-                const dy = e.clientY - lastMousePos.current.y; 
-                if (isPanning) {
-                    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy })); 
-                } else if (draggingNodeId) { 
-                    updateActiveProject(prev => prev.map(n => n.id === draggingNodeId ? { ...n, x: n.x + (dx / scale), y: n.y + (dy / scale) } : n)); 
-                } 
-                if (tempEdge) { 
-                    const c = getCanvasCoords(e.clientX, e.clientY); 
-                    setTempEdge(prev => ({ ...prev, toX: c.x, toY: c.y })); 
-                } 
-                lastMousePos.current = { x: e.clientX, y: e.clientY }; 
+            // 1. Workspace 컴포넌트 상단(ref 선언부)에 rAF용 ref 추가
+            const rAF = useRef(null);
+
+            // 2. handleGlobalMouseMove 함수 교체
+            const handleGlobalMouseMove = (e) => {
+                if (activeProject.type === 'doc') return;
+                
+                // 이벤트 객체 값 보존 (React 합성 이벤트 이슈 방지)
+                const clientX = e.clientX;
+                const clientY = e.clientY;
+
+                // 이미 예약된 프레임이 있다면 취소하고 최신 좌표로 갱신 (선택 사항, 여기서는 간단히 처리)
+                if (rAF.current) return; 
+
+                rAF.current = requestAnimationFrame(() => {
+                    const dx = clientX - lastMousePos.current.x;
+                    const dy = clientY - lastMousePos.current.y;
+
+                    if (isPanning) {
+                        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                    } else if (draggingNodeId) {
+                        // 배치 계산 최적화: scale 나눗셈을 한 번만 수행
+                        const scaleFactor = 1 / scale;
+                        updateActiveProject(prev => prev.map(n => 
+                            n.id === draggingNodeId 
+                            ? { ...n, x: n.x + (dx * scaleFactor), y: n.y + (dy * scaleFactor) } 
+                            : n
+                        ));
+                    }
+
+                    if (tempEdge) {
+                        const rect = containerRef.current.getBoundingClientRect();
+                        const x = (clientX - rect.left - pan.x) / scale;
+                        const y = (clientY - rect.top - pan.y) / scale;
+                        setTempEdge(prev => ({ ...prev, toX: x, toY: y }));
+                    }
+
+                    lastMousePos.current = { x: clientX, y: clientY };
+                    rAF.current = null;
+                });
             };
 
             const handleGlobalMouseUp = (e) => {
@@ -1560,20 +1550,17 @@
 
                 const GAP_BETWEEN_GROUPS = 400; // 그룹 간 간격
 
-                // 1. 그룹핑
                 const groups = {
                     '인물': activeProject.nodes.filter(n => n.type === '인물'),
                     '사건': activeProject.nodes.filter(n => n.type === '사건'),
                     '메모': activeProject.nodes.filter(n => n.type !== '인물' && n.type !== '사건')
                 };
 
-                // 헬퍼: 특정 그룹 내부의 엣지들만 가져오기
                 const getInternalEdges = (groupNodes) => {
                     const ids = new Set(groupNodes.map(n => n.id));
                     return activeProject.edges.filter(e => ids.has(e.from) && ids.has(e.to));
                 };
 
-                // 헬퍼: 일반적인 Dagre 레이아웃 (사건/메모용)
                 const layoutStandardGroup = (groupNodes, groupEdges) => {
                     if (groupNodes.length === 0) return { nodes: [], width: 0, minX: 0 };
                     const g = new dagre.graphlib.Graph();
@@ -1592,93 +1579,70 @@
                         if (x + CARD_W > maxX) maxX = x + CARD_W;
                         return { ...node, x, y };
                     });
-                    // 0부터 시작하도록 보정
                     return { 
                         nodes: positioned.map(n => ({ ...n, x: n.x - minX })), 
                         width: maxX - minX 
                     };
                 };
 
-                // =========================================================
-                // [핵심] 인물 그룹 특수 레이아웃 (상단: 1촌 독신 / 하단: 트리)
-                // =========================================================
                 const layoutPersonGroup = (groupNodes, groupEdges) => {
                     if (groupNodes.length === 0) return { nodes: [], width: 0 };
-
-                    // 1. 주인공(Root) 식별
                     const rootNode = groupNodes.find(n => n.data?.role === '주인공') || groupNodes[0];
-                    
-                    // 2. 상단으로 보낼 노드(UpNodes)와 하단 트리로 보낼 노드(DownNodes) 분류
                     const upNodes = [];
                     const downNodes = [rootNode]; // 주인공은 하단 트리 계산의 기준점이 됨
                     const downNodeIds = new Set([rootNode.id]);
 
                     groupNodes.forEach(node => {
                         if (node.id === rootNode.id) return; // 주인공 제외
-
-                        // 이 노드의 연결 관계 확인
                         const myEdges = groupEdges.filter(e => e.from === node.id || e.to === node.id);
                         const degree = myEdges.length;
                         const isConnectedToRoot = myEdges.some(e => e.from === rootNode.id || e.to === rootNode.id);
-
-                        // 조건: 주인공과 연결되어 있고(1촌), 연결이 그거 하나뿐(자식 없음)이면 -> 상단
                         if (isConnectedToRoot && degree === 1) {
                             upNodes.push(node);
                         } else {
-                            // 그 외(자식이 있거나, 주인공과 멀거나 등) -> 하단 트리
                             downNodes.push(node);
                             downNodeIds.add(node.id);
                         }
                     });
 
-                    // 3. 하단 노드들(주인공 포함)만 Dagre로 트리 정렬
                     const downEdges = groupEdges.filter(e => downNodeIds.has(e.from) && downNodeIds.has(e.to));
-                    
-                    // 하단 트리 계산
                     const g = new dagre.graphlib.Graph();
                     g.setGraph({ rankdir: 'TB', ranksep: 120, nodesep: 80 }); // 간격 넉넉히
                     g.setDefaultEdgeLabel(() => ({}));
-                    
-                    // 역순으로 노드 추가 (새 노드가 왼쪽에 배치되도록)
+
                     downNodes.slice().reverse().forEach(n => g.setNode(n.id, { width: CARD_W, height: CARD_H }));
                     downEdges.forEach(e => g.setEdge(e.from, e.to));
                     
-                    dagre.layout(g); // 주인공이 가장 위에 오고, 자식들이 아래로 배치됨
+                    dagre.layout(g);
 
-                    // 4. 좌표 정리
-                    // 하단 트리 좌표 적용
                     let minX = Infinity, maxX = -Infinity;
                     let rootPos = { x: 0, y: 0 };
 
                     const positionedDownNodes = downNodes.map(node => {
                         const pos = g.node(node.id);
                         const x = pos.x - CARD_W / 2;
-                        const y = pos.y - CARD_H / 2; // 주인공이 y=0 근처에 옴
+                        const y = pos.y - CARD_H / 2;
 
-                        if (node.id === rootNode.id) rootPos = { x, y }; // 주인공 위치 기억
+                        if (node.id === rootNode.id) rootPos = { x, y };
                         if (x < minX) minX = x;
                         if (x + CARD_W > maxX) maxX = x + CARD_W;
                         
                         return { ...node, x, y };
                     });
 
-                    // 5. 상단 노드들 강제 배치 (주인공 머리 위로, 왼쪽부터 추가)
                     const positionedUpNodes = [];
                     if (upNodes.length > 0) {
                         const gap = CARD_W + 20;
                         const totalUpWidth = (upNodes.length - 1) * gap;
-                        // 주인공의 X좌표를 기준으로 중앙 정렬
                         const startX = rootPos.x + (CARD_W / 2) - (CARD_W / 2) - (totalUpWidth / 2);
 
-                        // 역순으로 배치 (새 노드가 왼쪽에 추가되도록)
                         upNodes.slice().reverse().forEach((node, idx) => {
                             positionedUpNodes.push({
                                 ...node,
                                 x: startX + (idx * gap),
-                                y: rootPos.y - 150 - CARD_H // 주인공 위로 150px 띄우기
+                                y: rootPos.y - 150 - CARD_H
                             });
 
-                            // 범위 갱신 (전체 너비 계산용)
                             const nx = startX + (idx * gap);
                             if (nx < minX) minX = nx;
                             if (nx + CARD_W > maxX) maxX = nx + CARD_W;
@@ -1687,22 +1651,15 @@
 
                     const allPositioned = [...positionedDownNodes, ...positionedUpNodes];
 
-                    // 6. 전체 그룹 정규화 (x=0 부터 시작하도록)
                     return {
                         nodes: allPositioned.map(n => ({ ...n, x: n.x - minX })),
                         width: maxX - minX
                     };
                 };
 
-
-                // --- 실행 ---
-
-                // 1. 각 그룹 레이아웃 계산
                 const personResult = layoutPersonGroup(groups['인물'], getInternalEdges(groups['인물']));
                 const eventResult = layoutStandardGroup(groups['사건'], getInternalEdges(groups['사건']));
                 const memoResult = layoutStandardGroup(groups['메모'], getInternalEdges(groups['메모']));
-
-                // 2. 가로로 나란히 배치 (Offset 적용) - 순서: 인물 → 사건 → 메모
                 let currentOffset = 0;
 
                 const finalPersonNodes = personResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
@@ -1713,7 +1670,6 @@
 
                 const finalMemoNodes = memoResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
 
-                // 3. 업데이트 (원래 순서 유지, 위치만 변경)
                 const layoutedNodes = [...finalPersonNodes, ...finalEventNodes, ...finalMemoNodes];
                 const positionMap = new Map();
                 layoutedNodes.forEach(n => {
@@ -1733,7 +1689,27 @@
 
             const activeNode = useMemo(() => nodes.find(n => n.id === selectedNodeId), [nodes, selectedNodeId]);
             const activeEdge = useMemo(() => edges.find(e => e.id === selectedEdgeId), [edges, selectedEdgeId]);
-            const visibleNodes = useMemo(() => { if (activeProject?.type !== 'board') return []; const viewportW = window.innerWidth; const viewportH = window.innerHeight; const buffer = 300; return nodes.filter(node => { const screenX = node.x * scale + pan.x; const screenY = node.y * scale + pan.y; const screenW = CARD_W * scale; const screenH = CARD_H * scale; return (screenX + screenW + buffer > 0 && screenX - buffer < viewportW && screenY + screenH + buffer > 0 && screenY - buffer < viewportH); }); }, [nodes, scale, pan, activeProject?.type]);
+            const visibleNodes = useMemo(() => {
+                if (activeProject?.type !== 'board') return [];
+                if (isPanning || draggingNodeId) {
+                    return nodes;
+                }
+
+                const viewportW = window.innerWidth;
+                const viewportH = window.innerHeight;
+                const buffer = 300;
+                
+                return nodes.filter(node => {
+                    const screenX = node.x * scale + pan.x;
+                    const screenY = node.y * scale + pan.y;
+                    return (
+                        screenX > -CARD_W * scale - buffer &&
+                        screenX < viewportW + buffer &&
+                        screenY > -CARD_H * scale - buffer &&
+                        screenY < viewportH + buffer
+                    );
+                });
+            }, [nodes, scale, pan, activeProject?.type, isPanning, draggingNodeId]); 
             const visibleEdges = useMemo(() => { if (activeProject?.type !== 'board') return []; const visibleIds = new Set(visibleNodes.map(n => n.id)); return edges.filter(edge => visibleIds.has(edge.from) || visibleIds.has(edge.to)); }, [edges, visibleNodes, activeProject?.type]);
 
             const renderProjectItem = (project) => {
