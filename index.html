@@ -102,7 +102,7 @@
         .mention-list { position: fixed; z-index: 1000; background: white; border: 1px solid #e2e8f0; border-radius: 3px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); max-height: 400px; overflow: visible; display: flex; width: 600px; }
         .dark .mention-list { background: #18181b; border-color: #27272a; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
         .mention-item-active { background-color: #f1f5f9; border-left: 4px solid #4f46e5; }
-        .dark .mention-item-active { background-color: #27272a; border-left: 4px solid #6366f1; }
+        .dark .mention-item-active { background-color: #27272a; border-left: 4px solid #4f46e5; }
     </style>
 </head>
 <body>
@@ -156,13 +156,13 @@
         };
         const getSelectedBorderColor = (node) => {
             if (node.type === '인물') {
-                return 'border-blue-500 dark:border-blue-400';
+                return 'border-blue-500 dark:border-blue-600';
             } else if (node.type === '사건') {
-                return 'border-red-500 dark:border-red-400';
+                return 'border-red-500 dark:border-red-600';
             } else if (node.type === '메모') {
-                return 'border-amber-500 dark:border-amber-400';
+                return 'border-amber-500 dark:border-amber-600';
             }
-            return 'border-indigo-500 dark:border-indigo-400';
+            return 'border-indigo-500 dark:border-indigo-600';
         };
         const getStrokeDashArray = (style) => { switch(style) { case 'dashed': return "4, 8"; default: return ""; } };
 
@@ -1185,6 +1185,16 @@
                 });
             };
 
+            const handleReorderBoards = (newOrder) => {
+                saveHistory();
+                setProjects(prevProjects => {
+                    const docs = prevProjects.filter(p => p.type === 'doc');
+                    const newOrderIds = newOrder.map(p => p.id);
+                    const reorderedBoards = newOrderIds.map(id => prevProjects.find(p => p.id === id)).filter(Boolean);
+                    return [...reorderedBoards, ...docs];
+                });
+            };
+
             const handleReorderDocs = (newOrder) => {
                 setProjects(prevProjects => {
                     const boards = prevProjects.filter(p => p.type === 'board');
@@ -1524,8 +1534,8 @@
                             : 'bg-slate-50 border border-slate-200 dark:bg-zinc-800 dark:border-zinc-700' 
                         }`;
                     
-                return (
-                    <div key={project.id} className={containerClasses}>
+                const projectContent = (
+                    <div className={containerClasses}>
                         <div onClick={() => handleSelectProject(project.id)} onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-2.5'}`}>
                             {isActive && <div className={`absolute left-0 top-0 bottom-0 ${isDoc ? 'w-[3px]' : 'w-1'} bg-indigo-600 dark:bg-indigo-500`} />}
                             <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
@@ -1670,6 +1680,28 @@
                         )}
                     </div>
                 );
+
+                if (isDoc) {
+                    return projectContent;
+                }
+
+                return (
+                    <Reorder.Item
+                        key={project.id}
+                        value={project}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        layout
+                        layoutId={`board-${project.id}`}
+                        dragElastic={1}
+                        whileDrag={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.25)', zIndex: 100 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="cursor-grab active:cursor-grabbing"
+                    >
+                        {projectContent}
+                    </Reorder.Item>
+                );
             };
 
             if (!activeProject) return null;
@@ -1729,7 +1761,9 @@
                         <div className="flex-1 overflow-y-auto px-3 pt-4 custom-scroll pb-10">
                             <div className="mb-5">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-500 Galmuri14-full"></span> 아이디어 보드</div>
-                                <div className="space-y-1">{projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}</div>
+                                <Reorder.Group axis="y" values={projects.filter(p => p.type === 'board')} onReorder={handleReorderBoards} className="space-y-1">
+                                    {projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}
+                                </Reorder.Group>
                             </div>
                             <div className="px-2 mb-4"><hr className="border-t border-slate-200 dark:border-zinc-700" /></div>
                             <div>
