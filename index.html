@@ -78,8 +78,8 @@
         .canvas-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
         .edge-path { fill: none; transition: stroke 0.2s; stroke-linecap: round; stroke-linejoin: round; }
         .edge-hitbox { fill: none; stroke: transparent; stroke-width: 20; cursor: pointer; pointer-events: stroke; }
-        .node-glass { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px); border: 1px solid #cbd5e1; border-radius: 3px; box-sizing: border-box; }
-        .dark .node-glass { background: rgba(39, 39, 42, 0.95); border: 1px solid #52525b; color: #e4e4e7; }
+        .node-glass { background: #ffffff; backdrop-filter: blur(10px); border: 1px solid #cbd5e1; border-radius: 3px; box-sizing: border-box; }
+        .dark .node-glass { background: #27272a; border: 1px solid #52525b; color: #e4e4e7; }
         .node-postit { background-color: #fef9c3; border-radius: 3px; box-shadow: 5px 5px 15px rgba(0,0,0,0.1); border: 1px solid #fde047; }
         .dark .node-postit { background-color: #4e4932; border: 1px solid #6b654b; color: #e2dfc7; }
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -257,7 +257,7 @@
         );
 
         // NodeCard
-        const NodeCard = memo(({ node, isTop, isSelected, isDragging, onNodeDragStart, onMouseDown, onMouseUp, onClick, onDoubleClick, onDelete }) => {
+        const NodeCard = memo(({ node, isTop, isSelected, isDragging, onMouseDown, onMouseUp, onDoubleClick, onDelete, onClick }) => {
             const isIdea = node.type === '메모';
             let styleClass = isIdea ? "node-postit" : "node-glass";
             if (node.type === '인물') {
@@ -267,14 +267,7 @@
             } else if (node.type === '사건') styleClass += " node-event";
 
             return (
-                <div
-                    onMouseDown={(e) => { if (e.button === 0) onNodeDragStart(e, node.id); onMouseDown(e, node.id); }}
-                    onMouseUp={(e) => onMouseUp(e, node.id)}
-                    onClick={(e) => { if (e.detail === 1) { e.stopPropagation(); onClick(node.id); } }}
-                    onDoubleClick={() => onDoubleClick(node.id)}
-                    style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0 }}
-                    className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}
-                >
+                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0 }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
                     <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
                     <div className="w-full h-full flex flex-col overflow-hidden rounded-[inherit]">
                         {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${node.type === '인물' ? 'bg-blue-600 dark:bg-blue-800' : node.type === '사건' ? 'bg-red-600 dark:bg-red-800' : 'bg-amber-500 dark:bg-amber-700'}`} />}
@@ -1298,17 +1291,42 @@
             const [isPanning, setIsPanning] = useState(false);
             const [draggingNodeId, setDraggingNodeId] = useState(null);
             const [tempEdge, setTempEdge] = useState(null);
-            const [selectedNodeId, setSelectedNodeId] = useState(null);
-            const [highlightedNodeId, setHighlightedNodeId] = useState(null);
+            const [selectedNodeId, setSelectedNodeId] = useState(null); // For modal
+            const [selectedNodeIds, setSelectedNodeIds] = useState(new Set()); // For multi-select
             const [selectedEdgeId, setSelectedEdgeId] = useState(null);
             const [topNodeId, setTopNodeId] = useState(null);
+            const [marquee, setMarquee] = useState(null); // For selection rectangle
+
             const lastMousePos = useRef({ x: 0, y: 0 });
             const hasConnectedRef = useRef(false);
             const [sidebarDrag, setSidebarDrag] = useState({ active: false, nodeId: null, type: null, startIdx: null, currentIdx: null, x: 0, y: 0 });
             const sidebarDragRef = useRef(null);
+            const isMarqueeSelectingRef = useRef(false);
+            const selectedNodeIdsRef = useRef(selectedNodeIds);
 
             const saveHistory = useCallback(() => { setHistory(prev => ({ past: [...prev.past.slice(-19), { projects }], future: [] })); }, [projects]);
             const undo = useCallback(() => { setHistory(prev => { if (prev.past.length === 0) return prev; const previous = prev.past[prev.past.length - 1]; const newPast = prev.past.slice(0, prev.past.length - 1); setProjects(previous.projects); showToast("실행 취소됨"); return { past: newPast, future: [{ projects }, ...prev.future] }; }); }, [projects, showToast]);
+            
+            useEffect(() => { selectedNodeIdsRef.current = selectedNodeIds; }, [selectedNodeIds]);
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds.size > 0) {
+                        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+                        e.preventDefault();
+                        if (confirm(`${selectedNodeIds.size}개의 노드를 삭제하시겠습니까?`)) {
+                            saveHistory();
+                            updateActiveProject(
+                                prevNodes => prevNodes.filter(n => !selectedNodeIds.has(n.id)),
+                                prevEdges => prevEdges.filter(edge => !selectedNodeIds.has(edge.from) && !selectedNodeIds.has(edge.to))
+                            );
+                            setSelectedNodeIds(new Set());
+                        }
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [selectedNodeIds, saveHistory, updateActiveProject]);
 
             useEffect(() => {
                 const handleUndoKeyDown = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); } };
@@ -1360,7 +1378,7 @@
                 updateActiveProject(prev => [...prev, { id, x: center.x - CARD_W / 2, y: center.y - CARD_H / 2, label: `새 ${type}`, type, data: defaultData }]); 
                 setTopNodeId(id); 
             };
-            const deleteNode = (id) => { saveHistory(); updateActiveProject(prev => prev.filter(n => n.id !== id), prev => prev.filter(e => e.from !== id && e.to !== id)); if (selectedNodeId === id) setSelectedNodeId(null); if (highlightedNodeId === id) setHighlightedNodeId(null); };
+            const deleteNode = (id) => { saveHistory(); updateActiveProject(prev => prev.filter(n => n.id !== id), prev => prev.filter(e => e.from !== id && e.to !== id)); if (selectedNodeId === id) setSelectedNodeId(null); setSelectedNodeIds(prev => { const next = new Set(prev); next.delete(id); return next; }); };
             
             const handleReorderNodes = (type, newOrder) => {
                 saveHistory();
@@ -1507,18 +1525,32 @@
                     const currentY = latestMousePos.current.y;
                     const dx = currentX - lastMousePos.current.x;
                     const dy = currentY - lastMousePos.current.y;
-
-                    if (isPanningRef.current) {
+                    
+                    if (isMarqueeSelectingRef.current && marquee) {
+                        const currentCoords = getCanvasCoords(currentX, currentY);
+                        setMarquee(prev => {
+                            const x = Math.min(prev.startX, currentCoords.x);
+                            const y = Math.min(prev.startY, currentCoords.y);
+                            const width = Math.abs(currentCoords.x - prev.startX);
+                            const height = Math.abs(currentCoords.y - prev.startY);
+                            return { ...prev, x, y, width, height };
+                        });
+                    } else if (isPanningRef.current) {
                         setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
                     } else if (draggingNodeIdRef.current) {
-                        // 배치 계산 최적화: scale 나눗셈을 한 번만 수행
                         const scaleFactor = 1 / scaleRef.current;
-                        const id = draggingNodeIdRef.current;
-                        updateActiveProject(prev => prev.map(n => 
-                            n.id === id 
-                            ? { ...n, x: n.x + (dx * scaleFactor), y: n.y + (dy * scaleFactor) } 
-                            : n
-                        ));
+                        const dragId = draggingNodeIdRef.current;
+                        const deltaX = dx * scaleFactor;
+                        const deltaY = dy * scaleFactor;
+                        const selectedIds = selectedNodeIdsRef.current;
+
+                        ReactDOM.flushSync(() => {
+                            updateActiveProject(prevNodes => prevNodes.map(n =>
+                                (selectedIds.has(dragId) ? selectedIds.has(n.id) : n.id === dragId)
+                                    ? { ...n, x: n.x + deltaX, y: n.y + deltaY }
+                                    : n
+                            ));
+                        });
                     }
 
                     if (tempEdgeRef.current) {
@@ -1533,6 +1565,30 @@
 
             const handleGlobalMouseUp = (e) => {
                 if (activeProject.type === 'board') {
+                    if (isMarqueeSelectingRef.current && marquee) {
+                        const marqueeRect = { x: marquee.x, y: marquee.y, x2: marquee.x + marquee.width, y2: marquee.y + marquee.height };
+                        const nodesInMarquee = nodes.filter(node => {
+                            const nodeRect = { x: node.x, y: node.y, x2: node.x + CARD_W, y2: node.y + CARD_H };
+                            return nodeRect.x < marqueeRect.x2 && nodeRect.x2 > marqueeRect.x && nodeRect.y < marqueeRect.y2 && nodeRect.y2 > marqueeRect.y;
+                        });
+
+                        if (e.shiftKey) {
+                            setSelectedNodeIds(prev => {
+                                const newSet = new Set(prev);
+                                nodesInMarquee.forEach(node => newSet.add(node.id));
+                                selectedNodeIdsRef.current = newSet;
+                                return newSet;
+                            });
+                        } else {
+                            const newSet = new Set(nodesInMarquee.map(n => n.id));
+                            setSelectedNodeIds(newSet);
+                            selectedNodeIdsRef.current = newSet;
+                        }
+                    }
+
+                    isMarqueeSelectingRef.current = false;
+                    setMarquee(null);
+
                     if (draggingNodeId) saveHistory();
                     if (tempEdge && !hasConnectedRef.current) {
                         const c = getCanvasCoords(e.clientX, e.clientY);
@@ -1817,7 +1873,7 @@
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
-                                                                                setHighlightedNodeId(n.id);
+                                                                                setSelectedNodeIds(new Set([n.id]));
                                                                                 setPan({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
@@ -1825,10 +1881,10 @@
                                                                             }}
                                                                             onDoubleClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                setHighlightedNodeId(null);
+                                                                                setSelectedNodeIds(new Set());
                                                                                 setSelectedNodeId(n.id);
                                                                             }}
-                                                                            className={`group/node py-1.5 px-3 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
+                                                                            className={`group/node py-1.5 px-3 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(selectedNodeIds.has(n.id) || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
                                                                         >
                                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                                 <span className="text-xs shrink-0">{n.data.emoji}</span>
@@ -1861,7 +1917,7 @@
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
-                                                                                setHighlightedNodeId(n.id);
+                                                                                setSelectedNodeIds(new Set([n.id]));
                                                                                 setPan({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
@@ -1869,10 +1925,10 @@
                                                                             }}
                                                                             onDoubleClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                setHighlightedNodeId(null);
+                                                                                setSelectedNodeIds(new Set());
                                                                                 setSelectedNodeId(n.id);
                                                                             }}
-                                                                            className={`group/node py-1.5 px-2 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
+                                                                            className={`group/node py-1.5 px-2 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(selectedNodeIds.has(n.id) || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
                                                                         >
                                                                             <span className="text-xs shrink-0">{n.data.emoji}</span>
                                                                             <span className="text-[10px] font-bold text-slate-600 truncate dark:text-zinc-300 flex-1 min-w-0">{n.label}</span>
@@ -2038,14 +2094,25 @@
                     </aside>
 
                     <main
-                        className={`flex-1 relative overflow-hidden transition-all duration-500 ease-in-out ${activeProject.type === 'board' ? (isPanning ? 'cursor-grabbing' : draggingNodeId ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+                        className={`flex-1 relative overflow-hidden transition-all duration-500 ease-in-out ${activeProject.type === 'board' ? (isPanning || isMarqueeSelectingRef.current ? 'cursor-grabbing' : draggingNodeId ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
                         ref={containerRef}
                         onMouseDown={(e) => {
                             if(activeProject.type === 'board') { 
                                 if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
                                 lastMousePos.current = { x: e.clientX, y: e.clientY }; 
                                 latestMousePos.current = { x: e.clientX, y: e.clientY }; 
-                                if (e.button === 0) setIsPanning(true); 
+
+                                if (e.shiftKey && e.button === 0) {
+                                    isMarqueeSelectingRef.current = true;
+                                    const startCoords = getCanvasCoords(e.clientX, e.clientY);
+                                    setMarquee({ x: startCoords.x, y: startCoords.y, width: 0, height: 0, startX: startCoords.x, startY: startCoords.y });
+                                } else if (e.button === 0) {
+                                    setIsPanning(true);
+                                    if (!e.shiftKey) {
+                                        setSelectedNodeIds(new Set());
+                                        setSelectedNodeId(null);
+                                    }
+                                }
                             } 
                         }}
                     >
@@ -2128,25 +2195,21 @@
                                         })}
                                         {tempEdge && findNode(tempEdge.fromId) && <line x1={findNode(tempEdge.fromId).x + CARD_W/2} y1={findNode(tempEdge.fromId).y + CARD_H/2} x2={tempEdge.toX} y2={tempEdge.toY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4,4" />}
                                     </svg>
+                                    {marquee && (
+                                        <div
+                                            className="absolute border-2 border-dashed border-blue-500 bg-blue-500/10 dark:bg-blue-400/10 dark:border-blue-400 pointer-events-none"
+                                            style={{
+                                                left: marquee.x,
+                                                top: marquee.y,
+                                                width: marquee.width,
+                                                height: marquee.height,
+                                                zIndex: 999
+                                            }}
+                                        />
+                                    )}
+
                                     {visibleNodes.map(node => (
-                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { 
-                                            e.stopPropagation(); 
-                                            if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
-                                            lastMousePos.current = { x: e.clientX, y: e.clientY }; 
-                                            latestMousePos.current = { x: e.clientX, y: e.clientY }; 
-                                            setDraggingNodeId(id); setTopNodeId(id); 
-                                        }} onMouseDown={(e, id) => { 
-                                            if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
-                                            lastMousePos.current = { x: e.clientX, y: e.clientY };
-                                            latestMousePos.current = { x: e.clientX, y: e.clientY };
-                                            if (e.button === 2) { 
-                                                const node = findNode(id);
-                                                if (node) {
-                                                    // 선이 튀는 현상을 방지하기 위해 노드 중앙에서 시작하도록 초기화
-                                                    setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); 
-                                                }
-                                            } 
-                                        }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
+                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id)} onClick={(e, id) => { if(!e.shiftKey) setSelectedNodeIds(new Set([id])); }} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); setTopNodeId(id); } else if (e.button === 2) { const node = findNode(id); if (node) { setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); } } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} />
                                     ))}
                                 </div>
                             </>
