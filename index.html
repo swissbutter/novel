@@ -65,7 +65,7 @@
         body.font-pretendard, body.font-pretendard * { font-family: 'Pretendard', sans-serif !important; }
 
         body { background: #f1f5f9; overflow: hidden; user-select: none; transition: background-color 0.3s, color 0.3s; }
-        .dark body { background: #242464; color: #e4e4e7; }
+        .dark body { background: #09090b; color: #e4e4e7; }
         button:not([class*="rounded-full"]), input:not([class*="rounded-full"]), select:not([class*="rounded-full"]), textarea:not([class*="rounded-full"]), 
         div[class*="bg-"]:not([class*="rounded-full"]):not([class*="rounded-none"]), 
         div[class*="border"]:not([class*="rounded-full"]):not([class*="rounded-none"]), 
@@ -180,7 +180,7 @@
 
         // Toast
         const Toast = ({ message, type, onClose }) => (
-            <motion.div initial={{ y: 50, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 50, opacity: 0, scale: 0.9 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 Galmuri14-full shadow-2xl">
+            <motion.div initial={{ y: 50, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 50, opacity: 0, scale: 0.9 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 rounded-full shadow-2xl">
                 <span className="text-sm font-bold">{message}</span>
             </motion.div>
         );
@@ -194,6 +194,11 @@
                 else if (node.data.role === '적대자') styleClass += " node-antagonist";
                 else if (node.data.role === '조력자') styleClass += " node-helper";
             } else if (node.type === '사건') styleClass += " node-event";
+
+            // 터치 관련 refs와 state
+            const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+            const touchTimeoutRef = useRef(null);
+            const [touchDragActive, setTouchDragActive] = useState(false);
 
             // 터치 이벤트 핸들러
             const handleTouchStart = (e) => {
@@ -253,13 +258,13 @@
                     style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0 }}
                     className={`flex flex-col ${isMobile ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}
                 >
-                    <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 Galmuri14-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
-                    <div className="w-full h-full flex flex-col overflow-hidden Galmuri14-[inherit]">
+                    <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
+                    <div className="w-full h-full flex flex-col overflow-hidden rounded-[inherit]">
                         {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${node.type === '인물' ? 'bg-blue-600 dark:bg-blue-800' : node.type === '사건' ? 'bg-red-600 dark:bg-red-800' : 'bg-amber-500 dark:bg-amber-700'}`} />}
                         <div className="flex-1 flex flex-col p-4 overflow-hidden pointer-events-none">
                             <div className="flex items-center justify-between mb-2">
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{node.type}</span>
-                                {node.type === '인물' && <span className={`text-[9px] font-bold px-2 py-0.5 Galmuri14-[3px] ${getRoleBadgeStyle(node.data.role)}`}>{node.data.role}</span>}
+                                {node.type === '인물' && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-[3px] ${getRoleBadgeStyle(node.data.role)}`}>{node.data.role}</span>}
                             </div>
                             <div className={`text-xl font-black truncate mb-1.5 tracking-tight flex items-center ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
                                 <span className="mr-2 drop-shadow-sm text-2xl">{node.data.emoji || (node.type === '인물' ? '👤' : node.type === '사건' ? '🔥' : '💡')}</span>
@@ -271,7 +276,7 @@
                                     📍 {node.data.place || '장소 미상'} · 📅 {node.data.year || '시기 미상'}
                                 </div>
                             )}
-                            <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 Galmuri14-[3px] border border-slate-100 italic dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
+                            <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 rounded-[3px] border border-slate-100 italic dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
                         </div>
                     </div>
                 </div>
@@ -305,7 +310,7 @@
                     <div className="absolute top-[4px] bottom-[4px] left-0 w-full bg-white shadow-sm transform translate-x-[3px] z-[3] border border-slate-200 opacity-90"></div>
                     <div className="absolute top-[2px] bottom-[3px] left-[-1px] w-full page-bg shadow-sm transform translate-x-[1px] z-[4] border-l border-slate-200"></div>
                     
-                    <motion.div initial={{ rotateY: 0 }} whileHover={{ rotateY: -20 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="book-card relative Galmuri14-[3px] shadow-lg cursor-pointer flex flex-col overflow-hidden origin-left z-10 h-full" style={{ backgroundColor: book.color || '#475569', aspectRatio: '2 / 3' }}>
+                    <motion.div initial={{ rotateY: 0 }} whileHover={{ rotateY: -20 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className="book-card relative rounded-[3px] shadow-lg cursor-pointer flex flex-col overflow-hidden origin-left z-10 h-full" style={{ backgroundColor: book.color || '#475569', aspectRatio: '2 / 3' }}>
                         <div className="absolute inset-0 book-spine pointer-events-none z-10"></div>
                         <div className="absolute left-0 top-0 bottom-0 w-[15px] bg-black/10 z-10"></div>
                         <div className="flex-1 p-8 flex flex-col relative z-20 text-white">
@@ -321,11 +326,19 @@
                             </div>
                         </div>
                         <div className="absolute bottom-4 right-4 z-30 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                            <button onClick={(e) => { e.stopPropagation(); onEdit(book); }} className="p-2 text-white/40 hover:text-white hover:bg-white/20 Galmuri14-[3px]" title="수정"><IconSettings className="w-4 h-4" /></button>
-                            <button onClick={(e) => { e.stopPropagation(); onDelete(book.id, e); }} className="p-2 text-white/40 hover:text-white hover:bg-white/20 Galmuri14-[3px]" title="삭제"><IconTrash className="w-4 h-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onEdit(book); }} className="p-2 text-white/40 hover:text-white hover:bg-white/20 rounded-[3px]" title="수정"><IconSettings className="w-4 h-4" /></button>
+                            <button onClick={(e) => { e.stopPropagation(); onDelete(book.id, e); }} className="p-2 text-white/40 hover:text-white hover:bg-white/20 rounded-[3px]" title="삭제"><IconTrash className="w-4 h-4" /></button>
                         </div>
                     </motion.div>
                 </div>
+            );
+        }, (prevProps, nextProps) => {
+            return (
+                prevProps.book.id === nextProps.book.id &&
+                prevProps.book.title === nextProps.book.title &&
+                prevProps.book.author === nextProps.book.author &&
+                prevProps.book.color === nextProps.book.color &&
+                prevProps.book.projects?.length === nextProps.book.projects?.length
             );
         });
 
@@ -423,7 +436,7 @@
             
             return ( 
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}> 
-                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-darkpanel p-8 Galmuri14-[3px] shadow-2xl w-[450px] border border-slate-200 dark:border-zinc-700" onClick={e => e.stopPropagation()}> 
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-darkpanel p-8 rounded-[3px] shadow-2xl w-[450px] border border-slate-200 dark:border-zinc-700" onClick={e => e.stopPropagation()}> 
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100">{initialData ? '작품 설정 수정' : '새 작품 만들기'}</h2> 
                             {initialData && (
@@ -440,19 +453,19 @@
                         </div>
                         <div className="mb-4"> 
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">작품 제목</label> 
-                            <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 Galmuri14-[3px] text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors" placeholder="작품 제목을 입력하세요" /> 
+                            <input autoFocus type="text" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-[3px] text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors" placeholder="작품 제목을 입력하세요" /> 
                         </div> 
                         <div className="mb-6"> 
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase tracking-wide">작가 이름 (필명)</label> 
-                            <input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 Galmuri14-[3px] text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors" placeholder="작가명을 입력하세요 (선택)" /> 
+                            <input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} onKeyDown={handleKeyDown} className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-[3px] text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors" placeholder="작가명을 입력하세요 (선택)" /> 
                         </div> 
                         <div className="mb-8"> 
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-3 uppercase tracking-wide">표지 색상</label> 
-                            <div className="flex flex-wrap gap-2"> {BOOK_COLORS.map(color => ( <button key={color} onClick={() => setSelectedColor(color)} className={`w-8 h-8 Galmuri14-full shadow-sm transition-transform hover:scale-110 flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-darkpanel' : ''}`} style={{ backgroundColor: color }}> {selectedColor === color && <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>} </button> ))} </div> 
+                            <div className="flex flex-wrap gap-2"> {BOOK_COLORS.map(color => ( <button key={color} onClick={() => setSelectedColor(color)} className={`w-8 h-8 rounded-full shadow-sm transition-transform hover:scale-110 flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-darkpanel' : ''}`} style={{ backgroundColor: color }}> {selectedColor === color && <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>} </button> ))} </div> 
                         </div> 
                         <div className="flex gap-2"> 
-                            <button onClick={onClose} className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 Galmuri14-[3px] transition-colors">취소</button> 
-                            <button onClick={handleSubmit} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black Galmuri14-[3px] shadow-md transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600">{initialData ? '저장하기' : '만들기'}</button> 
+                            <button onClick={onClose} className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-[3px] transition-colors">취소</button> 
+                            <button onClick={handleSubmit} className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-[3px] shadow-md transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600">{initialData ? '저장하기' : '만들기'}</button> 
                         </div> 
                     </motion.div> 
                 </div> 
@@ -1639,7 +1652,7 @@
                 const cols = project.sidebarColumns || 1;
                 const containerClasses = isDoc 
                         ? `transition-all duration-200 border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 ${isActive ? 'bg-white dark:bg-zinc-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}` 
-                        : `Galmuri14-[3px] mb-1 transition-all duration-300 ${isActive 
+                        : `rounded-[3px] mb-1 transition-all duration-300 ${isActive 
                             ? 'bg-white shadow-md border-2 border-indigo-200 dark:bg-zinc-700 dark:border-indigo-500' 
                             : 'bg-slate-50 border border-slate-200 dark:bg-zinc-800 dark:border-zinc-700' 
                         }`;
@@ -1650,7 +1663,7 @@
                             {isActive && <div className={`absolute left-0 top-0 bottom-0 ${isDoc ? 'w-[3px]' : 'w-1'} bg-indigo-600 dark:bg-indigo-500`} />}
                             <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                 <span onClick={(e) => !isDoc && toggleProjectFolder(project.id, e)} className={`${isDoc ? 'text-sm opacity-50' : 'text-base'} shrink-0 dark:text-zinc-300`}>{isDoc ? '📄' : (isExpanded ? '📂' : '📁')}</span>
-                                {editingProjectId === project.id ? ( <input autoFocus className="w-full bg-white border border-indigo-400 Galmuri14-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white" defaultValue={project.name} onBlur={(e) => handleProjectRename(project.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)} /> ) : (
+                                {editingProjectId === project.id ? ( <input autoFocus className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white" defaultValue={project.name} onBlur={(e) => handleProjectRename(project.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)} /> ) : (
                                     <div className="flex items-center min-w-0 flex-1 justify-between">
                                             <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
                                             {isExpanded && !isDoc && (
@@ -1675,7 +1688,7 @@
                                                 </div>
                                             )}
                                             <div className="flex items-center shrink-0">
-                                                {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
+                                                {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
                                                 <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                             </div>
                                     </div>
@@ -1685,7 +1698,7 @@
                         {!isDoc && (
                             <AnimatePresence>
                                 {(isExpanded && project.type === 'board') && (
-                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-slate-50/30 Galmuri14-b-[3px] border-slate-100 dark:bg-zinc-800/30 dark:border-zinc-700">
+                                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-slate-50/30 rounded-b-[3px] border-slate-100 dark:bg-zinc-800/30 dark:border-zinc-700">
                                             <div className="pb-3 px-3 space-y-3 pt-2">
                                                 {(() => {
                                                     const cols = project.sidebarColumns || 1;
@@ -1693,7 +1706,7 @@
                                                         const filtered = (project.nodes || []).filter(n => n.type === type); if (filtered.length === 0) return null;
                                                         return (
                                                             <div key={type} className="pl-1">
-                                                                <div className="text-[9px] font-black text-slate-400 mb-1.5 px-2 uppercase tracking-tighter flex items-center gap-2"><span className="w-1 h-1 bg-slate-300 Galmuri14-[3px] dark:bg-zinc-600"></span>{type}</div>
+                                                                <div className="text-[9px] font-black text-slate-400 mb-1.5 px-2 uppercase tracking-tighter flex items-center gap-2"><span className="w-1 h-1 bg-slate-300 rounded-[3px] dark:bg-zinc-600"></span>{type}</div>
                                                                 {cols === 1 ? (
                                                                     <Reorder.Group axis="y" values={filtered} onReorder={(newOrder) => handleReorderNodes(type, newOrder)} className="space-y-1">
                                                                     {filtered.map(n => (
@@ -1722,7 +1735,7 @@
                                                                                 setHighlightedNodeId(null);
                                                                                 setSelectedNodeId(n.id);
                                                                             }}
-                                                                            className={`group/node py-1.5 px-3 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 Galmuri14-[3px] flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
+                                                                            className={`group/node py-1.5 px-3 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
                                                                         >
                                                                             <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                                 <span className="text-xs shrink-0">{n.data.emoji}</span>
@@ -1730,7 +1743,7 @@
                                                                             </div>
                                                                             <div className="flex items-center shrink-0">
                                                                                 {n.type === '인물' && (
-                                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
+                                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
                                                                                         {n.data.role}
                                                                                     </span>
                                                                                 )}
@@ -1766,12 +1779,12 @@
                                                                                 setHighlightedNodeId(null);
                                                                                 setSelectedNodeId(n.id);
                                                                             }}
-                                                                            className={`group/node py-1.5 px-2 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 Galmuri14-[3px] flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
+                                                                            className={`group/node py-1.5 px-2 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(highlightedNodeId === n.id || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
                                                                         >
                                                                             <span className="text-xs shrink-0">{n.data.emoji}</span>
                                                                             <span className="text-[10px] font-bold text-slate-600 truncate dark:text-zinc-300 flex-1 min-w-0">{n.label}</span>
                                                                             {cols === 2 && n.type === '인물' && n.data.role && (
-                                                                                <span className={`text-[7px] font-black px-1 py-0.5 Galmuri14-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
+                                                                                <span className={`text-[7px] font-black px-1 py-0.5 rounded-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
                                                                                     {n.data.role}
                                                                                 </span>
                                                                             )}
@@ -1826,7 +1839,7 @@
                         
                         <div className="w-full bg-slate-800 border-b border-slate-900 dark:border-#e2e8f0">
                             <button onClick={onExit} className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300">
-                                <div className="w-4 h-4 Galmuri14-full bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all border border-slate-400">
+                                <div className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all border border-slate-400">
                                     <IconBack className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
                                 </div>
                                 <div className="flex flex-col items-start dark:hover:bg-zinc-800/80">
@@ -1838,7 +1851,7 @@
                         <div className="px-6 pt-6 pb-5 bg-white dark:bg-[#161618] border-b border-slate-200/60 dark:border-zinc-800/60">
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 Galmuri14-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30">Novel project</span>
+                                    <span className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30">Novel project</span>
                                 </div>
                                 
                                 {isEditingTitle ? ( 
@@ -1869,19 +1882,19 @@
                         </div>
 
                         <div className="p-3 bg-white/50 border-b border-slate-200 flex gap-2 dark:bg-darkpanel/50 dark:border-darkborder">
-                            <button onClick={createNewProject} className="flex-1 py-2.5 bg-indigo-600 text-white text-[10px] font-black Galmuri14-[3px] hover:bg-indigo-700 transition-all shadow-md tracking-widest dark:bg-indigo-700 dark:hover:bg-indigo-600">+ 새 보드</button>
-                            <button onClick={createNewDoc} className="flex-1 py-2.5 bg-slate-800 text-white text-[10px] font-black Galmuri14-[3px] hover:bg-slate-900 transition-all shadow-md tracking-widest dark:bg-zinc-700 dark:hover:bg-zinc-600">+ 새 문서</button>
+                            <button onClick={createNewProject} className="flex-1 py-2.5 bg-indigo-600 text-white text-[10px] font-black rounded-[3px] hover:bg-indigo-700 transition-all shadow-md tracking-widest dark:bg-indigo-700 dark:hover:bg-indigo-600">+ 새 보드</button>
+                            <button onClick={createNewDoc} className="flex-1 py-2.5 bg-slate-800 text-white text-[10px] font-black rounded-[3px] hover:bg-slate-900 transition-all shadow-md tracking-widest dark:bg-zinc-700 dark:hover:bg-zinc-600">+ 새 문서</button>
                         </div>
                         <div className="flex-1 overflow-y-auto px-3 pt-4 custom-scroll pb-10">
                             <div className="mb-5">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-500 Galmuri14-full"></span> 아이디어 보드</div>
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 아이디어 보드</div>
                                 <Reorder.Group axis="y" values={projects.filter(p => p.type === 'board')} onReorder={handleReorderBoards} className="space-y-1">
                                     {projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}
                                 </Reorder.Group>
                             </div>
                             <div className="px-2 mb-4"><hr className="border-t border-slate-200 dark:border-zinc-700" /></div>
                             <div>
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-500 Galmuri14-full"></span> 문서함</div>
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 문서함</div>
                                 <Reorder.Group axis="y" values={projects.filter(p => p.type === 'doc')} onReorder={handleReorderDocs} className="space-y-0 border-t border-slate-200/50 dark:border-zinc-700/50">
                                     {projects.filter(p => p.type === 'doc').map(project => {
                                         const isActive = activeProjectId === project.id;
@@ -1908,7 +1921,7 @@
                                                         {editingProjectId === project.id ? (
                                                             <input
                                                                 autoFocus
-                                                                className="w-full bg-white border border-indigo-400 Galmuri14-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white"
+                                                                className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white"
                                                                 defaultValue={project.name}
                                                                 onBlur={(e) => handleProjectRename(project.id, e.target.value)}
                                                                 onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)}
@@ -1918,7 +1931,7 @@
                                                             <div className="flex items-center min-w-0 flex-1 justify-between">
                                                                 <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
                                                                 <div className="flex items-center shrink-0">
-                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
+                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
                                                                     <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                                                 </div>
                                                             </div>
@@ -1950,17 +1963,17 @@
                                             <IconMenu className="w-5 h-5 text-slate-600 dark:text-zinc-300" />
                                         </button>
                                     )}
-                                    <div className="h-10 px-5 bg-white shadow-lg border border-slate-200 Galmuri14-[3px] flex items-center gap-2 dark:bg-darkpanel dark:border-darkborder dark:text-white"><span className="w-2 h-2 bg-indigo-500 Galmuri14-[3px] animate-pulse"></span><span className="text-xs font-black text-slate-800 uppercase tracking-widest dark:text-zinc-200">{activeProject.name}</span></div>
-                                    <div className="flex items-center gap-1 p-1 bg-white Galmuri14-[3px] shadow-lg border border-slate-200 h-10 dark:bg-darkpanel dark:border-darkborder">
-                                        <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-4 Galmuri14-[3px] hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-indigo-400"><div className="w-5 h-5 flex items-center justify-center bg-indigo-500 Galmuri14-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">인물</span></button>
+                                    <div className="h-10 px-5 bg-white shadow-lg border border-slate-200 rounded-[3px] flex items-center gap-2 dark:bg-darkpanel dark:border-darkborder dark:text-white"><span className="w-2 h-2 bg-indigo-500 rounded-[3px] animate-pulse"></span><span className="text-xs font-black text-slate-800 uppercase tracking-widest dark:text-zinc-200">{activeProject.name}</span></div>
+                                    <div className="flex items-center gap-1 p-1 bg-white rounded-[3px] shadow-lg border border-slate-200 h-10 dark:bg-darkpanel dark:border-darkborder">
+                                        <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-indigo-400"><div className="w-5 h-5 flex items-center justify-center bg-indigo-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">인물</span></button>
                                         <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                        <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-4 Galmuri14-[3px] hover:bg-rose-50 text-rose-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-rose-400"><div className="w-5 h-5 flex items-center justify-center bg-rose-500 Galmuri14-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">사건</span></button>
+                                        <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-rose-50 text-rose-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-rose-400"><div className="w-5 h-5 flex items-center justify-center bg-rose-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">사건</span></button>
                                         <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                        <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-4 Galmuri14-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400"><div className="w-5 h-5 flex items-center justify-center bg-amber-500 Galmuri14-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">메모</span></button>
+                                        <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400"><div className="w-5 h-5 flex items-center justify-center bg-amber-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">메모</span></button>
                                     </div>
                                 </div>
 
-                                <div className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 Galmuri14-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
+                                <div className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 rounded-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
                                     <button 
                                         onClick={() => handleAutoLayout()} 
                                         className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
@@ -2019,7 +2032,7 @@
                         ) : (
                             <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
                                 <div className="fixed top-6 right-10 z-[110] flex gap-2">
-                                    <button onClick={() => setIsZenMode(!isZenMode)} className={`flex items-center gap-2 px-4 py-2 Galmuri14-full text-[11px] font-black tracking-widest transition-all shadow-xl border ${isZenMode ? 'bg-indigo-600 text-white border-indigo-500 scale-110 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
+                                    <button onClick={() => setIsZenMode(!isZenMode)} className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-widest transition-all shadow-xl border ${isZenMode ? 'bg-indigo-600 text-white border-indigo-500 scale-110 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
                                         <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
                                         {isZenMode ? '집중모드' : '집중모드'}
                                     </button>
@@ -2028,8 +2041,8 @@
                                     <div className="editor-title-container">
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
-                                            <div className={`flex bg-slate-100 p-1 Galmuri14-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                                {['초고', '수정', '완료'].map(status => ( <button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, status} : p))} className={`px-3 py-1 text-[10px] font-black Galmuri14-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button> ))}
+                                            <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                                {['초고', '수정', '완료'].map(status => ( <button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, status} : p))} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button> ))}
                                             </div>
                                         </div>
                                         <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
@@ -2043,9 +2056,9 @@
                                                     <div className="w-px h-6 bg-slate-100 mx-2 dark:bg-zinc-700"></div>
                                                     <div className="flex flex-col gap-1"><span className="text-indigo-400 uppercase">Achievement</span><span className="text-[14px] text-indigo-600 italic dark:text-indigo-400">{Math.min(Math.round(((activeProject.content || "").length / (activeProject.targetCount || 5000)) * 100), 100)}%</span></div>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-1"><span className="text-slate-400 uppercase">Target Goal</span><div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 Galmuri14-[3px] border border-slate-100 dark:bg-zinc-700 dark:border-zinc-600"><input type="number" className="w-16 bg-transparent outline-none text-right text-slate-700 font-bold dark:text-zinc-300" value={activeProject.targetCount || 5000} onChange={(e) => { const val = parseInt(e.target.value) || 0; setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, targetCount: val} : p)); }} /><span className="text-slate-400">자 목표</span></div></div>
+                                                <div className="flex flex-col items-end gap-1"><span className="text-slate-400 uppercase">Target Goal</span><div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-[3px] border border-slate-100 dark:bg-zinc-700 dark:border-zinc-600"><input type="number" className="w-16 bg-transparent outline-none text-right text-slate-700 font-bold dark:text-zinc-300" value={activeProject.targetCount || 5000} onChange={(e) => { const val = parseInt(e.target.value) || 0; setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, targetCount: val} : p)); }} /><span className="text-slate-400">자 목표</span></div></div>
                                             </div>
-                                            <div className="w-full h-1.5 bg-slate-100 Galmuri14-[3px] overflow-hidden dark:bg-zinc-700"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(((activeProject.content || "").length / (activeProject.targetCount || 5000)) * 100, 100)}%`, backgroundColor: (activeProject.content || "").length >= (activeProject.targetCount || 5000) ? "#10b981" : "#4f46e5" }} className="h-full transition-all duration-500 ease-out Galmuri14-[3px]" /></div>
+                                            <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(((activeProject.content || "").length / (activeProject.targetCount || 5000)) * 100, 100)}%`, backgroundColor: (activeProject.content || "").length >= (activeProject.targetCount || 5000) ? "#10b981" : "#4f46e5" }} className="h-full transition-all duration-500 ease-out rounded-[3px]" /></div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -2055,7 +2068,7 @@
 
                     <AnimatePresence>
                         {hoverInfo.visible && (
-                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ left: hoverInfo.x, top: hoverInfo.y + 20 }} className="fixed z-[1001] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-3 Galmuri14-[3px] shadow-2xl pointer-events-none min-w-[200px]">
+                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ left: hoverInfo.x, top: hoverInfo.y + 20 }} className="fixed z-[1001] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-3 rounded-[3px] shadow-2xl pointer-events-none min-w-[200px]">
                                 <div className="flex items-center gap-2 mb-1"> <span className="text-lg">{hoverInfo.node.data.emoji}</span> <span className="font-black text-slate-800 dark:text-zinc-100">{hoverInfo.node.label}</span> </div>
                                 <div className="text-[10px] text-slate-400 font-bold uppercase mb-2">{hoverInfo.node.projectName} · {hoverInfo.node.type}</div>
                                 
@@ -2102,7 +2115,7 @@
                                                 {/* 우측: 인물일 경우 배지 표시, 사건일 경우 빈 공간 유지 (높이 뒤틀림 방지) */}
                                                 <div className="shrink-0 ml-2 flex items-center h-full">
                                                     {node.type === '인물' ? (
-                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 Galmuri14-[2px] rounded-sm shadow-sm leading-none ${getRoleBadgeStyle(node.data.role)}`}>
+                                                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[2px] rounded-sm shadow-sm leading-none ${getRoleBadgeStyle(node.data.role)}`}>
                                                             {node.data.role}
                                                         </span>
                                                     ) : (
@@ -2116,7 +2129,7 @@
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 p-5 overflow-hidden Galmuri14-r-[3px]">
+                                <div className="flex-1 flex flex-col bg-white dark:bg-zinc-900 p-5 overflow-hidden rounded-r-[3px]">
                                     {filteredMentionNodes[mention.selectedIndex] ? (
                                         <>
                                             <div className="flex items-center gap-3 mb-2">
@@ -2194,7 +2207,7 @@
                                                     <div className="flex gap-3">
                                                         <div className="w-28">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">역할</label>
-                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-black text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.role} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, role: e.target.value}} : n))}>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.role} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, role: e.target.value}} : n))}>
                                                                 <option value="주인공">😁 주인공</option>
                                                                 <option value="조력자">😎 조력자</option>
                                                                 <option value="적대자">😡 적대자</option>
@@ -2204,18 +2217,18 @@
                                                         </div>
                                                         <div className="w-16">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
-                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 Galmuri14-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
+                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 rounded-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
                                                         </div>
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
-                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
                                                         </div>
                                                     </div>
                                                     {/* 성별 + 나이 + 직업 + 종족 */}
                                                     <div className="flex gap-3">
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">성별</label>
-                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.gender} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, gender: e.target.value}} : n))}>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.gender} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, gender: e.target.value}} : n))}>
                                                                 <option value="남자">남자</option>
                                                                 <option value="여자">여자</option>
                                                                 <option value="중성">중성</option>
@@ -2224,15 +2237,15 @@
                                                         </div>
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">나이</label>
-                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.age} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, age: e.target.value}} : n))} placeholder="나이" />
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.age} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, age: e.target.value}} : n))} placeholder="나이" />
                                                         </div>
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">직업</label>
-                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.job} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, job: e.target.value}} : n))} placeholder="직업 입력" />
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.job} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, job: e.target.value}} : n))} placeholder="직업 입력" />
                                                         </div>
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">종족</label>
-                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.race || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, race: e.target.value}} : n))} placeholder="종족 입력" />
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.race || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, race: e.target.value}} : n))} placeholder="종족 입력" />
                                                         </div>
                                                     </div>
                                                 </>
@@ -2243,11 +2256,11 @@
                                                 <div className="flex gap-3">
                                                     <div className="w-20">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
-                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] text-center text-xl border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] text-center text-xl border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
                                                     </div>
                                                     <div className="flex-1">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
-                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
                                                     </div>
                                                 </div>
                                             )}
@@ -2257,11 +2270,11 @@
                                                 <div className="flex gap-3">
                                                     <div className="flex-1">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">발생 장소</label>
-                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.place || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, place: e.target.value}} : n))} placeholder="장소 입력" />
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.place || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, place: e.target.value}} : n))} placeholder="장소 입력" />
                                                     </div>
                                                     <div className="flex-1">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">발생 시기</label>
-                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 Galmuri14-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.year || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, year: e.target.value}} : n))} placeholder="시기/연도 입력" />
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.year || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, year: e.target.value}} : n))} placeholder="시기/연도 입력" />
                                                     </div>
                                                 </div>
                                             )}
@@ -2276,7 +2289,7 @@
 
                                     {/* 푸터 */}
                                     <div className="p-6 border-t border-slate-200 dark:border-zinc-700 shrink-0">
-                                        <button onClick={() => { saveHistory(); setSelectedNodeId(null); showToast("설정이 저장되었습니다"); }} className="w-full py-4 bg-slate-900 text-white font-black hover:bg-indigo-600 transition-all uppercase text-xs tracking-widest Galmuri14-[3px] shadow-lg dark:bg-indigo-600 dark:hover:bg-indigo-500">
+                                        <button onClick={() => { saveHistory(); setSelectedNodeId(null); showToast("설정이 저장되었습니다"); }} className="w-full py-4 bg-slate-900 text-white font-black hover:bg-indigo-600 transition-all uppercase text-xs tracking-widest rounded-[3px] shadow-lg dark:bg-indigo-600 dark:hover:bg-indigo-500">
                                             저장 후 닫기
                                         </button>
                                     </div>
@@ -2288,18 +2301,18 @@
                     <AnimatePresence>
                         {activeEdge && (
                             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 Galmuri14-[3px] shadow-2xl w-[420px] relative dark:bg-darkpanel border border-slate-200 dark:border-darkborder">
+                                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 rounded-[3px] shadow-2xl w-[420px] relative dark:bg-darkpanel border border-slate-200 dark:border-darkborder">
                                     <button onClick={() => setSelectedEdgeId(null)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                                     </button>
                                     <h2 className="text-sm font-black text-indigo-500 uppercase tracking-widest mb-8 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-indigo-500 Galmuri14-full"></span> 관계 설정
+                                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 관계 설정
                                     </h2>
                                     <div className="space-y-8">
                                         <div>
                                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter ml-1 mb-2 block">관계 메모</label>
                                             <input 
-                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 Galmuri14-[3px] font-bold text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700/50" 
+                                                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-[3px] font-bold text-sm outline-none focus:border-indigo-500 focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700/50" 
                                                 placeholder="예: 연인, 적대 관계, 조력자 등"
                                                 value={activeEdge.label} 
                                                 onChange={e => updateActiveProject(null, prev => prev.map(ev => ev.id === activeEdge.id ? {...ev, label: e.target.value} : ev))} 
@@ -2309,7 +2322,7 @@
                                             <div className="flex-1">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter ml-1 mb-2 block">선 종류</label>
                                                 <select 
-                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 Galmuri14-[3px] font-bold text-xs outline-none cursor-pointer hover:bg-slate-100 transition-colors dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
+                                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-[3px] font-bold text-xs outline-none cursor-pointer hover:bg-slate-100 transition-colors dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
                                                     value={activeEdge.style || 'solid'}
                                                     onChange={e => updateActiveProject(null, prev => prev.map(ev => ev.id === activeEdge.id ? {...ev, style: e.target.value} : ev))}
                                                 >
@@ -2319,14 +2332,14 @@
                                             </div>
                                             <div className="flex-[1.2]">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-tighter ml-1 mb-2 block">선 굵기</label>
-                                                <div className="flex items-center h-[42px] bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 Galmuri14-[3px] p-1">
+                                                <div className="flex items-center h-[42px] bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-[3px] p-1">
                                                     {[2, 4, 6].map(w => (
                                                         <button 
                                                             key={w} 
                                                             onClick={() => updateActiveProject(null, prev => prev.map(ev => ev.id === activeEdge.id ? {...ev, width: w} : ev))}
-                                                            className={`flex-1 h-full flex flex-col items-center justify-center Galmuri14-[2px] transition-all ${ (activeEdge.width || 2) === w ? 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-700 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300' }`}
+                                                            className={`flex-1 h-full flex flex-col items-center justify-center rounded-[2px] transition-all ${ (activeEdge.width || 2) === w ? 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-700 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300' }`}
                                                         >
-                                                            <div className="bg-current Galmuri14-full mb-1" style={{ width: w*2, height: 2 }}></div>
+                                                            <div className="bg-current rounded-full mb-1" style={{ width: w*2, height: 2 }}></div>
                                                             <span className="text-[9px] font-black">{w}px</span>
                                                         </button>
                                                     ))}
@@ -2336,7 +2349,7 @@
                                     </div>
                                     <button 
                                         onClick={() => { saveHistory(); setSelectedEdgeId(null); }} 
-                                        className="w-full mt-10 py-4 bg-slate-900 text-white font-black Galmuri14-[3px] hover:bg-indigo-600 transition-all uppercase text-[11px] tracking-[0.2em] shadow-lg dark:bg-indigo-600 dark:hover:bg-indigo-500"
+                                        className="w-full mt-10 py-4 bg-slate-900 text-white font-black rounded-[3px] hover:bg-indigo-600 transition-all uppercase text-[11px] tracking-[0.2em] shadow-lg dark:bg-indigo-600 dark:hover:bg-indigo-500"
                                     >
                                         저장 후 닫기
                                     </button>
@@ -2469,19 +2482,19 @@
                     </AnimatePresence>
 
                     <header className="h-16 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 dark:bg-darkpanel/80 dark:border-darkborder">
-                        <div className="flex items-center gap-2"> <div className="w-6 h-6 bg-slate-900 Galmuri14-[3px] dark:bg-zinc-100"></div> <span className="text-lg font-black tracking-tight text-slate-900 dark:text-zinc-100">SAGAK STUDIO</span> </div>
+                        <div className="flex items-center gap-2"> <div className="w-6 h-6 bg-slate-900 rounded-[3px] dark:bg-zinc-100"></div> <span className="text-lg font-black tracking-tight text-slate-900 dark:text-zinc-100">SAGAK STUDIO</span> </div>
                         <div className="flex items-center gap-3">
-                            <button onClick={toggleFont} className="p-2 text-slate-400 hover:text-slate-800 transition-colors bg-slate-100 Galmuri14-[3px] dark:bg-zinc-800 dark:text-zinc-400" title="폰트 변경">
+                            <button onClick={toggleFont} className="p-2 text-slate-400 hover:text-slate-800 transition-colors bg-slate-100 rounded-[3px] dark:bg-zinc-800 dark:text-zinc-400" title="폰트 변경">
                                 <IconFont className="w-4 h-4" />
                             </button>
-                            <button onClick={toggleDarkMode} className="p-2 text-slate-400 hover:text-slate-800 transition-colors bg-slate-100 Galmuri14-[3px] hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-700" title="다크 모드 토글"> {isDarkMode ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />} </button>
+                            <button onClick={toggleDarkMode} className="p-2 text-slate-400 hover:text-slate-800 transition-colors bg-slate-100 rounded-[3px] hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-700" title="다크 모드 토글"> {isDarkMode ? <IconSun className="w-4 h-4" /> : <IconMoon className="w-4 h-4" />} </button>
                             <div className="h-4 w-px bg-slate-300 mx-1 dark:bg-zinc-700"></div>
 
                             {/* 불러오기 버튼 */}
-                            <button onClick={openLoadPanel} className={`flex items-center gap-2 px-2 py-2 border text-[11px] font-bold Galmuri14-[3px] transition-all shadow-sm ${filePanel.isOpen && filePanel.mode === 'load' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="파일 불러오기"><IconUpload className="w-3 h-3" /></button>
+                            <button onClick={openLoadPanel} className={`flex items-center gap-2 px-2 py-2 border text-[11px] font-bold rounded-[3px] transition-all shadow-sm ${filePanel.isOpen && filePanel.mode === 'load' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="파일 불러오기"><IconUpload className="w-3 h-3" /></button>
 
                             {/* 저장 버튼 */}
-                            <button onClick={openSavePanel} className={`flex items-center gap-2 px-2 py-2 text-[11px] font-bold Galmuri14-[3px] transition-all shadow-sm ${filePanel.isOpen && filePanel.mode === 'save' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'}`} title="전체 저장"><IconSave className="w-3 h-3" /></button>
+                            <button onClick={openSavePanel} className={`flex items-center gap-2 px-2 py-2 text-[11px] font-bold rounded-[3px] transition-all shadow-sm ${filePanel.isOpen && filePanel.mode === 'save' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200'}`} title="전체 저장"><IconSave className="w-3 h-3" /></button>
                         </div>
                     </header> 
                     <div className="flex-1 overflow-y-auto custom-scroll"> 
@@ -2495,8 +2508,8 @@
                                 </div> 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"> 
                                     {books.map(book => ( <BookCover key={book.id} book={book} onClick={() => onSelectBook(book.id)} onDelete={onDeleteBook} onEdit={(target) => setModalConfig({ isOpen: true, mode: 'edit', targetBook: target })} /> ))} 
-                                    <button onClick={() => setModalConfig({ isOpen: true, mode: 'create', targetBook: null })} className="group flex flex-col items-center justify-center gap-4 aspect-[2/3] Galmuri14-[3px] border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800/50"> 
-                                        <div className="w-12 h-12 Galmuri14-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all dark:bg-zinc-800 dark:text-zinc-500"> <IconPlus className="w-6 h-6" /> </div> 
+                                    <button onClick={() => setModalConfig({ isOpen: true, mode: 'create', targetBook: null })} className="group flex flex-col items-center justify-center gap-4 aspect-[2/3] rounded-[3px] border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 transition-all dark:border-zinc-700 dark:hover:bg-zinc-800/50"> 
+                                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all dark:bg-zinc-800 dark:text-zinc-500"> <IconPlus className="w-6 h-6" /> </div> 
                                         <span className="text-sm font-bold text-slate-400 group-hover:text-indigo-600 dark:text-zinc-500 dark:group-hover:text-indigo-400">새 작품 추가</span> 
                                     </button> 
                                 </div> 
