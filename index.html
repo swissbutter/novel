@@ -85,8 +85,7 @@
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .zoom-container { 
             transform-origin: 0 0; 
-            will-change: transform; 
-            transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
+            will-change: transform;
             backface-visibility: hidden;
             transform: translateZ(0); 
         }
@@ -1481,42 +1480,53 @@
 
             // 1. Workspace 컴포넌트 상단(ref 선언부)에 rAF용 ref 추가
             const rAF = useRef(null);
+            const latestMousePos = useRef({ x: 0, y: 0 });
+            
+            const isPanningRef = useRef(isPanning);
+            const draggingNodeIdRef = useRef(draggingNodeId);
+            const scaleRef = useRef(scale);
+            const tempEdgeRef = useRef(tempEdge);
+
+            useEffect(() => { isPanningRef.current = isPanning; }, [isPanning]);
+            useEffect(() => { draggingNodeIdRef.current = draggingNodeId; }, [draggingNodeId]);
+            useEffect(() => { scaleRef.current = scale; }, [scale]);
+            useEffect(() => { tempEdgeRef.current = tempEdge; }, [tempEdge]);
 
             // 2. handleGlobalMouseMove 함수 교체
             const handleGlobalMouseMove = (e) => {
                 if (activeProject.type === 'doc') return;
                 
-                // 이벤트 객체 값 보존 (React 합성 이벤트 이슈 방지)
-                const clientX = e.clientX;
-                const clientY = e.clientY;
+                // 최신 마우스 좌표 저장
+                latestMousePos.current = { x: e.clientX, y: e.clientY };
 
                 // 이미 예약된 프레임이 있다면 취소하고 최신 좌표로 갱신 (선택 사항, 여기서는 간단히 처리)
                 if (rAF.current) return; 
 
                 rAF.current = requestAnimationFrame(() => {
-                    const dx = clientX - lastMousePos.current.x;
-                    const dy = clientY - lastMousePos.current.y;
+                    const currentX = latestMousePos.current.x;
+                    const currentY = latestMousePos.current.y;
+                    const dx = currentX - lastMousePos.current.x;
+                    const dy = currentY - lastMousePos.current.y;
 
-                    if (isPanning) {
+                    if (isPanningRef.current) {
                         setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-                    } else if (draggingNodeId) {
+                    } else if (draggingNodeIdRef.current) {
                         // 배치 계산 최적화: scale 나눗셈을 한 번만 수행
-                        const scaleFactor = 1 / scale;
+                        const scaleFactor = 1 / scaleRef.current;
+                        const id = draggingNodeIdRef.current;
                         updateActiveProject(prev => prev.map(n => 
-                            n.id === draggingNodeId 
+                            n.id === id 
                             ? { ...n, x: n.x + (dx * scaleFactor), y: n.y + (dy * scaleFactor) } 
                             : n
                         ));
                     }
 
-                    if (tempEdge) {
-                        const rect = containerRef.current.getBoundingClientRect();
-                        const x = (clientX - rect.left - pan.x) / scale;
-                        const y = (clientY - rect.top - pan.y) / scale;
-                        setTempEdge(prev => ({ ...prev, toX: x, toY: y }));
+                    if (tempEdgeRef.current) {
+                        const c = getCanvasCoords(currentX, currentY);
+                        setTempEdge(prev => ({ ...prev, toX: c.x, toY: c.y }));
                     }
 
-                    lastMousePos.current = { x: clientX, y: clientY };
+                    lastMousePos.current = { x: currentX, y: currentY };
                     rAF.current = null;
                 });
             };
@@ -1524,7 +1534,7 @@
             const handleGlobalMouseUp = (e) => {
                 if (activeProject.type === 'board') {
                     if (draggingNodeId) saveHistory();
-                    if (tempEdge) {
+                    if (tempEdge && !hasConnectedRef.current) {
                         const c = getCanvasCoords(e.clientX, e.clientY);
                         // 마우스 위치에 있는 노드 찾기 (출발 노드 제외)
                         const targetNode = nodes.find(n =>
@@ -1539,13 +1549,15 @@
                             updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: '관계' }]);
                         } else {
                             // 빈 공간에서 놓으면 새 노드 생성
-                            saveHistory();
                             const fromNode = findNode(tempEdge.fromId);
-                            const newNodeId = generateUUID();
-                            const defaultData = fromNode.type === '인물'
-                                ? { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' }
-                                : (fromNode.type === '사건' ? { emoji: '🔥', place: '', year: '', memo: '' } : { emoji: '💡', memo: '' });
-                            updateActiveProject(prev => [...prev, { id: newNodeId, x: c.x - CARD_W/2, y: c.y - CARD_H/2, label: `새 ${fromNode.type}`, type: fromNode.type, data: defaultData }], prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: newNodeId, label: '관계' }]);
+                            if (fromNode) {
+                                saveHistory();
+                                const newNodeId = generateUUID();
+                                const defaultData = fromNode.type === '인물'
+                                    ? { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' }
+                                    : (fromNode.type === '사건' ? { emoji: '🔥', place: '', year: '', memo: '' } : { emoji: '💡', memo: '' });
+                                updateActiveProject(prev => [...prev, { id: newNodeId, x: c.x - CARD_W/2, y: c.y - CARD_H/2, label: `새 ${fromNode.type}`, type: fromNode.type, data: defaultData }], prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: newNodeId, label: '관계' }]);
+                            }
                         }
                     }
                     hasConnectedRef.current = false;
@@ -2028,22 +2040,43 @@
                     <main
                         className={`flex-1 relative overflow-hidden transition-all duration-500 ease-in-out ${activeProject.type === 'board' ? (isPanning ? 'cursor-grabbing' : draggingNodeId ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
                         ref={containerRef}
-                        onMouseDown={(e) => { if(activeProject.type === 'board') { lastMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) setIsPanning(true); } }}
+                        onMouseDown={(e) => {
+                            if(activeProject.type === 'board') { 
+                                if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
+                                lastMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                latestMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                if (e.button === 0) setIsPanning(true); 
+                            } 
+                        }}
                     >
                         {activeProject.type === 'board' ? (
                             <>
-                                <div className="absolute top-6 left-6 z-[80] flex items-center gap-3">
-                                    <div className="h-10 px-5 bg-white shadow-lg border border-slate-200 rounded-[3px] flex items-center gap-2 dark:bg-darkpanel dark:border-darkborder dark:text-white"><span className="w-2 h-2 bg-indigo-500 rounded-[3px] animate-pulse"></span><span className="text-xs font-black text-slate-800 uppercase tracking-widest dark:text-zinc-200">{activeProject.name}</span></div>
-                                    <div className="flex items-center gap-1 p-1 bg-white rounded-[3px] shadow-lg border border-slate-200 h-10 dark:bg-darkpanel dark:border-darkborder">
-                                        <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-indigo-400"><div className="w-5 h-5 flex items-center justify-center bg-indigo-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">인물</span></button>
-                                        <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                        <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-rose-50 text-rose-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-rose-400"><div className="w-5 h-5 flex items-center justify-center bg-rose-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">사건</span></button>
-                                        <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                        <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400"><div className="w-5 h-5 flex items-center justify-center bg-amber-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div><span className="text-[11px] font-black">메모</span></button>
+                                <div className="absolute top-6 left-6 z-[80] flex items-center gap-3" onMouseDown={(e) => e.stopPropagation()}>
+                                    <div className="h-10 px-5 bg-white shadow-lg border border-slate-200 rounded-[3px] flex items-center gap-2 dark:bg-darkpanel dark:border-darkborder dark:text-white">
+                                        <span className="w-2 h-2 bg-indigo-500 rounded-[3px] animate-pulse"></span>
+                                        <span className="text-xs font-black text-slate-800 uppercase tracking-widest dark:text-zinc-200">{activeProject.name}</span>
                                     </div>
+                                    <div className="flex items-center gap-1 p-1 bg-white rounded-[3px] shadow-lg border border-slate-200 h-10 dark:bg-darkpanel dark:border-darkborder">
+                                            <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-indigo-400">
+                                                <div className="w-5 h-5 flex items-center justify-center bg-indigo-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
+                                                <span className="text-[11px] font-black">인물</span>
+                                            </button>
+                                            <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
+                                            <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-rose-50 text-rose-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-rose-400">
+                                                <div className="w-5 h-5 flex items-center justify-center bg-rose-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
+                                                <span className="text-[11px] font-black">사건</span>
+                                            </button>
+                                            <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
+                                            <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400">
+                                                <div className="w-5 h-5 flex items-center justify-center bg-amber-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
+                                                <span className="text-[11px] font-black">메모</span>
+                                            </button>
+                                        </div>
                                 </div>
 
-                                <div className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 rounded-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
+                                <div
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 rounded-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
                                     <button 
                                         onClick={() => handleAutoLayout()} 
                                         className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
@@ -2056,6 +2089,7 @@
                                         className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
                                         title="화면 중앙 맞춤"
                                     >
+                                        {/* 아이콘 SVG 생략 */}
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="scale-75">
                                             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
                                         </svg>
@@ -2095,7 +2129,24 @@
                                         {tempEdge && findNode(tempEdge.fromId) && <line x1={findNode(tempEdge.fromId).x + CARD_W/2} y1={findNode(tempEdge.fromId).y + CARD_H/2} x2={tempEdge.toX} y2={tempEdge.toY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4,4" />}
                                     </svg>
                                     {visibleNodes.map(node => (
-                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { e.stopPropagation(); setDraggingNodeId(id); setTopNodeId(id); }} onMouseDown={(e, id) => { if (e.button === 2) { const c = getCanvasCoords(e.clientX, e.clientY); setTempEdge({ fromId: id, toX: c.x, toY: c.y }); } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
+                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { 
+                                            e.stopPropagation(); 
+                                            if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
+                                            lastMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                            latestMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                            setDraggingNodeId(id); setTopNodeId(id); 
+                                        }} onMouseDown={(e, id) => { 
+                                            if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
+                                            lastMousePos.current = { x: e.clientX, y: e.clientY };
+                                            latestMousePos.current = { x: e.clientX, y: e.clientY };
+                                            if (e.button === 2) { 
+                                                const node = findNode(id);
+                                                if (node) {
+                                                    // 선이 튀는 현상을 방지하기 위해 노드 중앙에서 시작하도록 초기화
+                                                    setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); 
+                                                }
+                                            } 
+                                        }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
                                     ))}
                                 </div>
                             </>
