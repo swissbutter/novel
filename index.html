@@ -1600,9 +1600,18 @@
                         );
 
                         if (targetNode) {
-                            // 다른 노드 위에서 놓으면 연결
-                            saveHistory();
-                            updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: '관계' }]);
+                            // 중복 엣지 검사 (A→B 또는 B→A 둘 다 확인)
+                            const edgeExists = edges.some(e =>
+                                (e.from === tempEdge.fromId && e.to === targetNode.id) ||
+                                (e.from === targetNode.id && e.to === tempEdge.fromId)
+                            );
+                            if (edgeExists) {
+                                // 이미 연결되어 있으면 무시
+                            } else {
+                                // 다른 노드 위에서 놓으면 연결
+                                saveHistory();
+                                updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: '관계' }]);
+                            }
                         } else {
                             // 빈 공간에서 놓으면 새 노드 생성
                             const fromNode = findNode(tempEdge.fromId);
@@ -2209,7 +2218,7 @@
                                     )}
 
                                     {visibleNodes.map(node => (
-                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id)} onClick={(e, id) => { if(!e.shiftKey) setSelectedNodeIds(new Set([id])); }} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); setTopNodeId(id); } else if (e.button === 2) { const node = findNode(id); if (node) { setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); } } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} />
+                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id)} onClick={(e, id) => { if(!e.shiftKey) setSelectedNodeIds(new Set([id])); }} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); setTopNodeId(id); } else if (e.button === 2) { const node = findNode(id); if (node) { setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); } } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { const edgeExists = edges.some(e => (e.from === tempEdge.fromId && e.to === id) || (e.from === id && e.to === tempEdge.fromId)); if (!edgeExists) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} />
                                     ))}
                                 </div>
                             </>
