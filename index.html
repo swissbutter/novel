@@ -127,6 +127,85 @@
         const CARD_H = 200;
         const BOOK_COLORS = ['#18181b', '#3c3c3c', '#881337', '#7c2d12', '#424034', '#73734e', '#2e3b36', '#134e4a', '#1e3a8a', '#33272c', '#4c1d95', '#451a03'];
 
+        // --- 이름 생성기 데이터 (DB) ---
+        const NAME_DB = {
+            fantasy: {
+                royalty: {
+                    m: ["아서|Arthur", "아라곤|Aragorn", "바리안|Varian", "안두인|Anduin", "아서스|Arthas", "스란두일|Thranduil", "소린|Thorin", "엘론드|Elrond", "길가메쉬|Gilgamesh", "레오니다스|Leonidas", "티리온|Tyrion", "에드다드|Eddard", "로버트|Robert", "조프리|Joffrey", "토르|Thor", "오딘|Odin", "제우스|Zeus", "누아다|Nuada", "카스피안|Caspian", "에릭|Eric", "루시우스|Lucius", "녹티스|Noctis", "클라우드|Cloud", "세피로스|Sephiroth", "라인하르트|Reinhardt", "시그마|Sigma", "알렉세이|Alexei", "프란츠|Franz", "카를|Karl", "빌헬름|Wilhelm", "다리우스|Darius", "자르반|Jarvan", "스웨인|Swain", "아지르|Azir", "비에고|Viego"],
+                    f: ["갈라드리엘|Galadriel", "아르웬|Arwen", "다에네리스|Daenerys", "세르세이|Cersei", "산사|Sansa", "제이나|Jaina", "실바나스|Sylvanas", "알렉스트라자|Alexstrasza", "엘사|Elsa", "안나|Anna", "아나스타샤|Anastasia", "이사벨|Isabel", "빅토리아|Victoria", "엘리자베스|Elizabeth", "캐서린|Catherine", "아테나|Athena", "헤라|Hera", "프레이야|Freya", "티란데|Tyrande", "아즈샤라|Azshara", "젤다|Zelda", "피치|Peach", "에이와|Eywa", "리노아|Rinoa", "유우나|Yuna", "에어리스|Aerith", "티파|Tifa", "라이트닝|Lightning", "애쉬|Ashe", "카타리나|Katarina", "르블랑|LeBlanc", "이렐리아|Irelia", "카르마|Karma", "신드라|Syndra", "리산드라|Lissandra"],
+                    s: ["펜드래곤|Pendragon", "타르가르옌|Targaryen", "스타크|Stark", "라니스터|Lannister", "바라테온|Baratheon", "윈드러너|Windrunner", "스톰레이지|Stormrage", "메네실|Menethil", "린|Wrynn", "헬스크림|Hellscream", "프라우드무어|Proudmoore", "브론즈비어드|Bronzebeard", "애쉬본|Ashborn", "라이온하트|Lionheart", "실버문|Silvermoon", "하이타워|Hightower", "선스트라이더|Sunstrider", "문새도우|Moonshadow", "스타폴|Starfall", "드래곤하트|Dragonheart", "합스부르크|Habsburg", "로마노프|Romanov", "튜더|Tudor", "윈저|Windsor", "부르봉|Bourbon", "크라운가드|Crownguard", "라이트브링어|Lightbringer", "페이트|Fate", "블러드폴|Bloodfall", "나이트로드|Nightlord"]
+                },
+                knight: {
+                    m: ["란셀롯|Lancelot", "가웨인|Gawain", "퍼시벌|Percival", "갤러해드|Galahad", "트리스탄|Tristan", "게롤트|Geralt", "제이미|Jaime", "그레고르|Gregor", "산도르|Sandor", "브론|Bronn", "존|Jon", "롭|Robb", "보로미르|Boromir", "파라미르|Faramir", "에오메르|Eomer", "김리|Gimli", "레골라스|Legolas", "우서|Uther", "볼바르|Bolvar", "티리온|Tirion", "가렌|Garen", "다리우스|Darius", "제드|Zed", "야스오|Yasuo", "리신|Lee Sin", "둠피스트|Doomfist", "겐지|Genji", "한조|Hanzo", "솔져|Soldier", "맥크리|McCree", "단테|Dante", "버질|Vergil", "크레토스|Kratos", "링크|Link", "소라|Sora"],
+                    f: ["브리엔|Brienne", "아리아|Arya", "요운|Eowyn", "라라|Lara", "잔|Jeanne", "발레라|Valeera", "마이에브|Maiev", "알레리아|Alleria", "베리사|Veresa", "리븐|Riven", "피오라|Fiora", "바이|Vi", "케이틀린|Caitlyn", "레오나|Leona", "다이애나|Diana", "아칼리|Akali", "이렐리아|Irelia", "세주아니|Sejuani", "애쉬|Ashe", "시비르|Sivir", "트레이서|Tracer", "파라|Pharah", "브리기테|Brigitte", "자리야|Zarya", "송|D.Va"],
+                    s: ["아이언풋|Ironfoot", "스노우|Snow", "샌드|Sand", "플라워|Flowers", "스톰|Storm", "클리게인|Clegane", "타스|Tarth", "페인|Payne", "포드링|Fordring", "모그레인|Mograine", "둠해머|Doomhammer", "블러드후프|Bloodhoof", "블레이드|Blade", "쉴드|Shield", "워송|Warsong", "울프스베인|Wolfsbane", "베어클로|Bearclaw", "호크아이|Hawkeye", "스틸|Steel", "암스트롱|Armstrong", "스트라이프|Strife", "하트|Hart", "발렌타인|Valentine", "레드필드|Redfield", "크로프트|Croft", "윈체스터|Winchester", "벨몬트|Belmont", "조스타|Joestar", "아커만|Ackerman", "예거|Yeager"]
+                },
+                wizard: {
+                    m: ["간달프|Gandalf", "사루만|Saruman", "라다가스트|Radagast", "알버스|Albus", "세베루스|Severus", "멀린|Merlin", "닥터|Doctor", "메디브|Medivh", "카드가|Khadgar", "굴단|Gul'dan", "일리단|Illidan", "켈투자드|Kel'Thuzad", "말푸리온|Malfurion", "라이즈|Ryze", "베이가|Veigar", "빅토르|Viktor", "제라스|Xerath", "아지르|Azir", "말자하|Malzahar", "카사딘|Kassadin", "빈센트|Vincent", "하울|Howl", "게드|Ged", "해리|Harry", "론|Ron", "뉴트|Newt", "겔러트|Gellert", "톰|Tom", "볼드모트|Voldemort", "사우론|Sauron"],
+                    f: ["예니퍼|Yennefer", "트리스|Triss", "시리|Ciri", "헤르미온느|Hermione", "루나|Luna", "미네르바|Minerva", "벨라트릭스|Bellatrix", "모르가나|Morgana", "제이나|Jaina", "에이그윈|Aegwynn", "럭스|Lux", "아리|Ahri", "룰루|Lulu", "잔나|Janna", "소라카|Soraka", "리나|Lina", "나가|Naga", "키르케|Circe", "메데이아|Medea", "헤카테|Hecate", "스칼렛|Scarlett", "완다|Wanda", "자타나|Zatanna", "레이븐|Raven", "스타파이어|Starfire", "티아라|Tiara", "엘파바|Elphaba", "글린다|Glinda", "우르슐라|Ursula", "말레피센트|Maleficent"],
+                    s: ["덤블도어|Dumbledore", "그린델왈드|Grindelwald", "포터|Potter", "그레인저|Granger", "위즐리|Weasley", "말포이|Malfoy", "스네이프|Snape", "블랙|Black", "러브굿|Lovegood", "스캐맨더|Scamander", "레이븐클로|Ravenclaw", "슬리데린|Slytherin", "그리핀도르|Gryffindor", "후플푸프|Hufflepuff", "펜타킬|Pentakill", "스타게이저|Stargazer", "문위스퍼|Moonwhisper", "보이드|Void", "아케인|Arcane", "미스틱|Mystic", "스펠바인더|Spellbinder", "룬|Rune", "섀도우|Shadow", "트와일라잇|Twilight", "이클립스|Eclipse", "솔라|Solar", "루나|Lunar", "템페스트|Tempest", "와일드|Wild", "카오스|Chaos"]
+                },
+                commoner: {
+                    m: ["프로도|Frodo", "샘와이즈|Samwise", "빌보|Bilbo", "페레그린|Peregrin", "메리아독|Meriadoc", "루크|Luke", "한|Han", "피터|Peter", "에드|Ed", "알폰스|Alphonse", "탄지로|Tanjiro", "젠이츠|Zenitsu", "루피|Luffy", "조로|Zoro", "상디|Sanji", "나루토|Naruto", "사스케|Sasuke", "이치고|Ichigo", "에렌|Eren", "아르민|Armin", "잭|Jack", "윌|Will", "소이어|Sawyer", "핀|Finn", "제이크|Jake"],
+                    f: ["캣니스|Katniss", "프림로즈|Primrose", "헤이젤|Hazel", "그레텔|Gretel", "도로시|Dorothy", "웬디|Wendy", "앨리스|Alice", "루시|Lucy", "수잔|Susan", "나미|Nami", "로빈|Robin", "사쿠라|Sakura", "히나타|Hinata", "미카사|Mikasa", "사샤|Sasha", "치히로|Chihiro", "소피|Sophie", "키키|Kiki", "산|San", "포뇨|Ponyo", "벨|Belle", "신데렐라|Cinderella", "오로라|Aurora", "뮬란|Mulan", "티아나|Tiana"],
+                    s: ["배긴스|Baggins", "갬지|Gamgee", "툭|Took", "브랜디벅|Brandybuck", "언더힐|Underhill", "스카이워커|Skywalker", "솔로|Solo", "파커|Parker", "켄트|Kent", "웨인|Wayne", "스미스|Smith", "밀러|Miller", "베이커|Baker", "쿠퍼|Cooper", "플레처|Fletcher", "헌터|Hunter", "피셔|Fisher", "쿡|Cook", "카펜터|Carpenter", "테일러|Taylor", "에버딘|Everdeen", "호손|Hawthorne", "멜라크|Mellark", "오크|Oak", "우드|Wood"]
+                },
+                servant: {
+                    m: ["도비|Dobby", "크리처|Kreacher", "골룸|Gollum", "스미골|Smeagol", "호도르|Hodor", "릭|Reek", "이고르|Igor", "프라이데이|Friday", "칼리반|Caliban", "콰지모도|Quasimodo", "그루트|Groot", "로켓|Rocket", "스티치|Stitch", "투슬리스|Toothless", "피카츄|Pikachu", "초파|Chopper", "도라에몽|Doraemon", "케로|Kero", "모코코|Mokoko", "포로|Poro", "슬라임|Slime", "고블린|Goblin", "오크|Orc", "트롤|Troll", "놈|Gnome"],
+                    f: ["윙키|Winky", "나나|Nana", "팅커벨|Tinkerbell", "나비|Navi", "헤이헤이|Heihei", "미니|Minnie", "데이지|Daisy", "헬로|Hello", "키티|Kitty", "마이멜로디|MyMelody", "쿠로미|Kuromi", "폼폼|Pompom", "시나몬|Cinnamon", "모카|Mocha", "쉬폰|Chiffon", "루루|Lulu", "미미|Mimi", "디디|Didi", "라라|Lala", "뽀|Po", "페어리|Fairy", "픽시|Pixie", "님프|Nymph", "드라이어드|Dryad", "밴시|Banshee"],
+                    s: ["(성 없음)|", "(성 없음)|", "(성 없음)|", "(성 없음)|", "(성 없음)|", "노바디|Nobody", "도|Doe", "스미스|Smith", "본즈|Bones", "크릭|Creek", "리버|River", "힐|Hill", "필드|Field", "스톤|Stone", "워터|Water", "플라워|Flower", "트리|Tree", "리프|Leaf", "루트|Root", "베리|Berry"]
+                }
+            },
+            wuxia: {
+                noble: {
+                    m: ["청명", "백운", "무진", "자운", "태을", "천우", "명운", "진천", "호연", "상현", "운룡", "현진", "도현", "문기", "학규", "소유", "건영", "시운", "규화", "단우", "청운", "유성", "비천", "무경", "현도", "자하", "일청", "소백", "운엽", "천기", "형운", "지학", "현무", "청허", "무영", "진우", "경수", "태산", "운중", "호영", "천광", "낙운", "시현", "규연", "백천", "송운", "학진", "유도", "현성", "진혁", "운현", "상원", "수현", "경운", "도원", "무극", "청람", "화운", "진명", "천위"],
+                    f: ["소연", "화린", "청아", "유란", "백설", "자령", "명주", "설화", "예린", "유화", "빙예", "소향", "채령", "은설", "수련", "홍련", "단영", "미령", "소월", "자하", "연희", "서연", "비란", "아영", "청조", "유리", "가을", "설지", "화영", "난향", "옥련", "수아", "지선", "혜진", "나영", "우희", "소선", "비연", "현주", "월희", "금선", "채운", "소유", "명하", "진주", "설희", "운령", "청유", "하늘", "은하"],
+                    s: ["남궁", "제갈", "모용", "황보", "사마", "독고", "선우", "상관", "구양", "야율", "공손", "서문", "동방", "헌원", "하후", "우문", "백리", "북궁", "자말", "단목", "진", "백", "이", "왕", "유", "장", "운", "풍", "뇌", "임", "한", "조", "송", "정", "양", "하", "오", "서", "윤", "강", "고", "원", "곽", "주", "채"]
+                },
+                villain: {
+                    m: ["혈비", "천악", "무결", "광현", "패천", "마령", "독심", "살혼", "광마", "염라", "흑주", "사신", "파천", "멸혼", "귀영", "악살", "혈풍", "마진", "독수", "잔월", "패왕", "천살", "극도", "흑룡", "사혈", "무명", "귀면", "뇌옥", "광도", "음마", "혈랑", "적운", "혼세", "단죄", "야차", "수라", "참격", "멸천", "흉수", "사패", "독룡", "무혈", "살겁", "천마", "지옥", "폭염", "괴수", "참혈", "환마", "혈광"],
+                    f: ["홍련", "요화", "흑조", "매구", "독희", "사녀", "혈매", "음희", "마설", "자요", "비월", "천요", "염희", "적련", "귀비", "독란", "야희", "유명", "살희", "흑접", "혈희", "몽마", "환희", "절영", "마예", "소살", "음령", "적화", "요란", "무염", "비사", "혈주", "독연", "암향", "사령", "흑련", "괴희", "참아", "멸화", "주란"],
+                    s: ["마", "독고", "음", "사", "천", "혈", "장", "흑", "배", "염", "귀", "야", "폭", "살", "뇌", "묵", "견", "나", "방", "위", "당", "팽", "설", "금", "전", "반", "시", "감", "동", "악", "형", "몽", "좌", "우", "표", "양", "명"]
+                },
+                warrior: {
+                    m: ["비룡", "일도", "무진", "광현", "철심", "단우", "검진", "소룡", "태산", "무비", "검한", "도전", "광도", "철산", "풍진", "한수", "고검", "낭천", "벽산", "취선", "단운", "검마", "패도", "무상", "유협", "진검", "천호", "질풍", "번개", "무식", "철우", "강철", "호걸", "용비", "백호", "청룡", "비검", "단월", "무신", "고영", "한비", "천랑", "월풍", "적호", "뇌전", "쾌검", "환검", "무정", "잠룡", "풍운"],
+                    f: ["검희", "무영", "비연", "채령", "월영", "소월", "은설", "미령", "단영", "소향", "명월", "청설", "한월", "유성", "비령", "검향", "무란", "설검", "청향", "은비", "비화", "월하", "단심", "연무", "호연", "진아", "설란", "청빙", "여협", "비단", "운검", "향무", "소협", "자영", "혜검", "무소", "월아", "청련", "비취", "단향"],
+                    s: ["곽", "하", "한", "임", "차", "고", "석", "주", "양", "표", "설", "홍", "배", "전", "노", "문", "방", "성", "오", "육", "지", "허", "현", "추", "단", "묵", "공", "감", "탁", "위", "모", "편", "국", "어", "용", "남", "비", "도"]
+                }
+            },
+            korean: {
+                modern: {
+                    m: ["민준", "서준", "도윤", "예준", "시우", "하준", "지호", "주원", "지후", "준우", "준서", "도현", "건우", "현우", "우진", "지훈", "선우", "유준", "서진", "연우", "은우", "민재", "현준", "시윤", "정우", "이준", "승우", "윤우", "지환", "지우", "승현", "유찬", "준혁", "수호", "승민", "시후", "진우", "민성", "준영", "수현", "지원", "이안", "재윤", "시현", "태윤", "한결", "지안", "동현", "윤호", "시원", "은찬", "시온", "민우", "재원", "민규", "지한", "서우", "은호", "재민", "민찬", "우주", "우빈", "하율", "준호", "지율", "성민", "승준", "하진", "성현", "재현", "현서", "민호", "태민", "예성", "지성", "지민", "윤재", "태현", "민혁", "하람", "도훈", "이든", "지오", "강민", "지완", "태준", "준성", "하랑", "승원", "도영", "현수", "정현", "승호", "도율", "시율", "성빈", "우현", "시훈", "민서", "서율", "건희", "시완", "주환", "라온", "원준", "민수", "정훈", "태오", "현민", "승윤", "동하", "민기", "재하", "주영", "도경", "서후", "단우", "경민", "민건", "현성", "시환", "시안", "도원", "정후", "가온", "온유", "승빈", "정원", "호준", "태훈", "재준", "재훈", "태영", "세현", "동건", "연준", "태경", "도준", "유건", "범준", "하온", "찬영", "태율", "현진", "재영", "영준", "성윤", "하윤", "현승", "주혁", "상현", "찬우", "지혁", "세준", "승훈", "하늘", "승재", "동윤", "우성", "건호", "태호", "찬희", "윤찬", "윤후", "성훈", "유안", "지운", "연호", "수민", "서호", "유현", "동욱", "승찬", "도겸", "태우", "규빈", "현호", "주한", "서원", "재우", "현빈", "재희", "수혁", "주완", "유진", "효준", "우찬", "시헌", "주현", "준석", "은율", "재혁", "동우", "선호", "형준", "이한", "성우", "상윤", "도진", "우영"],
+                    f: ["서연", "민서", "지우", "서윤", "하은", "지안", "수아", "하린", "유나", "서아", "채원", "지유", "다인", "예은", "수빈", "시아", "소율", "아린", "다은", "나은", "유진", "지원", "예린", "지은", "수진", "은지", "민지", "윤아", "채은", "가은", "서현", "예진", "서영", "지민", "예원", "윤서", "소윤", "지현", "하윤", "은우", "현지", "채우", "예지", "시은", "민주", "다연", "연우", "수민", "채아", "다온", "지아", "시현", "주하", "승연", "서진", "서은", "나윤", "채연", "예나", "민채", "다현", "가윤", "하율", "정원", "태희", "도연", "시연", "서율", "은서", "예빈", "지윤", "나연", "예림", "연서", "하영", "수현", "규리", "아인", "은채", "주아", "소은", "서우", "유주", "윤지", "다솜", "소민", "지온", "사랑", "예서", "채원", "유빈", "가온", "지안", "설아", "수아", "이서", "이수", "이안", "이빈", "이현", "나은", "하온", "하진", "주은", "채민", "채빈", "채이", "채윤", "채율", "채은", "태리", "태린", "태연", "태은", "태이", "태인", "태희", "하늘", "하나", "하루", "하리", "하민", "하서", "하솔", "하연", "하영", "하온", "하윤", "하은", "하진", "한나", "한별", "한비", "한솔", "한이", "해나", "해린", "해수", "해온", "해윤", "해인", "현서", "현수", "현아", "현영", "현유", "현주", "현지", "혜나", "혜린", "혜민", "혜빈", "혜서", "혜수", "혜연", "혜영", "혜원", "혜윤", "혜인", "혜주"],
+                    s: ["김", "이", "박", "정", "최", "조", "강", "윤", "장", "임", "신", "유", "한", "오", "서", "전", "권", "황", "안", "송", "홍", "양", "고", "문", "손", "배", "백", "허", "노", "남", "심", "하", "주", "구", "곽", "성", "차", "우", "진", "민", "류", "나", "지", "엄", "변", "채", "원", "방", "천", "공", "현", "함", "여", "염", "석", "추", "도", "소", "설", "선", "마", "길", "연", "위", "표", "명", "기", "반", "라", "왕", "금", "옥", "육", "인", "맹", "제", "모", "탁", "국", "어", "경", "은", "편", "용", "예", "봉", "사", "부", "가", "복", "태", "목", "형", "피", "두", "감", "호", "제갈", "남궁", "독고", "선우", "황보"]
+                },
+                classic: {
+                    m: ["영수", "영호", "영식", "영철", "정수", "정호", "정식", "정훈", "성수", "성호", "성훈", "성진", "철수", "철호", "철민", "민수", "민호", "민철", "만수", "동수", "동현", "동훈", "진수", "진호", "준호", "준수", "광수", "광호", "상훈", "상우", "상철", "병철", "병수", "재호", "재석", "경수", "종수", "종호", "종훈", "명수", "명호", "현수", "현우", "현철", "기수", "기철", "석수", "석호"],
+                    f: ["영희", "영숙", "영자", "영순", "정숙", "정희", "정순", "정자", "순자", "순희", "순정", "미숙", "미경", "미영", "미자", "미희", "경숙", "경희", "경자", "경순", "혜자", "혜숙", "혜경", "혜영", "혜정", "희자", "희숙", "희경", "희정", "숙자", "숙희", "명자", "명숙", "명희", "현숙", "현정", "현주", "현희", "은주", "은영", "은숙", "은경", "은희", "지영", "지숙", "지현", "지혜", "수진"],
+                    s: ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "한", "오", "서", "전", "권", "황", "안", "송", "홍", "양", "고", "문", "손", "배", "백", "허", "유", "남", "심", "노"]
+                }
+            }
+        };
+
+        const NAME_ROLES = {
+            fantasy: [
+                {id: 'royalty', text: '👑 왕족 / 고위 귀족'},
+                {id: 'knight', text: '⚔️ 기사 / 전사'},
+                {id: 'wizard', text: '✨ 마법사 / 현자'},
+                {id: 'commoner', text: '🔨 평민 / 상인'},
+                {id: 'servant', text: '🧹 하인 / 크리처'}
+            ],
+            wuxia: [
+                {id: 'noble', text: '🏯 명문 세가 / 정파'},
+                {id: 'villain', text: '😈 사파 / 마교'},
+                {id: 'warrior', text: '🗡️ 낭인 / 협객'}
+            ],
+            korean: [
+                {id: 'modern', text: '📱 현대적 / 트렌디'},
+                {id: 'classic', text: '📺 전통적 / 중후함'}
+            ]
+        };
+
         const generateUUID = () => {
             if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -523,6 +602,112 @@
                         </div>
                     </motion.div>
                 </div>
+            );
+        };
+
+    // NameGenerator 컴포넌트 (한국 이름 우선)
+    const NameGenerator = ({ onConfirm, onClose }) => {
+            // 1. 초기값을 'korean'과 그에 맞는 역할 'modern'으로 설정
+            const [genre, setGenre] = useState('korean');
+            const [role, setRole] = useState('modern');
+            const [gender, setGender] = useState('random');
+            const [generatedName, setGeneratedName] = useState(null);
+
+            // 장르 변경 시 역할(Role) 초기화
+            useEffect(() => {
+                // 해당 장르의 첫 번째 역할로 자동 선택
+                if (NAME_ROLES[genre] && NAME_ROLES[genre].length > 0) {
+                    setRole(NAME_ROLES[genre][0].id);
+                }
+            }, [genre]);
+
+            const handleGenerate = () => {
+                const dataSet = NAME_DB[genre][role];
+                if (!dataSet) return;
+
+                let targetGender = gender;
+                if (targetGender === 'random') {
+                    targetGender = Math.random() < 0.5 ? 'm' : 'f';
+                }
+
+                const nameList = targetGender === 'm' ? dataSet.m : dataSet.f;
+                const surnameList = dataSet.s;
+
+                const rawName = nameList[Math.floor(Math.random() * nameList.length)];
+                const rawSurname = surnameList[Math.floor(Math.random() * surnameList.length)];
+
+                let fullName = "";
+
+                if (genre === 'fantasy') {
+                    const [krName, enName] = rawName.split('|');
+                    const [krSur, enSur] = rawSurname.split('|');
+                    if (krSur === "(성 없음)") {
+                        fullName = `${krName} (${enName})`;
+                    } else {
+                        fullName = `${krName} ${krSur} (${enName} ${enSur})`;
+                    }
+                } else if (genre === 'wuxia') {
+                    const krName = rawName.split('|')[0];
+                    const krSur = rawSurname.split('|')[0];
+                    fullName = `${krSur}${krName}`;
+                } else {
+                    fullName = `${rawSurname}${rawName}`;
+                }
+                setGeneratedName(fullName);
+            };
+
+            // 처음 렌더링 시 자동 생성
+            useEffect(() => {
+                if(!generatedName) handleGenerate();
+            }, []);
+
+            return (
+                <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4 border-t border-slate-200 dark:border-zinc-700 pt-4 overflow-hidden"
+                >
+                    <div className="bg-slate-50 dark:bg-zinc-800/50 p-4 rounded-[3px] border border-slate-200 dark:border-zinc-700 mb-3">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest dark:text-zinc-400">🎲 이름 생성기</h3>
+                            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                            {/* 2. 드롭다운 옵션 순서 변경: 한국 -> 판타지 -> 무협 */}
+                            <select value={genre} onChange={(e) => setGenre(e.target.value)} className="p-2 text-xs font-bold rounded-[3px] border border-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 outline-none">
+                                <option value="korean">🏙️ 현대 한국</option>
+                                <option value="fantasy">⚔️ 판타지</option>
+                                <option value="wuxia">🐉 무협</option>
+                            </select>
+                            <select value={gender} onChange={(e) => setGender(e.target.value)} className="p-2 text-xs font-bold rounded-[3px] border border-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 outline-none">
+                                <option value="random">🎲 성별 랜덤</option>
+                                <option value="m">‍♂️ 남성</option>
+                                <option value="f">‍♀️ 여성</option>
+                            </select>
+                            <select value={role} onChange={(e) => setRole(e.target.value)} className="col-span-2 p-2 text-xs font-bold rounded-[3px] border border-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 outline-none">
+                                {NAME_ROLES[genre].map(r => (
+                                    <option key={r.id} value={r.id}>{r.text}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div 
+                            onClick={() => generatedName && onConfirm(generatedName)}
+                            className="bg-white dark:bg-zinc-700 p-3 rounded-[3px] border border-dashed border-indigo-300 dark:border-zinc-500 text-center cursor-pointer hover:bg-indigo-50 dark:hover:bg-zinc-600 transition-colors group relative"
+                        >
+                            <div className="text-sm font-black text-slate-800 dark:text-white break-keep leading-snug">
+                                {generatedName || "생성 중..."}
+                            </div>
+                            <div className="text-[9px] text-indigo-400 dark:text-indigo-300 font-bold mt-1 opacity-0 group-hover:opacity-100 transition-opacity">클릭하여 적용</div>
+                        </div>
+
+                        <button onClick={handleGenerate} className="w-full mt-2 py-2 bg-indigo-600 text-white text-xs font-black rounded-[3px] shadow-sm hover:bg-indigo-700 transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600">
+                            새로운 이름 생성
+                        </button>
+                    </div>
+                </motion.div>
             );
         };
 
@@ -1010,6 +1195,7 @@
             const [isZenMode, setIsZenMode] = useState(false); 
             const titleInputRef = useRef(null);
             const workspaceTimerRef = useRef(null);
+            const [isNameGenOpen, setIsNameGenOpen] = useState(false); // 이름 생성기 토글 상태
 
             // [추가된 기능] 화면 중앙 맞춤 함수 (fitToScreen)
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
@@ -2095,9 +2281,30 @@
                                             {/* 인물 전용 필드 */}
                                             {activeNode.type === '인물' && (
                                                 <>
-                                                    {/* 역할 + 이모지 + 이름 */}
+                                                    {/* 1열: 이모지 / 이름 / 주사위 */}
                                                     <div className="flex gap-3">
-                                                        <div className="w-28">
+                                                        <div className="w-14">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
+                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 rounded-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
+                                                            <div className="flex gap-1">
+                                                                <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
+                                                                <button 
+                                                                    onClick={() => setIsNameGenOpen(!isNameGenOpen)}
+                                                                    className={`mt-1 w-[42px] h-[42px] flex items-center justify-center rounded-[3px] border transition-colors ${isNameGenOpen ? 'bg-indigo-100 border-indigo-300 text-indigo-600 dark:bg-indigo-900/50 dark:border-indigo-700 dark:text-indigo-400' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-indigo-500 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300'}`}
+                                                                    title="이름 생성기 열기"
+                                                                >
+                                                                    🎲
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 2열: 역할 / 성별 / 나이 */}
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">역할</label>
                                                             <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.role} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, role: e.target.value}} : n))}>
                                                                 <option value="주인공">😁 주인공</option>
@@ -2107,17 +2314,6 @@
                                                                 <option value="엑스트라">🥸 엑스트라</option>
                                                             </select>
                                                         </div>
-                                                        <div className="w-16">
-                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
-                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 rounded-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
-                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
-                                                        </div>
-                                                    </div>
-                                                    {/* 성별 + 나이 + 직업 + 종족 */}
-                                                    <div className="flex gap-3">
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">성별</label>
                                                             <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.gender} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, gender: e.target.value}} : n))}>
@@ -2131,6 +2327,10 @@
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">나이</label>
                                                             <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.age} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, age: e.target.value}} : n))} placeholder="나이" />
                                                         </div>
+                                                    </div>
+
+                                                    {/* 3열: 직업 / 종족 */}
+                                                    <div className="flex gap-3">
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">직업</label>
                                                             <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.job} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, job: e.target.value}} : n))} placeholder="직업 입력" />
@@ -2175,6 +2375,19 @@
                                             <div>
                                                 <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모 및 세부 설정</label>
                                                 <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="메모를 입력하세요..." />
+                                                
+                                                {/* 이름 생성기 컴포넌트 위치 */}
+                                                <AnimatePresence>
+                                                    {isNameGenOpen && (
+                                                        <NameGenerator 
+                                                            onClose={() => setIsNameGenOpen(false)}
+                                                            onConfirm={(name) => {
+                                                                updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: name} : n));
+                                                                // showToast("이름이 적용되었습니다"); // Workspace에 showToast prop이 있다면 사용 가능
+                                                            }}
+                                                        />
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         </div>
                                     </div>
