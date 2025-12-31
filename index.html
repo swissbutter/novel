@@ -23,6 +23,9 @@
                         darkbg: '#09090b',
                         darkpanel: '#18181b',
                         darkborder: '#27272a',
+                    },
+                    borderRadius: {
+                        'sm': '3px',
                     }
                 }
             }
@@ -63,6 +66,14 @@
 
         body { background: #f1f5f9; overflow: hidden; user-select: none; transition: background-color 0.3s, color 0.3s; }
         .dark body { background: #242464; color: #e4e4e7; }
+        button:not([class*="rounded-full"]), input:not([class*="rounded-full"]), select:not([class*="rounded-full"]), textarea:not([class*="rounded-full"]), 
+        div[class*="bg-"]:not([class*="rounded-full"]):not([class*="rounded-none"]), 
+        div[class*="border"]:not([class*="rounded-full"]):not([class*="rounded-none"]), 
+        aside:not([class*="rounded-full"]), main:not([class*="rounded-full"]), 
+        section:not([class*="rounded-full"]), article:not([class*="rounded-full"]), 
+        header:not([class*="rounded-full"]), footer:not([class*="rounded-full"]) { 
+            border-radius: 3px; 
+        }
         .grid-background { background-color: #f8fafc; background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px); background-size: 20px 20px; }
         .dark .grid-background { background-color: #09090b; background-image: linear-gradient(#141416 1px, transparent 1px), linear-gradient(90deg, #141416 1px, transparent 1px); }
         .dot-background { background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1px, transparent 0) !important; background-size: 20px 20px !important; background-position: 0 0; }
