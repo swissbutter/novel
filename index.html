@@ -184,15 +184,7 @@
             } else if (node.type === '사건') styleClass += " node-event";
 
             return (
-                <div 
-                    onMouseDown={(e) => { if (e.button === 0) onNodeDragStart(e, node.id); onMouseDown(e, node.id); }} 
-                    onMouseUp={(e) => onMouseUp(e, node.id)} 
-                    onTouchStart={(e) => { if (onTouchStart) onTouchStart(e, node.id); }} 
-                    onTouchEnd={(e) => { if (onTouchEnd) onTouchEnd(e, node.id); }} 
-                    onClick={(e) => { if (e.detail === 1) { e.stopPropagation(); onClick(node.id); } }} 
-                    onDoubleClick={() => onDoubleClick(node.id)} 
-                    style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, willChange: isDragging ? 'transform' : 'auto', touchAction: 'none' }} 
-                    className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
+                <div onMouseDown={(e) => { if (e.button === 0) onNodeDragStart(e, node.id); onMouseDown(e, node.id); }} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (e.detail === 1) { e.stopPropagation(); onClick(node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0 }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
                     <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 Galmuri14-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
                     <div className="w-full h-full flex flex-col overflow-hidden Galmuri14-[inherit]">
                         {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${node.type === '인물' ? 'bg-blue-600 dark:bg-blue-800' : node.type === '사건' ? 'bg-red-600 dark:bg-red-800' : 'bg-amber-500 dark:bg-amber-700'}`} />}
@@ -1116,10 +1108,6 @@
             // 사이드바 노드 드래그용 상태
             const [sidebarDrag, setSidebarDrag] = useState({ active: false, nodeId: null, type: null, startIdx: null, currentIdx: null, x: 0, y: 0 });
             const sidebarDragRef = useRef(null);
-            const touchStartTimeRef = useRef(0);
-            const touchStartPosRef = useRef({ x: 0, y: 0, nodeId: null });
-            const longPressTimerRef = useRef(null);
-            const touchModeRef = useRef('none'); // 'none' | 'edge' | 'drag'
 
             const saveHistory = useCallback(() => { setHistory(prev => ({ past: [...prev.past.slice(-19), { projects }], future: [] })); }, [projects]);
             const undo = useCallback(() => { setHistory(prev => { if (prev.past.length === 0) return prev; const previous = prev.past[prev.past.length - 1]; const newPast = prev.past.slice(0, prev.past.length - 1); setProjects(previous.projects); showToast("실행 취소됨"); return { past: newPast, future: [{ projects }, ...prev.future] }; }); }, [projects, showToast]);
@@ -1289,9 +1277,6 @@
                 }
             }, [sidebarDrag.active, handleSidebarDragMove, handleSidebarDragEnd]);
 
-            const rafIdRef = useRef(null);
-            const dragUpdateRef = useRef({ dx: 0, dy: 0, pending: false });
-            
             const handleGlobalMouseMove = (e) => { 
                 if (activeProject.type === 'doc') return; 
                 const dx = e.clientX - lastMousePos.current.x;
@@ -1299,17 +1284,7 @@
                 if (isPanning) {
                     setPan(prev => ({ x: prev.x + dx, y: prev.y + dy })); 
                 } else if (draggingNodeId) { 
-                    dragUpdateRef.current = { dx, dy, pending: true };
-                    if (!rafIdRef.current) {
-                        rafIdRef.current = requestAnimationFrame(() => {
-                            if (dragUpdateRef.current.pending) {
-                                const { dx: deltaX, dy: deltaY } = dragUpdateRef.current;
-                                updateActiveProject(prev => prev.map(n => n.id === draggingNodeId ? { ...n, x: n.x + (deltaX / scale), y: n.y + (deltaY / scale) } : n)); 
-                                dragUpdateRef.current.pending = false;
-                            }
-                            rafIdRef.current = null;
-                        });
-                    }
+                    updateActiveProject(prev => prev.map(n => n.id === draggingNodeId ? { ...n, x: n.x + (dx / scale), y: n.y + (dy / scale) } : n)); 
                 } 
                 if (tempEdge) { 
                     const c = getCanvasCoords(e.clientX, e.clientY); 
@@ -1320,18 +1295,7 @@
 
             const handleGlobalMouseUp = (e) => {
                 if (activeProject.type === 'board') {
-                    if (rafIdRef.current) {
-                        cancelAnimationFrame(rafIdRef.current);
-                        rafIdRef.current = null;
-                    }
-                    if (draggingNodeId) {
-                        if (dragUpdateRef.current.pending) {
-                            const { dx: deltaX, dy: deltaY } = dragUpdateRef.current;
-                            updateActiveProject(prev => prev.map(n => n.id === draggingNodeId ? { ...n, x: n.x + (deltaX / scale), y: n.y + (deltaY / scale) } : n)); 
-                            dragUpdateRef.current.pending = false;
-                        }
-                        saveHistory();
-                    }
+                    if (draggingNodeId) saveHistory();
                     if (tempEdge) {
                         const c = getCanvasCoords(e.clientX, e.clientY);
                         // 마우스 위치에 있는 노드 찾기 (출발 노드 제외)
@@ -1361,74 +1325,6 @@
                     setDraggingNodeId(null);
                     setTempEdge(null);
                 }
-            };
-
-            const handleNodeTouchStart = (e, nodeId) => {
-                if (e.touches.length !== 1) return;
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const touch = e.touches[0];
-                touchStartPosRef.current = { x: touch.clientX, y: touch.clientY, nodeId };
-                touchStartTimeRef.current = Date.now();
-                lastMousePos.current = { x: touch.clientX, y: touch.clientY };
-                touchModeRef.current = 'none';
-                
-                // 길게 터치 감지 (300ms 후 노드 이동 모드)
-                longPressTimerRef.current = setTimeout(() => {
-                    if (touchModeRef.current === 'none') {
-                        touchModeRef.current = 'drag';
-                        setDraggingNodeId(nodeId);
-                        setTopNodeId(nodeId);
-                    }
-                }, 300);
-            };
-
-            const handleNodeTouchEnd = (e, nodeId) => {
-                if (longPressTimerRef.current) {
-                    clearTimeout(longPressTimerRef.current);
-                    longPressTimerRef.current = null;
-                }
-                
-                if (e.changedTouches.length === 0) return;
-                const touch = e.changedTouches[0];
-                const touchDuration = Date.now() - touchStartTimeRef.current;
-                const moveDistance = Math.sqrt(
-                    Math.pow(touch.clientX - touchStartPosRef.current.x, 2) + 
-                    Math.pow(touch.clientY - touchStartPosRef.current.y, 2)
-                );
-                
-                // 짧게 터치 후 드래그 (선 연결 모드)
-                if (touchModeRef.current === 'none' && touchDuration < 300 && moveDistance > 10) {
-                    touchModeRef.current = 'edge';
-                    const c = getCanvasCoords(touchStartPosRef.current.x, touchStartPosRef.current.y);
-                    setTempEdge({ fromId: nodeId, toX: c.x, toY: c.y });
-                    lastMousePos.current = { x: touch.clientX, y: touch.clientY };
-                } else if (touchModeRef.current === 'edge' && tempEdge) {
-                    // 선 연결 완료
-                    const c = getCanvasCoords(touch.clientX, touch.clientY);
-                    const targetNode = nodes.find(n =>
-                        n.id !== tempEdge.fromId &&
-                        c.x >= n.x && c.x <= n.x + CARD_W &&
-                        c.y >= n.y && c.y <= n.y + CARD_H
-                    );
-
-                    if (targetNode) {
-                        saveHistory();
-                        updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: '관계' }]);
-                    } else {
-                        saveHistory();
-                        const fromNode = findNode(tempEdge.fromId);
-                        const newNodeId = generateUUID();
-                        const defaultData = fromNode.type === '인물'
-                            ? { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' }
-                            : (fromNode.type === '사건' ? { emoji: '🔥', place: '', year: '', memo: '' } : { emoji: '💡', memo: '' });
-                        updateActiveProject(prev => [...prev, { id: newNodeId, x: c.x - CARD_W/2, y: c.y - CARD_H/2, label: `새 ${fromNode.type}`, type: fromNode.type, data: defaultData }], prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: newNodeId, label: '관계' }]);
-                    }
-                    setTempEdge(null);
-                }
-                
-                touchModeRef.current = 'none';
             };
 
             const handleDocInput = (e) => { let val = e.target.value; const pos = e.target.selectionStart; if (val === "") { updateDocContent("　"); return; } if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) { val = "　" + val; updateDocContent(val); setTimeout(() => { if(textareaRef.current) textareaRef.current.setSelectionRange(pos + 1, pos + 1); }, 0); return; } const lastChar = val[pos - 1]; if (lastChar === '#' || lastChar === '@') { const coords = getCaretCoordinates(e.target, pos); const totalWidth = 650; const totalHeight = 400; let finalX = coords.left; let finalY = coords.top + 25; if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20; if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10; setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 }); } else if (mention.active) { if (lastChar === ' ' || !lastChar || lastChar === '\n') setMention({ ...mention, active: false }); else setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 }); } updateDocContent(val); };
@@ -1615,24 +1511,7 @@
 
             const activeNode = useMemo(() => nodes.find(n => n.id === selectedNodeId), [nodes, selectedNodeId]);
             const activeEdge = useMemo(() => edges.find(e => e.id === selectedEdgeId), [edges, selectedEdgeId]);
-            const visibleNodes = useMemo(() => { 
-                if (activeProject?.type !== 'board') return []; 
-                const viewportW = window.innerWidth; 
-                const viewportH = window.innerHeight; 
-                const buffer = 300; 
-                const result = [];
-                for (let i = 0; i < nodes.length; i++) {
-                    const node = nodes[i];
-                    const screenX = node.x * scale + pan.x; 
-                    const screenY = node.y * scale + pan.y; 
-                    const screenW = CARD_W * scale; 
-                    const screenH = CARD_H * scale; 
-                    if (screenX + screenW + buffer > 0 && screenX - buffer < viewportW && screenY + screenH + buffer > 0 && screenY - buffer < viewportH) {
-                        result.push(node);
-                    }
-                }
-                return result;
-            }, [nodes, scale, pan, activeProject?.type]);
+            const visibleNodes = useMemo(() => { if (activeProject?.type !== 'board') return []; const viewportW = window.innerWidth; const viewportH = window.innerHeight; const buffer = 300; return nodes.filter(node => { const screenX = node.x * scale + pan.x; const screenY = node.y * scale + pan.y; const screenW = CARD_W * scale; const screenH = CARD_H * scale; return (screenX + screenW + buffer > 0 && screenX - buffer < viewportW && screenY + screenH + buffer > 0 && screenY - buffer < viewportH); }); }, [nodes, scale, pan, activeProject?.type]);
             const visibleEdges = useMemo(() => { if (activeProject?.type !== 'board') return []; const visibleIds = new Set(visibleNodes.map(n => n.id)); return edges.filter(edge => visibleIds.has(edge.from) || visibleIds.has(edge.to)); }, [edges, visibleNodes, activeProject?.type]);
 
             const renderProjectItem = (project) => {
@@ -1796,7 +1675,7 @@
             if (!activeProject) return null;
 
             return (
-                <div className={`flex w-screen h-screen no-drag transition-colors duration-500 ${(activeProject.type === 'board') ? 'grid-background' : 'dot-background'} ${(isPanning || draggingNodeId) ? 'is-dragging' : ''}`} onMouseMove={handleGlobalMouseMove} onMouseUp={handleGlobalMouseUp} onTouchMove={handleGlobalTouchMove} onTouchEnd={handleGlobalTouchEnd} onContextMenu={e => e.preventDefault()}>
+                <div className={`flex w-screen h-screen no-drag transition-colors duration-500 ${(activeProject.type === 'board') ? 'grid-background' : 'dot-background'} ${(isPanning || draggingNodeId) ? 'is-dragging' : ''}`} onMouseMove={handleGlobalMouseMove} onMouseUp={handleGlobalMouseUp} onContextMenu={e => e.preventDefault()}>
                     <aside className={`h-full bg-[#f8fafc] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#0f0f10] dark:border-zinc-800 transition-all duration-500 ease-in-out ${isZenMode ? 'w-0 -translate-x-full opacity-0' : 'w-80 opacity-100'}`}>
                         
                         <div className="w-full bg-slate-800 border-b border-slate-900 dark:border-#e2e8f0">
@@ -1972,7 +1851,7 @@
                                         {tempEdge && <line x1={findNode(tempEdge.fromId).x + CARD_W/2} y1={findNode(tempEdge.fromId).y + CARD_H/2} x2={tempEdge.toX} y2={tempEdge.toY} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4,4" />}
                                     </svg>
                                     {visibleNodes.map(node => (
-                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { e.stopPropagation(); setDraggingNodeId(id); setTopNodeId(id); }} onMouseDown={(e, id) => { if (e.button === 2) { const c = getCanvasCoords(e.clientX, e.clientY); setTempEdge({ fromId: id, toX: c.x, toY: c.y }); } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onTouchStart={handleNodeTouchStart} onTouchEnd={handleNodeTouchEnd} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
+                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={highlightedNodeId === node.id || selectedNodeId === node.id} isDragging={draggingNodeId === node.id} onNodeDragStart={(e, id) => { e.stopPropagation(); setDraggingNodeId(id); setTopNodeId(id); }} onMouseDown={(e, id) => { if (e.button === 2) { const c = getCanvasCoords(e.clientX, e.clientY); setTempEdge({ fromId: id, toX: c.x, toY: c.y }); } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } }} onClick={setHighlightedNodeId} onDoubleClick={(id) => { setHighlightedNodeId(null); setSelectedNodeId(id); }} onDelete={deleteNode} />
                                     ))}
                                 </div>
                             </>
