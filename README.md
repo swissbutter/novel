@@ -4,9 +4,6 @@
 
 사각 스튜디오는 복잡한 설치 과정 없이 **단 하나의 HTML 파일**만으로 브라우저에서 즉시 실행되는 웹 애플리케이션입니다. 인물 관계도 시각화부터 원고 집필까지 하나의 워크스페이스에서 해결하세요.
 
-![Sagak Studio Preview](https://via.placeholder.com/800x400?text=Sagak+Studio+Screenshot)
-> *이곳에 실제 스크린샷 이미지 주소를 넣어주세요.*
-
 <br/>
 
 ## ✨ 주요 기능 (Key Features)
