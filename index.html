@@ -189,7 +189,15 @@
                     </div>
                 </div>
             );
-        });
+        }, (prevProps, nextProps) => {
+            return (
+                prevProps.node.id === nextProps.node.id &&
+                prevProps.node.x === nextProps.node.x &&
+                prevProps.node.y === nextProps.node.y &&
+                prevProps.node.label === nextProps.node.label &&
+                prevProps.isTop === nextProps.isTop
+            );
+        });  // NodeCard 컴포넌트 끝
 
         // BookCover
         const BookCover = memo(({ book, onClick, onDelete, onEdit }) => {
@@ -352,6 +360,249 @@
                     </motion.div> 
                 </div> 
             ); 
+        };
+
+        // ExportModal 컴포넌트 추가
+        const ExportModal = ({ onClose, onConfirm }) => {
+            const now = new Date();
+            const defaultFilename = `sagak_studio_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            const [filename, setFilename] = useState(defaultFilename);
+            const [exportType, setExportType] = useState('json');
+            const [password, setPassword] = useState('');
+            const [passwordConfirm, setPasswordConfirm] = useState('');
+
+            const handleSubmit = () => {
+                if (!filename.trim()) {
+                    alert("파일명을 입력해주세요.");
+                    return;
+                }
+                
+                if (exportType === 'vel') {
+                    if (!password) {
+                        alert("암호를 입력해주세요.");
+                        return;
+                    }
+                    if (password !== passwordConfirm) {
+                        alert("암호가 일치하지 않습니다.");
+                        return;
+                    }
+                }
+                
+                onConfirm(filename, exportType, password);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }} 
+                        animate={{ opacity: 1, scale: 1 }} 
+                        className="bg-white dark:bg-darkpanel p-8 rounded-sm shadow-2xl w-[450px] border border-slate-200 dark:border-zinc-700" 
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">파일 저장</h2>
+
+                        {/* 파일명 + 저장 형식 (한 줄) */}
+                        <div className="mb-6">
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">파일명</label>
+                            <div className="flex gap-2">
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    value={filename}
+                                    onChange={(e) => setFilename(e.target.value)}
+                                    className="flex-1 p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                                    placeholder="파일명 입력"
+                                />
+                                <select
+                                    value={exportType}
+                                    onChange={(e) => setExportType(e.target.value)}
+                                    className="px-4 py-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                                >
+                                    <option value="json">일반 (.json)</option>
+                                    <option value="vel">암호화 (.vel)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* 암호 입력 (vel 선택 시만 표시) */}
+                        {exportType === 'vel' && (
+                            <div className="mb-6 space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">암호</label>
+                                    <input 
+                                        type="password" 
+                                        value={password} 
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="암호 입력"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">암호 확인</label>
+                                    <input 
+                                        type="password" 
+                                        value={passwordConfirm} 
+                                        onChange={(e) => setPasswordConfirm(e.target.value)}
+                                        className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="암호 재입력"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 버튼 */}
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={onClose}
+                                className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-sm transition-colors"
+                            >
+                                취소
+                            </button>
+                            <button 
+                                onClick={handleSubmit}
+                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-sm shadow-md transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600"
+                            >
+                                저장하기
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            );
+        };
+
+        // ImportModal
+        const ImportModal = ({ onClose, onConfirm, fileData, isEncrypted }) => {
+            const [password, setPassword] = useState('');
+            const [importMode, setImportMode] = useState('replace'); // 'replace' 또는 'append'
+            const [step, setStep] = useState(isEncrypted ? 'password' : 'mode'); // 'password' 또는 'mode'
+            const [decryptedData, setDecryptedData] = useState(null);
+
+            const handlePasswordSubmit = () => {
+                if (!password.trim()) {
+                    alert("암호를 입력해주세요.");
+                    return;
+                }
+
+                try {
+                    const bytes = CryptoJS.AES.decrypt(fileData, password);
+                    const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+                    if (!decryptedText) throw new Error("Decryption failed");
+                    const parsed = JSON.parse(decryptedText);
+                    setDecryptedData(parsed);
+                    setStep('mode');
+                } catch (error) {
+                    alert("비밀번호가 틀리거나 손상된 파일입니다.");
+                }
+            };
+
+            const handleImport = () => {
+                const dataToImport = isEncrypted ? decryptedData : JSON.parse(fileData);
+                onConfirm(dataToImport, importMode === 'replace');
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    if (step === 'password') {
+                        handlePasswordSubmit();
+                    } else {
+                        handleImport();
+                    }
+                }
+                if (e.key === 'Escape') onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white dark:bg-darkpanel p-8 rounded-sm shadow-2xl w-[450px] border border-slate-200 dark:border-zinc-700"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {step === 'password' ? (
+                            <>
+                                <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">암호화된 파일</h2>
+
+                                <div className="mb-6">
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">암호 입력</label>
+                                    <input
+                                        autoFocus
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        onKeyDown={handleKeyDown}
+                                        className="w-full p-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="파일 암호를 입력하세요"
+                                    />
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={onClose}
+                                        className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-sm transition-colors"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        onClick={handlePasswordSubmit}
+                                        className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-sm shadow-md transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600"
+                                    >
+                                        확인
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">파일 불러오기</h2>
+
+                                <div className="mb-6">
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-3 uppercase">불러오기 방식</label>
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() => setImportMode('replace')}
+                                            className={`w-full p-4 rounded-sm border-2 font-bold text-sm transition-all text-left ${
+                                                importMode === 'replace'
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                                                    : 'border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="font-black mb-1">덮어쓰기</div>
+                                            <div className="text-xs opacity-70">기존 서재를 삭제하고 불러온 파일로 대체합니다</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setImportMode('append')}
+                                            className={`w-full p-4 rounded-sm border-2 font-bold text-sm transition-all text-left ${
+                                                importMode === 'append'
+                                                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                                                    : 'border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="font-black mb-1">추가하기</div>
+                                            <div className="text-xs opacity-70">기존 서재 뒤에 불러온 파일을 추가합니다</div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={onClose}
+                                        className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-sm transition-colors"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        onClick={handleImport}
+                                        className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-sm shadow-md transition-colors dark:bg-indigo-700 dark:hover:bg-indigo-600"
+                                    >
+                                        불러오기
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </motion.div>
+                </div>
+            );
         };
 
         // Workspace
@@ -1234,89 +1485,79 @@
             );
         };
 
-        const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, isDarkMode, toggleDarkMode, fontMode, toggleFont }) => { 
-            const fileInputRef = useRef(null); 
+        const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, isDarkMode, toggleDarkMode, fontMode, toggleFont }) => {
+            const fileInputRef = useRef(null);
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
 
-            // [수정됨] 내보내기 함수 (암호화 + .vel 확장자)
+            const [exportModal, setExportModal] = useState({ isOpen: false });
+            const [importModal, setImportModal] = useState({ isOpen: false, fileData: null, isEncrypted: false });
+
             const handleExport = () => { 
-                const password = prompt("파일을 암호화하시겠습니까?\n비밀번호를 입력하면 [.vel]로, 취소하면 일반 [.json]으로 저장됩니다.");
+                setExportModal({ isOpen: true });
+            };
+
+            const handleConfirmExport = (filename, exportType, password) => {
+                const jsonString = JSON.stringify(books);
                 
-                // 1. 암호화 저장 (.vel)
-                if (password) {
-                    try {
-                        const jsonString = JSON.stringify(books);
-                        // AES 암호화
-                        const encrypted = CryptoJS.AES.encrypt(jsonString, password).toString();
-                        
-                        const blob = new Blob([encrypted], { type: "text/plain;charset=utf-8" });
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = "sagak_library_secured.vel"; // .vel 확장자
-                        link.click();
-                        URL.revokeObjectURL(link.href);
-                    } catch (e) {
-                        alert("암호화 저장 중 오류가 발생했습니다.");
-                        console.error(e);
-                    }
-                } 
-                // 2. 일반 저장 (.json) - 비밀번호 입력창에서 취소 또는 빈값 입력 시
-                else {
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(books)); 
-                    const downloadAnchorNode = document.createElement('a'); 
-                    downloadAnchorNode.setAttribute("href", dataStr); 
-                    downloadAnchorNode.setAttribute("download", "sagak_library.json"); 
-                    document.body.appendChild(downloadAnchorNode); 
-                    downloadAnchorNode.click(); 
-                    downloadAnchorNode.remove(); 
+                if (exportType === 'vel') {
+                    // 암호화 저장
+                    const encrypted = CryptoJS.AES.encrypt(jsonString, password).toString();
+                    const blob = new Blob([encrypted], { type: "text/plain;charset=utf-8" });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${filename}.vel`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } else {
+                    // 일반 JSON 저장
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonString);
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", `${filename}.json`);
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
                 }
-            }; 
-
-            // [수정됨] 불러오기 함수 (암호화 해독 로직 추가)
-            const handleFileChange = (e) => { 
-                const file = e.target.files[0]; 
-                if (!file) return; 
                 
-                const reader = new FileReader(); 
-                reader.onload = (e) => { 
+                setExportModal({ isOpen: false });
+            };
+
+
+            // [수정됨] 불러오기 함수 - 모달 방식으로 변경
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
                     const fileContent = e.target.result;
-                    let parsedData = null;
+                    let isEncrypted = false;
 
                     try {
-                        // 1. 일반 JSON으로 시도
-                        parsedData = JSON.parse(fileContent);
+                        // JSON 파싱 시도
+                        JSON.parse(fileContent);
+                        // 성공하면 일반 JSON 파일
+                        isEncrypted = false;
                     } catch (jsonError) {
-                        // 2. JSON 파싱 실패 시 암호화된 파일로 간주
-                        const password = prompt("암호화된 파일(.vel)입니다. 비밀번호를 입력하세요:");
-                        if (password) {
-                            try {
-                                const bytes = CryptoJS.AES.decrypt(fileContent, password);
-                                const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
-                                if (!decryptedData) throw new Error("Decryption failed");
-                                parsedData = JSON.parse(decryptedData);
-                            } catch (decryptError) {
-                                alert("비밀번호가 틀리거나 손상된 파일입니다.");
-                                return;
-                            }
-                        } else {
-                            return; // 비밀번호 입력 취소
-                        }
+                        // 실패하면 암호화된 파일
+                        isEncrypted = true;
                     }
 
-                    // 데이터 로드 로직 (기존과 동일)
-                    if (parsedData && Array.isArray(parsedData)) { 
-                        if (confirm("기존 서재를 비우고 불러온 파일로 대체하시겠습니까? \n('취소'를 누르면 기존 목록 뒤에 추가됩니다.)")) {
-                            onImport(parsedData, true); 
-                        } else {
-                            onImport(parsedData, false); 
-                        }
-                    } else { 
-                        alert("올바르지 않은 데이터 형식입니다."); 
-                    } 
-                }; 
-                reader.readAsText(file); 
+                    // ImportModal 열기
+                    setImportModal({ isOpen: true, fileData: fileContent, isEncrypted });
+                };
+                reader.readAsText(file);
                 // 같은 파일을 다시 불러올 수 있도록 초기화
                 e.target.value = '';
+            };
+
+            const handleConfirmImport = (data, shouldReplace) => {
+                if (data && Array.isArray(data)) {
+                    onImport(data, shouldReplace);
+                    setImportModal({ isOpen: false, fileData: null, isEncrypted: false });
+                } else {
+                    alert("올바르지 않은 데이터 형식입니다.");
+                }
             }; 
 
             // ... 나머지 코드는 기존과 동일 ...
@@ -1337,9 +1578,11 @@
                 setModalConfig({ isOpen: false, mode: 'create', targetBook: null });
             };
 
-            return ( 
-                <div className="w-screen h-screen flex flex-col bg-[#f1f5f9] dark:bg-darkbg transition-colors duration-300"> 
-                    {modalConfig.isOpen && ( <BookSettingsModal initialData={modalConfig.targetBook} onClose={() => setModalConfig({ isOpen: false, mode: 'create', targetBook: null })} onConfirm={handleConfirmModal} /> )} 
+            return (
+                <div className="w-screen h-screen flex flex-col bg-[#f1f5f9] dark:bg-darkbg transition-colors duration-300">
+                    {modalConfig.isOpen && ( <BookSettingsModal initialData={modalConfig.targetBook} onClose={() => setModalConfig({ isOpen: false, mode: 'create', targetBook: null })} onConfirm={handleConfirmModal} /> )}
+                    {exportModal.isOpen && ( <ExportModal onClose={() => setExportModal({ isOpen: false })} onConfirm={handleConfirmExport} /> )}
+                    {importModal.isOpen && ( <ImportModal onClose={() => setImportModal({ isOpen: false, fileData: null, isEncrypted: false })} onConfirm={handleConfirmImport} fileData={importModal.fileData} isEncrypted={importModal.isEncrypted} /> )}
                     <header className="h-16 px-8 flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 dark:bg-darkpanel/80 dark:border-darkborder"> 
                         <div className="flex items-center gap-2"> <div className="w-6 h-6 bg-slate-900 Galmuri14-[3px] dark:bg-zinc-100"></div> <span className="text-lg font-black tracking-tight text-slate-900 dark:text-zinc-100">SAGAK STUDIO</span> </div> 
                         <div className="flex items-center gap-3"> 
