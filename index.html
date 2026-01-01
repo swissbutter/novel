@@ -76,7 +76,7 @@
         .dot-background { background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1px, transparent 0) !important; background-size: 20px 20px !important; background-position: 0 0; }
         .dark .dot-background { background-color: #09090b; background-image: radial-gradient(#27272a 1px, transparent 0) !important; }
         .canvas-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; overflow: visible; }
-        .edge-path { fill: none; transition: stroke 0.2s; stroke-linecap: round; stroke-linejoin: round; }
+        .edge-path { fill: none; transition: stroke 0.2s, d 0.15s ease-out; stroke-linecap: round; stroke-linejoin: round; }
         .edge-hitbox { fill: none; stroke: transparent; stroke-width: 20; cursor: pointer; pointer-events: stroke; }
         .node-glass { background: #ffffff; backdrop-filter: blur(10px); border: 1px solid #cbd5e1; border-radius: 3px; box-sizing: border-box; }
         .dark .node-glass { background: #27272a; border: 1px solid #52525b; color: #e4e4e7; }
@@ -90,6 +90,7 @@
             transform: translateZ(0); 
         }
         .is-dragging .zoom-container { transition: none; }
+        .is-dragging .edge-path { transition: none; }
         .node-protagonist { outline: 8px solid rgba(37, 99, 235, 0.2); background: #d7e7fc; }
         .dark .node-protagonist { outline: 8px solid rgba(37, 99, 235, 0.2); background: #172554; }
         .node-antagonist { border: 1px solid #c88885; background: #fbdfde; }
@@ -315,7 +316,7 @@
             const badge = getNodeBadge(node);
 
             return (
-                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : (isGroup ? 5 : 10), width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, ...(isGroup && node.data.color ? { borderColor: node.data.color } : {}) }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
+                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : (isGroup ? 5 : 10), width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, transition: isDragging ? 'none' : 'transform 0.15s ease-out, box-shadow 0.2s', ...(isGroup && node.data.color ? { borderColor: node.data.color } : {}) }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''}`}>
                     <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
                     <div className="w-full h-full flex flex-col overflow-hidden rounded-[inherit]">
                         {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${getNodeBarColor(node)}`} />}
@@ -337,7 +338,7 @@
         };  // NodeCard 컴포넌트 끝
 
         // GroupNode - 그룹 영역 노드
-        const GroupNode = ({ node, isSelected, onMouseDown, onDoubleClick, onDelete, onResize }) => {
+        const GroupNode = ({ node, isSelected, isDragging, onMouseDown, onDoubleClick, onDelete, onResize }) => {
             const width = node.data.width || 400;
             const height = node.data.height || 300;
             const color = node.data.color || '#94a3b8';
@@ -391,8 +392,9 @@
                         left: 0,
                         borderColor: color,
                         backgroundColor: `${color}15`,
+                        transition: (isResizing || isDragging) ? 'none' : 'transform 0.15s ease-out, box-shadow 0.2s',
                     }}
-                    className={`cursor-grab active:cursor-grabbing group border-2 border-dashed rounded-[3px] ${isSelected ? 'border-solid shadow-lg' : ''} ${isResizing ? 'transition-none' : 'transition-shadow'}`}
+                    className={`cursor-grab active:cursor-grabbing group border-2 border-dashed rounded-[3px] ${isSelected ? 'border-solid shadow-lg' : ''}`}
                 >
                     {/* 삭제 버튼 */}
                     <button
@@ -1565,7 +1567,6 @@
                 const rect = containerRef.current.getBoundingClientRect(); 
                 return { x: (clientX - rect.left - pan.x) / scale, y: (clientY - rect.top - pan.y) / scale }; 
             };
-            const findNodeBase = (id) => nodes.find(n => n.id === id);
             // 드래그 중 오프셋이 적용된 노드 위치 반환
             const findNode = (id) => {
                 const node = nodes.find(n => n.id === id);
@@ -2713,7 +2714,7 @@
 
                                     {/* 그룹 노드 먼저 렌더링 (뒤에 배치) */}
                                     {visibleGroupNodes.map(node => (
-                                        <GroupNode key={node.id} node={node} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} onResize={resizeGroupNode} />
+                                        <GroupNode key={node.id} node={node} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id || dragOffset.nodeIds.has(node.id))} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} onResize={resizeGroupNode} />
                                     ))}
                                     {/* 일반 노드 나중에 렌더링 (앞에 배치) */}
                                     {visibleRegularNodes.map(node => (
@@ -2909,7 +2910,7 @@
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     className="fixed inset-0 bg-black/20 z-[199]"
-                                    onClick={() => { setSelectedNodeId(null); setHighlightedNodeId(null); }}
+                                    onClick={() => { setSelectedNodeId(null); }}
                                 />
                                 <motion.div
                                     initial={{ x: '100%' }}
