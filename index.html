@@ -128,7 +128,7 @@
         const CARD_H = 200;
         const BOOK_COLORS = ['#18181b', '#3c3c3c', '#881337', '#7c2d12', '#424034', '#73734e', '#2e3b36', '#134e4a', '#1e3a8a', '#33272c', '#4c1d95', '#451a03'];
         const NAME_DB = {
-           fantasy: {
+            fantasy: {
                 royalty: {
                     m: ["아서|Arthur", "윌리엄|William", "리처드|Richard", "에드워드|Edward", "알렉산더|Alexander", "루이|Louis", "헨리|Henry", "프레데릭|Frederick", "레오|Leo", "막시밀리안|Maximilian", "필립|Philip", "찰스|Charles", "조지|George", "알라릭|Alaric", "테오도르|Theodore", "발레리우스|Valerius", "아우구스투스|Augustus", "세바스찬|Sebastian", "율리우스|Julius", "카시우스|Cassius", "데미안|Demian", "루시안|Lucian", "아드리안|Adrian", "줄리안|Julian", "베네딕트|Benedict", "콘스탄틴|Constantine", "가브리엘|Gabriel", "미카엘|Michael", "라파엘|Raphael", "오스카|Oscar", "클로비스|Clovis", "샤를마뉴|Charlemagne", "피핀|Pepin", "로타르|Lothair", "콘라드|Conrad", "오토|Otto", "지기스문트|Sigismund", "페르디난드|Ferdinand", "알폰소|Alfonso", "펠리페|Felipe", "카를로스|Carlos", "프란시스|Francis", "제임스|James", "해롤드|Harold", "에드문드|Edmund", "앨버트|Albert", "빅터|Victor", "니콜라스|Nicholas", "블라디미르|Vladimir", "구스타프|Gustav", "크리스티안|Christian", "레오폴드|Leopold", "루드비히|Ludwig", "프란츠|Franz", "루돌프|Rudolf", "발트해머|Waldemar", "카시미르|Casimir", "마티아스|Matthias", "스테판|Stefan", "이반|Ivan", "아게실라우스|Agesilaus", "레오니다스|Leonidas", "크세르크세스|Xerxes", "다리우스|Darius", "키루스|Cyrus", "트라야누스|Trajan", "하드리아누스|Hadrian", "마르쿠스|Marcus", "콤모두스|Commodus", "셉티미우스|Septimius", "카라칼라|Caracalla", "디오클레티아누스|Diocletian", "발렌티니안|Valentinian", "테오도시우스|Theodosius", "유스티니아누스|Justinian", "벨리사리우스|Belisarius", "헤라클리우스|Heraclius", "바실리우스|Basilius", "레오|Leo", "로마누스|Romanus", "알렉시우스|Alexius", "마누엘|Manuel", "안드로니쿠스|Andronicus", "볼레슬라프|Boleslaw", "미에슈코|Mieszko", "라디슬라프|Ladislav", "벨라|Bela", "이스트반|Istvan", "칼만|Kalman", "러요슈|Lajos"],
                     f: ["엘리자베스|Elizabeth", "빅토리아|Victoria", "이사벨라|Isabella", "마틸다|Matilda", "아델라|Adela", "베아트리스|Beatrice", "샬롯|Charlotte", "엘레노어|Eleanor", "마가렛|Margaret", "캐서린|Catherine", "소피아|Sophia", "아나스타샤|Anastasia", "줄리아|Julia", "클라우디아|Claudia", "발렌티나|Valentina", "세실리아|Cecilia", "오필리아|Ophelia", "코델리아|Cordelia", "제네비브|Genevieve", "로잘린드|Rosalind", "비비안|Vivian", "세라피나|Seraphina", "아우렐리아|Aurelia", "루시아|Lucia", "헬레나|Helena", "다이아나|Diana", "카밀라|Camilla", "오로라|Aurora", "실비아|Sylvia", "마리|Marie", "아델라이드|Adelaide", "콘스탄스|Constance", "이디스|Edith", "필리파|Philippa", "조안|Joan", "앤|Anne", "크리스티나|Christina", "빌헬미나|Wilhelmina", "앙투아네트|Antoinette", "조세핀|Josephine", "테레사|Theresa", "이레네|Irene", "제니아|Xenia", "타티아나|Tatiana", "올가|Olga", "잉그리드|Ingrid", "아스트리드|Astrid", "브리짓|Bridget", "우르술라|Ursula", "클레멘타인|Clementine", "플로라|Flora", "블랑쉬|Blanche", "가브리엘라|Gabriella", "알렉산드라|Alexandra", "캐롤라인|Caroline", "루이즈|Louise", "엠마뉴엘|Emmanuelle", "비올라|Viola", "미란다|Miranda", "리건|Regan", "제노비아|Zenobia", "클레오파트라|Cleopatra", "네페르티티|Nefertiti", "하트셉수트|Hatshepsut", "아그리피나|Agrippina", "메살리나|Messalina", "옥타비아|Octavia", "리비아|Livia", "루크레치아|Lucretia", "베로니카|Veronica", "우라니아|Urania", "칼리오페|Calliope", "에우로파|Europa", "안티고네|Antigone", "이스메네|Ismene", "일렉트라|Electra", "이피게니아|Iphigenia", "라비니아|Lavinia", "디도|Dido", "기네비어|Guinevere", "이졸데|Isolde", "모르간|Morgan", "님에|Nimue", "일레인|Elaine", "이그레인|Igraine", "모가즈|Morgause", "그리젤다|Griselda", "고디바|Godiva", "로웨나|Rowena", "에오윈|Eowyn"],
@@ -2328,17 +2328,17 @@
                 <div className={`flex w-screen h-screen no-drag transition-colors duration-500 ${(activeProject.type === 'board') ? 'grid-background' : 'dot-background'} ${(isPanning || draggingNodeId) ? 'is-dragging' : ''}`} onMouseMove={handleGlobalMouseMove} onMouseUp={handleGlobalMouseUp} onContextMenu={e => e.preventDefault()}>
                     <aside className={`h-full bg-[#f8fafc] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#0f0f10] dark:border-zinc-800 transition-all duration-500 ease-in-out ${
                         isZenMode ? 'w-0 -translate-x-full opacity-0' : 'w-80 opacity-100'
-                    }`}>
+                    }`} style={{ borderRadius: 0 }}>
                         
-                        <div className="w-full bg-slate-800 border-b border-slate-900 dark:border-#e2e8f0">
-                            <button onClick={onExit} className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300">
-                                <div className="w-4 h-4 bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all border border-slate-400">
+                        <div className="w-full bg-slate-800 hover:bg-slate-700 rounded-none">
+                            <div className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300 cursor-pointer">
+                                <div className="w-4 h-4 bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all">
                                     <IconBack className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
                                 </div>
                                 <div className="flex flex-col items-start dark:hover:bg-zinc-800/80">
                                     <span className="text-[12px] text-slate-400 tracking-tight group-hover:text-slate-200">내 서재로 돌아가기</span>
                                 </div>
-                            </button>
+                            </div>
                         </div>
 
                         <div className="px-6 pt-6 pb-5 bg-white dark:bg-[#161618] border-b border-slate-200/60 dark:border-zinc-800/60">
