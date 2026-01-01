@@ -72,6 +72,8 @@
   - `docx` & `FileSaver`: 워드 문서 생성 및 저장
   - `jszip`: 데이터 압축
 
+<br/>
+
 ## 📜 라이선스
 
 This project is licensed under the **MIT License**.
