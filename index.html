@@ -118,6 +118,14 @@
         .dark .mention-list { background: #18181b; border-color: #27272a; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
         .mention-item-active { background-color: #f1f5f9; border-left: 4px solid #4f46e5; }
         .dark .mention-item-active { background-color: #27272a; border-left: 4px solid #4f46e5; }
+        .editor-textarea.zen-active {
+            padding-bottom: 50vh !important;
+            -ms-overflow-style: none !important; 
+            scrollbar-width: none !important; 
+        }
+        .editor-textarea.zen-active::-webkit-scrollbar {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1404,6 +1412,46 @@
                 return () => { if(workspaceTimerRef.current) clearTimeout(workspaceTimerRef.current); }; 
             }, [projects, activeProjectId, expandedProjects, scale, pan]);
 
+            const scrollTargetRef = useRef(0);
+            const scrollAnimRef = useRef(null);
+
+            const updateFocusScroll = useCallback(() => {
+                if (!isZenMode || !textareaRef.current) return;
+                
+                const textarea = textareaRef.current;
+                const coords = getCaretCoordinates(textarea, textarea.selectionStart);
+                const rect = textarea.getBoundingClientRect();
+                const contentOffsetTop = coords.top - rect.top - textarea.scrollTop;
+                const targetScroll = contentOffsetTop - (textarea.clientHeight * 0.6);
+                
+                scrollTargetRef.current = targetScroll;
+            }, [isZenMode]);
+
+            useEffect(() => {
+                if (!isZenMode) {
+                    if (scrollAnimRef.current) cancelAnimationFrame(scrollAnimRef.current);
+                    return;
+                }
+
+                updateFocusScroll();
+
+                const loop = () => {
+                    if (textareaRef.current) {
+                        const current = textareaRef.current.scrollTop;
+                        const target = scrollTargetRef.current;
+                        const diff = target - current;
+
+                        if (Math.abs(diff) > 1) {
+                            textareaRef.current.scrollTop = current + diff * 0.1;
+                        }
+                    }
+                    scrollAnimRef.current = requestAnimationFrame(loop);
+                };
+                
+                loop();
+                return () => cancelAnimationFrame(scrollAnimRef.current);
+            }, [isZenMode, updateFocusScroll]);
+
             useEffect(() => {
                 const handleZenShortcut = (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
@@ -1968,22 +2016,18 @@
                         );
 
                         if (targetNode) {
-                            // 중복 엣지 검사 (A→B 또는 B→A 둘 다 확인)
                             const edgeExists = edges.some(e =>
                                 (e.from === tempEdge.fromId && e.to === targetNode.id) ||
                                 (e.from === targetNode.id && e.to === tempEdge.fromId)
                             );
                             if (edgeExists) {
-                                // 이미 연결되어 있으면 무시
                             } else {
-                                // 다른 노드 위에서 놓으면 연결
                                 saveHistory();
                                 const fromNode = findNode(tempEdge.fromId);
                                 const edgeLabel = '';
                                 updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: edgeLabel }]);
                             }
                         } else {
-                            // 빈 공간에서 놓으면 새 노드 생성
                             const fromNode = findNode(tempEdge.fromId);
                             if (fromNode) {
                                 saveHistory();
@@ -2002,31 +2046,81 @@
             };
 
             const handleDocInput = (e) => {
+                const inputType = e.nativeEvent.inputType;
                 let val = e.target.value;
                 const pos = e.target.selectionStart;
-
                 const lastChar = val[pos - 1];
+
+                if (inputType === 'insertFromPaste') {
+                    if (mention.active) {
+                        const currentSearch = val.slice(mention.pos, pos);
+                        if (/[\s\n]/.test(currentSearch)) {
+                            setMention({ ...mention, active: false });
+                        } else {
+                            setMention({ ...mention, search: currentSearch, selectedIndex: 0 });
+                        }
+                    }
+                    updateDocContent(val);
+                    return;
+                }
+
                 if (lastChar === '#' || lastChar === '@' || lastChar === '$') {
                     const coords = getCaretCoordinates(e.target, pos);
-                    const totalWidth = 650;
-                    const totalHeight = 400;
-                    let finalX = coords.left;
-                    let finalY = coords.top + 25;
+                    const rect = e.target.getBoundingClientRect();
+                    const visualY = coords.top - (e.target.scrollTop * 2);
 
-                    if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20;
-                    if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10;
+                    let finalX, finalY;
+
+                    if (isZenMode) {
+                        finalX = Math.max(rect.left + 20, rect.left + coords.left - 610);
+                        finalY = visualY + 20; 
+                    } else {
+                        finalX = coords.left;
+                        finalY = visualY + 25;
+                    }
+
+                    const menuWidth = 600;
+                    const menuHeight = 400;
+
+                    if (finalX + menuWidth > window.innerWidth) finalX = window.innerWidth - menuWidth - 20;
+                    if (!isZenMode && (finalY + menuHeight > window.innerHeight)) {
+                        finalY = visualY - menuHeight - 10; 
+                    }
 
                     setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 });
+
                 } else if (mention.active) {
-                    if (lastChar === ' ' || !lastChar || lastChar === '\n') {
+                    const currentSearch = val.slice(mention.pos, pos);
+                    if (!lastChar || /[\s\n]/.test(lastChar) || pos < mention.pos) {
                         setMention({ ...mention, active: false });
                     } else {
-                        setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 });
+                        setMention({ ...mention, search: currentSearch, selectedIndex: 0 });
                     }
                 }
+                
                 updateDocContent(val);
             };
-            const insertMention = (node) => { const text = activeProject.content || ""; const before = text.slice(0, mention.pos - 1); const after = text.slice(mention.pos + mention.search.length); const newText = before + node.label + "" + after; updateDocContent(newText); setMention({ ...mention, active: false }); setTimeout(() => textareaRef.current.focus(), 10); };
+
+            const insertMention = (node) => { 
+                const text = activeProject.content || ""; 
+                const before = text.slice(0, mention.pos - 1); 
+                const after = text.slice(mention.pos + mention.search.length); 
+                const insertedText = node.label + "";
+                const newText = before + insertedText + after; 
+                updateDocContent(newText); 
+                setMention({ ...mention, active: false }); 
+                const newCursorPos = before.length + insertedText.length;
+                requestAnimationFrame(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.focus();
+                        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+                        if (typeof updateFocusScroll === 'function') {
+                            updateFocusScroll();
+                        }
+                    }
+                });
+            };
+
             const handleDocKeyDown = (e) => {
                 if (e.nativeEvent.isComposing) return;
                 
@@ -2783,7 +2877,28 @@
                                         </div>
                                         <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
                                     </div>
-                                    <textarea ref={textareaRef} className="editor-textarea custom-scroll" value={activeProject.content || ""} onChange={handleDocInput} onKeyDown={handleDocKeyDown} onMouseMove={handleDocMouseMove} onMouseOut={() => setHoverInfo({ ...hoverInfo, visible: false })} placeholder="이곳에 웹소설 내용을 작성하세요... (@인물 또는 #사건 입력)" />
+                                    <textarea 
+                                        ref={textareaRef} 
+                                        // [중요] zen-active 클래스 조건부 적용
+                                        className={`editor-textarea custom-scroll ${isZenMode ? 'zen-active' : ''}`} 
+                                        value={activeProject.content || ""} 
+                                        onChange={(e) => {
+                                            handleDocInput(e);
+                                            updateFocusScroll(); // [중요] 입력할 때마다 목표 스크롤 갱신
+                                        }} 
+                                        onKeyDown={(e) => {
+                                            handleDocKeyDown(e);
+                                            // 엔터나 백스페이스 누를 때도 갱신
+                                            if (e.key === 'Enter' || e.key === 'Backspace') requestAnimationFrame(updateFocusScroll);
+                                        }}
+                                        // [중요] 클릭하거나 키보드로 커서 이동 시에도 중앙 정렬
+                                        onClick={() => updateFocusScroll()}
+                                        onKeyUp={() => updateFocusScroll()}
+                                        
+                                        onMouseMove={handleDocMouseMove} 
+                                        onMouseOut={() => setHoverInfo({ ...hoverInfo, visible: false })} 
+                                        placeholder="이곳에 웹소설 내용을 작성하세요... (@인물 또는 #사건 입력)" 
+                                    />
                                     <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
                                         <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
                                             <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
@@ -3252,6 +3367,10 @@
                                             {activeNode.type === '그룹' && (
                                                 <>
                                                     <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모</label>
+                                                        <input type="text" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.memo || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="그룹 메모..." />
+                                                    </div>
+                                                    <div>
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">그룹 색상</label>
                                                         <div className="flex gap-2 mt-2 flex-wrap">
                                                             {['#94a3b8', '#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'].map(color => (
@@ -3268,10 +3387,6 @@
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">높이</label>
                                                             <input type="number" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.height || 300} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, height: Math.max(150, parseInt(e.target.value) || 150)}} : n))} min="150" />
                                                         </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모</label>
-                                                        <input type="text" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.memo || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="그룹 메모..." />
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">포함된 노드 ({(activeNode.data.childNodes || []).length}개)</label>
