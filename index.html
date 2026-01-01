@@ -1309,25 +1309,41 @@
             const [scale, setScale] = useState(currentBook.scale || 1);
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
             const panAnimationRef = useRef(null);
-            const animatePanTo = useCallback((targetPan, duration = 400) => {
+            
+            // 통합 뷰포트 애니메이션 (Pan + Scale)
+            const animateViewport = useCallback((targetPan, targetScale, duration = 600) => {
                 if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
+                
                 const startPan = { ...pan };
+                const startScale = scale;
                 const startTime = performance.now();
-                const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+                
+                // Quintic ease-out for smoother motion
+                const easeOutQuint = (t) => 1 - Math.pow(1 - t, 5);
+
                 const animate = (currentTime) => {
                     const elapsed = currentTime - startTime;
                     const progress = Math.min(elapsed / duration, 1);
-                    const easedProgress = easeOutCubic(progress);
+                    const easedProgress = easeOutQuint(progress);
+
                     setPan({
                         x: startPan.x + (targetPan.x - startPan.x) * easedProgress,
                         y: startPan.y + (targetPan.y - startPan.y) * easedProgress
                     });
+                    
+                    if (targetScale !== undefined && targetScale !== null) {
+                        setScale(startScale + (targetScale - startScale) * easedProgress);
+                    }
+
                     if (progress < 1) {
                         panAnimationRef.current = requestAnimationFrame(animate);
+                    } else {
+                        panAnimationRef.current = null;
                     }
                 };
                 panAnimationRef.current = requestAnimationFrame(animate);
-            }, [pan]);
+            }, [pan, scale]);
+
             const [isEditingTitle, setIsEditingTitle] = useState(false);
             const [isZenMode, setIsZenMode] = useState(false); 
             const titleInputRef = useRef(null);
@@ -1346,10 +1362,10 @@
                 document.addEventListener('mousedown', handleClickOutside);
                 return () => document.removeEventListener('mousedown', handleClickOutside);
             }, [showNodeDropdown]);
+
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
                 if (!targetNodes || targetNodes.length === 0) {
-                    setPan({ x: 0, y: 0 });
-                    setScale(1);
+                    animateViewport({ x: 0, y: 0 }, 1);
                     return;
                 }
                 const minX = Math.min(...targetNodes.map(n => n.x));
@@ -1366,13 +1382,14 @@
                 
                 let newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.2), 1.5);
                 
-                setPan({ 
+                const newPan = { 
                     x: (viewportW / 2) - ((minX + maxX) / 2 * newScale), 
                     y: (viewportH / 2) - ((minY + maxY) / 2 * newScale) 
-                });
-                setScale(newScale);
+                };
+
+                animateViewport(newPan, newScale);
                 showToast("화면에 맞게 조정되었습니다.");
-            }, [projects, activeProjectId]);
+            }, [projects, activeProjectId, animateViewport, showToast]);
 
             useEffect(() => { if (isEditingTitle && titleInputRef.current) titleInputRef.current.focus(); }, [isEditingTitle]);
             
