@@ -1423,7 +1423,7 @@
             const nodes = activeProject?.nodes || [];
             const edges = activeProject?.edges || [];
             const allBoardNodes = useMemo(() => projects.filter(p => p.type === 'board').flatMap(p => (p.nodes || []).map(node => ({ ...node, projectName: p.name }))), [projects]);
-            const filteredMentionNodes = useMemo(() => { if (!mention.active) return []; return allBoardNodes.filter(n => n.type === (mention.type === '@' ? '인물' : '사건') && (n.label.includes(mention.search) || mention.search === "")); }, [allBoardNodes, mention]);
+            const filteredMentionNodes = useMemo(() => { if (!mention.active) return []; return allBoardNodes.filter(n => n.type === (mention.type === '@' ? '인물' : mention.type === '#' ? '사건' : '메모') && (n.label.includes(mention.search) || mention.search === "")); }, [allBoardNodes, mention]);
 
             const handleSelectProject = (id) => {
                 setActiveProjectId(id);
@@ -1956,10 +1956,10 @@
                 }
             };
 
-            const handleDocInput = (e) => { let val = e.target.value; const pos = e.target.selectionStart; if (val === "") { updateDocContent("　"); return; } if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) { val = "　" + val; updateDocContent(val); setTimeout(() => { if(textareaRef.current) textareaRef.current.setSelectionRange(pos + 1, pos + 1); }, 0); return; } const lastChar = val[pos - 1]; if (lastChar === '#' || lastChar === '@') { const coords = getCaretCoordinates(e.target, pos); const totalWidth = 650; const totalHeight = 400; let finalX = coords.left; let finalY = coords.top + 25; if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20; if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10; setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 }); } else if (mention.active) { if (lastChar === ' ' || !lastChar || lastChar === '\n') setMention({ ...mention, active: false }); else setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 }); } updateDocContent(val); };
+            const handleDocInput = (e) => { let val = e.target.value; const pos = e.target.selectionStart; if (val === "") { updateDocContent("　"); return; } if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) { val = "　" + val; updateDocContent(val); setTimeout(() => { if(textareaRef.current) textareaRef.current.setSelectionRange(pos + 1, pos + 1); }, 0); return; } const lastChar = val[pos - 1]; if (lastChar === '#' || lastChar === '@' || lastChar === '$') { const coords = getCaretCoordinates(e.target, pos); const totalWidth = 650; const totalHeight = 400; let finalX = coords.left; let finalY = coords.top + 25; if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20; if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10; setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 }); } else if (mention.active) { if (lastChar === ' ' || !lastChar || lastChar === '\n') setMention({ ...mention, active: false }); else setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 }); } updateDocContent(val); };
             const insertMention = (node) => { const text = activeProject.content || ""; const before = text.slice(0, mention.pos - 1); const after = text.slice(mention.pos + mention.search.length); const newText = before + node.label + "" + after; updateDocContent(newText); setMention({ ...mention, active: false }); setTimeout(() => textareaRef.current.focus(), 10); };
             const handleDocKeyDown = (e) => { if (e.nativeEvent.isComposing) return; if (mention.active) { if (e.key === 'ArrowDown') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % filteredMentionNodes.length })); } else if (e.key === 'ArrowUp') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + filteredMentionNodes.length) % filteredMentionNodes.length })); } else if (e.key === 'Enter') { e.preventDefault(); if (filteredMentionNodes[mention.selectedIndex]) insertMention(filteredMentionNodes[mention.selectedIndex]); } else if (e.key === 'Escape') setMention({ ...mention, active: false }); } else if (e.key === 'Enter') { e.preventDefault(); const start = e.target.selectionStart; const end = e.target.selectionEnd; const value = e.target.value; const newValue = value.substring(0, start) + "\n　" + value.substring(end); updateDocContent(newValue); setTimeout(() => { if(textareaRef.current) { textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2; } }, 0); } };
-            const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
+            const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건' || n.type === '메모')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
 
             const handleAutoLayout = useCallback(() => {
                 if (!activeProject || activeProject.type !== 'board') return;
@@ -2163,7 +2163,7 @@
                                             <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
                                             {isExpanded && !isDoc && (
                                                 <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                    {[1, 2, 3].map(col => (
+                                                    {[1, 2, 3, 4].map(col => (
                                                         <button
                                                             key={col}
                                                             onClick={(e) => {
@@ -2256,7 +2256,7 @@
                                                                     ))}
                                                                     </Reorder.Group>
                                                                 ) : (
-                                                                    <div className={`grid gap-1 ${cols === 3 ? 'grid-cols-3' : cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                                                    <div className={`grid gap-1 ${cols === 4 ? 'grid-cols-4' : cols === 3 ? 'grid-cols-3' : cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                                                     {filtered.map(n => (
                                                                         <div
                                                                             key={n.id}
@@ -2276,8 +2276,8 @@
                                                                             }}
                                                                             className={`group/node py-1.5 px-2 bg-white hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-zinc-600 rounded-[3px] flex items-center gap-1.5 cursor-pointer shadow-sm transition-colors border-l-4 dark:bg-zinc-700 dark:border-zinc-600 ${getSidebarItemAccent(n)} ${(selectedNodeIds.has(n.id) || selectedNodeId === n.id) ? `border-2 ${getSelectedBorderColor(n)}` : 'border-2 border-slate-200 dark:border-zinc-600'}`}
                                                                         >
-                                                                            <span className="text-xs shrink-0">{n.data.emoji}</span>
-                                                                            <span className="text-[10px] font-bold text-slate-600 truncate dark:text-zinc-300 flex-1 min-w-0">{n.label}</span>
+                                                                            {cols !== 4 && <span className="text-xs shrink-0">{n.data.emoji}</span>}
+                                                                            <span className={`font-bold text-slate-600 truncate dark:text-zinc-300 flex-1 min-w-0 ${cols === 4 ? 'text-[9px]' : 'text-[10px]'}`}>{n.label}</span>
                                                                             {cols === 2 && n.type === '인물' && n.data.role && (
                                                                                 <span className={`text-[7px] font-black px-1 py-0.5 rounded-[3px] shrink-0 ${getRoleBadgeStyle(n.data.role)}`}>
                                                                                     {n.data.role}
@@ -2800,6 +2800,12 @@
                                                     <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-bold uppercase text-rose-500">
                                                         <span>장소: {filteredMentionNodes[mention.selectedIndex].data.place || '미정'}</span>
                                                         <span>시기: {filteredMentionNodes[mention.selectedIndex].data.year || '미정'}</span>
+                                                    </div>
+                                                )}
+
+                                                {filteredMentionNodes[mention.selectedIndex].type === '메모' && (
+                                                    <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-bold uppercase text-amber-500">
+                                                        <span>📝 메모</span>
                                                     </div>
                                                 )}
 
