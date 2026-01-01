@@ -1420,15 +1420,7 @@
             const [mention, setMention] = useState({ active: false, type: '', search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
             const [hoverInfo, setHoverInfo] = useState({ visible: false, node: null, x: 0, y: 0 });
             const textareaRef = useRef(null);
-            const cursorPositionRef = useRef(null);
             const containerRef = useRef(null);
-
-            useEffect(() => {
-                if (cursorPositionRef.current !== null && textareaRef.current) {
-                    textareaRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
-                    cursorPositionRef.current = null;
-                }
-            }, [activeProject?.content]);
 
             const setSidebarCols = (projectId, cols) => {
                 setProjects(prev => prev.map(p => 
@@ -2006,18 +1998,6 @@
                 let val = e.target.value;
                 const pos = e.target.selectionStart;
 
-                if (val === "") {
-                    updateDocContent("　");
-                    return;
-                }
-
-                if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) {
-                    val = "　" + val;
-                    cursorPositionRef.current = pos + 1;
-                    updateDocContent(val);
-                    return;
-                }
-
                 const lastChar = val[pos - 1];
                 if (lastChar === '#' || lastChar === '@' || lastChar === '$') {
                     const coords = getCaretCoordinates(e.target, pos);
@@ -2056,16 +2036,6 @@
                     } else if (e.key === 'Escape') {
                         setMention({ ...mention, active: false });
                     }
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const start = e.target.selectionStart;
-                    const end = e.target.selectionEnd;
-                    const value = e.target.value;
-                    const newValue = value.substring(0, start) + "\n　" + value.substring(end);
-                    
-                    // setTimeout 대신 ref에 저장하여 useEffect에서 처리
-                    cursorPositionRef.current = start + 2;
-                    updateDocContent(newValue);
                 }
             };
             const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건' || n.type === '메모')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
