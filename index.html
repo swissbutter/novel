@@ -2331,7 +2331,10 @@
                     }`} style={{ borderRadius: 0 }}>
                         
                         <div className="w-full bg-slate-800 hover:bg-slate-700 rounded-none">
-                            <div className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300 cursor-pointer">
+                            <div 
+                                onClick={onExit} 
+                                className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300 cursor-pointer"
+                            >
                                 <div className="w-4 h-4 bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all">
                                     <IconBack className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
                                 </div>
