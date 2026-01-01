@@ -1539,7 +1539,7 @@
                 return node;
             };
             
-            const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 프로젝트', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
+            const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 보드', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
             const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: " ", status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
             const deleteProject = (id, e) => { if (e) e.stopPropagation(); if (confirm("삭제하시겠습니까?")) { saveHistory(); let newProjects = projects.filter(p => p.id !== id); if (newProjects.length === 0) { const dummyId = generateUUID(); newProjects = [{ id: dummyId, type: 'board', name: '새 프로젝트', nodes: [], edges: [] }]; handleSelectProject(dummyId); } else if (activeProjectId === id) handleSelectProject(newProjects[0].id); setProjects(newProjects); } };
             const handleProjectRename = (id, newName) => { saveHistory(); setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p)); setEditingProjectId(null); };
@@ -3395,7 +3395,7 @@
                     const defaultProjectId = generateUUID();
                     const newBook = {
                         id: newId, title, author, color,
-                        projects: [{ id: defaultProjectId, type: 'board', name: '아이디어 보드', nodes: [], edges: [] }],
+                        projects: [{ id: defaultProjectId, type: 'board', name: '새 보드', nodes: [], edges: [] }],
                         activeProjectId: defaultProjectId
                     };
                     onCreateBook(newBook);
