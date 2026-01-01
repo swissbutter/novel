@@ -1308,6 +1308,26 @@
             const [expandedProjects, setExpandedProjects] = useState(currentBook.expandedProjects || (currentBook.projects[0] ? { [currentBook.projects[0].id]: true } : {}));
             const [scale, setScale] = useState(currentBook.scale || 1);
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
+            const panAnimationRef = useRef(null);
+            const animatePanTo = useCallback((targetPan, duration = 400) => {
+                if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
+                const startPan = { ...pan };
+                const startTime = performance.now();
+                const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easedProgress = easeOutCubic(progress);
+                    setPan({
+                        x: startPan.x + (targetPan.x - startPan.x) * easedProgress,
+                        y: startPan.y + (targetPan.y - startPan.y) * easedProgress
+                    });
+                    if (progress < 1) {
+                        panAnimationRef.current = requestAnimationFrame(animate);
+                    }
+                };
+                panAnimationRef.current = requestAnimationFrame(animate);
+            }, [pan]);
             const [isEditingTitle, setIsEditingTitle] = useState(false);
             const [isZenMode, setIsZenMode] = useState(false); 
             const titleInputRef = useRef(null);
@@ -2221,7 +2241,7 @@
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
                                                                                 setSelectedNodeIds(new Set([n.id]));
-                                                                                setPan({
+                                                                                animatePanTo({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
                                                                                 });
@@ -2265,7 +2285,7 @@
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
                                                                                 setSelectedNodeIds(new Set([n.id]));
-                                                                                setPan({
+                                                                                animatePanTo({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
                                                                                 });
