@@ -2253,15 +2253,14 @@
                                                                             layoutId={n.id}
                                                                             dragElastic={1}
                                                                             whileDrag={{ scale: 1.05, boxShadow: '0 10px 25px rgba(0,0,0,0.25)', zIndex: 100 }}
-                                                                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
                                                                                 setSelectedNodeIds(new Set([n.id]));
-                                                                                animatePanTo({
+                                                                                animateViewport({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
-                                                                                });
+                                                                                }, scale);
                                                                             }}
                                                                             onDoubleClick={(e) => {
                                                                                 e.stopPropagation();
@@ -2302,10 +2301,10 @@
                                                                                 e.stopPropagation();
                                                                                 handleSelectProject(project.id);
                                                                                 setSelectedNodeIds(new Set([n.id]));
-                                                                                animatePanTo({
+                                                                                animateViewport({
                                                                                     x: -(n.x + CARD_W/2)*scale + (window.innerWidth - 320)/2,
                                                                                     y: -(n.y + CARD_H/2)*scale + window.innerHeight/2
-                                                                                });
+                                                                                }, scale);
                                                                             }}
                                                                             onDoubleClick={(e) => {
                                                                                 e.stopPropagation();
