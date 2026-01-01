@@ -1314,6 +1314,17 @@
             const [isNameGenOpen, setIsNameGenOpen] = useState(false); // 이름 생성기 토글 상태
             const [nameGenSettings, setNameGenSettings] = useState({ genre: 'korean', role: 'modern', gender: 'random' });
             const [showNodeDropdown, setShowNodeDropdown] = useState(false); // 추가 노드 드롭다운
+            const nodeDropdownRef = useRef(null);
+            useEffect(() => {
+                if (!showNodeDropdown) return;
+                const handleClickOutside = (e) => {
+                    if (nodeDropdownRef.current && !nodeDropdownRef.current.contains(e.target)) {
+                        setShowNodeDropdown(false);
+                    }
+                };
+                document.addEventListener('mousedown', handleClickOutside);
+                return () => document.removeEventListener('mousedown', handleClickOutside);
+            }, [showNodeDropdown]);
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
                 if (!targetNodes || targetNodes.length === 0) {
                     setPan({ x: 0, y: 0 });
@@ -2474,7 +2485,7 @@
                                                 <span className="text-[10px] font-black hidden sm:inline">메모</span>
                                             </button>
                                             <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                            <div className="relative">
+                                            <div className="relative" ref={nodeDropdownRef}>
                                                 <button onClick={() => setShowNodeDropdown(!showNodeDropdown)} className="flex items-center gap-1 h-full px-3 rounded-[3px] hover:bg-slate-100 text-slate-600 transition-all active:scale-95 dark:hover:bg-zinc-700 dark:text-slate-400" title="더 많은 노드 추가">
                                                     <span className="text-sm">➕</span>
                                                     <span className="text-[10px] font-black hidden sm:inline">더보기</span>
