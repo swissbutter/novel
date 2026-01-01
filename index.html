@@ -1420,7 +1420,15 @@
             const [mention, setMention] = useState({ active: false, type: '', search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
             const [hoverInfo, setHoverInfo] = useState({ visible: false, node: null, x: 0, y: 0 });
             const textareaRef = useRef(null);
+            const cursorPositionRef = useRef(null);
             const containerRef = useRef(null);
+
+            useEffect(() => {
+                if (cursorPositionRef.current !== null && textareaRef.current) {
+                    textareaRef.current.setSelectionRange(cursorPositionRef.current, cursorPositionRef.current);
+                    cursorPositionRef.current = null;
+                }
+            }, [activeProject?.content]);
 
             const setSidebarCols = (projectId, cols) => {
                 setProjects(prev => prev.map(p => 
@@ -1994,9 +2002,72 @@
                 }
             };
 
-            const handleDocInput = (e) => { let val = e.target.value; const pos = e.target.selectionStart; if (val === "") { updateDocContent("　"); return; } if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) { val = "　" + val; updateDocContent(val); setTimeout(() => { if(textareaRef.current) textareaRef.current.setSelectionRange(pos + 1, pos + 1); }, 0); return; } const lastChar = val[pos - 1]; if (lastChar === '#' || lastChar === '@' || lastChar === '$') { const coords = getCaretCoordinates(e.target, pos); const totalWidth = 650; const totalHeight = 400; let finalX = coords.left; let finalY = coords.top + 25; if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20; if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10; setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 }); } else if (mention.active) { if (lastChar === ' ' || !lastChar || lastChar === '\n') setMention({ ...mention, active: false }); else setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 }); } updateDocContent(val); };
+            const handleDocInput = (e) => {
+                let val = e.target.value;
+                const pos = e.target.selectionStart;
+
+                if (val === "") {
+                    updateDocContent("　");
+                    return;
+                }
+
+                if (val.length >= 1 && val[0] !== "　" && !e.nativeEvent.isComposing) {
+                    val = "　" + val;
+                    cursorPositionRef.current = pos + 1;
+                    updateDocContent(val);
+                    return;
+                }
+
+                const lastChar = val[pos - 1];
+                if (lastChar === '#' || lastChar === '@' || lastChar === '$') {
+                    const coords = getCaretCoordinates(e.target, pos);
+                    const totalWidth = 650;
+                    const totalHeight = 400;
+                    let finalX = coords.left;
+                    let finalY = coords.top + 25;
+
+                    if (finalX + totalWidth > window.innerWidth) finalX = window.innerWidth - totalWidth - 20;
+                    if (finalY + totalHeight > window.innerHeight) finalY = coords.top - totalHeight - 10;
+
+                    setMention({ active: true, type: lastChar, search: '', x: finalX, y: finalY, pos, selectedIndex: 0 });
+                } else if (mention.active) {
+                    if (lastChar === ' ' || !lastChar || lastChar === '\n') {
+                        setMention({ ...mention, active: false });
+                    } else {
+                        setMention({ ...mention, search: val.slice(mention.pos, pos), selectedIndex: 0 });
+                    }
+                }
+                updateDocContent(val);
+            };
             const insertMention = (node) => { const text = activeProject.content || ""; const before = text.slice(0, mention.pos - 1); const after = text.slice(mention.pos + mention.search.length); const newText = before + node.label + "" + after; updateDocContent(newText); setMention({ ...mention, active: false }); setTimeout(() => textareaRef.current.focus(), 10); };
-            const handleDocKeyDown = (e) => { if (e.nativeEvent.isComposing) return; if (mention.active) { if (e.key === 'ArrowDown') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % filteredMentionNodes.length })); } else if (e.key === 'ArrowUp') { e.preventDefault(); setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + filteredMentionNodes.length) % filteredMentionNodes.length })); } else if (e.key === 'Enter') { e.preventDefault(); if (filteredMentionNodes[mention.selectedIndex]) insertMention(filteredMentionNodes[mention.selectedIndex]); } else if (e.key === 'Escape') setMention({ ...mention, active: false }); } else if (e.key === 'Enter') { e.preventDefault(); const start = e.target.selectionStart; const end = e.target.selectionEnd; const value = e.target.value; const newValue = value.substring(0, start) + "\n　" + value.substring(end); updateDocContent(newValue); setTimeout(() => { if(textareaRef.current) { textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 2; } }, 0); } };
+            const handleDocKeyDown = (e) => {
+                if (e.nativeEvent.isComposing) return;
+                
+                if (mention.active) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex + 1) % filteredMentionNodes.length }));
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setMention(prev => ({ ...prev, selectedIndex: (prev.selectedIndex - 1 + filteredMentionNodes.length) % filteredMentionNodes.length }));
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (filteredMentionNodes[mention.selectedIndex]) insertMention(filteredMentionNodes[mention.selectedIndex]);
+                    } else if (e.key === 'Escape') {
+                        setMention({ ...mention, active: false });
+                    }
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const start = e.target.selectionStart;
+                    const end = e.target.selectionEnd;
+                    const value = e.target.value;
+                    const newValue = value.substring(0, start) + "\n　" + value.substring(end);
+                    
+                    // setTimeout 대신 ref에 저장하여 useEffect에서 처리
+                    cursorPositionRef.current = start + 2;
+                    updateDocContent(newValue);
+                }
+            };
             const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건' || n.type === '메모')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
 
             const handleAutoLayout = useCallback(() => {
