@@ -227,25 +227,34 @@
         const getEdgeTargetPos = (from, to, offset = 12) => { const x1 = from.x + CARD_W / 2; const y1 = from.y + CARD_H / 2; const x2 = to.x + CARD_W / 2; const y2 = to.y + CARD_H / 2; const dx = x2 - x1; const dy = y2 - y1; const angle = Math.atan2(dy, dx); const absCos = Math.abs(Math.cos(angle)); const absSin = Math.abs(Math.sin(angle)); let distance = (CARD_W * absSin <= CARD_H * absCos) ? (CARD_W / 2) / absCos : (CARD_H / 2) / absSin; return { x: x2 - Math.cos(angle) * (distance + offset), y: y2 - Math.sin(angle) * (distance + offset) }; };
         const getRoleBadgeStyle = (role) => { switch(role) { case '주인공': return 'bg-blue-600 dark:bg-blue-800 text-white'; case '적대자': return 'bg-red-600 dark:bg-red-800 text-white'; case '조력자': return 'bg-emerald-600 dark:bg-emerald-800 text-white'; case '조연': return 'bg-slate-500 text-white'; case '엑스트라': return 'bg-slate-300 text-slate-600'; default: return 'bg-slate-100 text-slate-500 border border-slate-200'; } };
         const getStatusBadgeStyle = (status) => { switch(status) { case '초고': return 'bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300'; case '수정': return 'bg-amber-100 text-amber-600 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'; case '완료': return 'bg-emerald-600 text-white'; default: return 'bg-slate-100 text-slate-400'; } };
-        const getSidebarItemAccent = (node) => { 
-            if (node.type === '인물') {
-                return 'border-l-blue-500 dark:border-l-blue-600';
-            } else if (node.type === '사건') {
-                return 'border-l-red-500 dark:border-l-red-600';
-            } else if (node.type === '메모') {
-                return 'border-l-amber-500 dark:border-l-amber-600';
-            }
-            return 'border-l-transparent';
+        // 노드 타입별 색상 정의
+        const NODE_TYPE_COLORS = {
+            '인물': { sidebar: 'border-l-blue-500 dark:border-l-blue-600', selected: 'border-blue-500 dark:border-blue-600', bar: 'bg-blue-600 dark:bg-blue-800', text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500', hover: 'hover:bg-blue-50 dark:hover:bg-zinc-700' },
+            '사건': { sidebar: 'border-l-red-500 dark:border-l-red-600', selected: 'border-red-500 dark:border-red-600', bar: 'bg-red-600 dark:bg-red-800', text: 'text-red-600 dark:text-red-400', bg: 'bg-red-500', hover: 'hover:bg-red-50 dark:hover:bg-zinc-700' },
+            '메모': { sidebar: 'border-l-amber-500 dark:border-l-amber-600', selected: 'border-amber-500 dark:border-amber-600', bar: 'bg-amber-500 dark:bg-amber-700', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500', hover: 'hover:bg-amber-50 dark:hover:bg-zinc-700' },
+            '장소': { sidebar: 'border-l-emerald-500 dark:border-l-emerald-600', selected: 'border-emerald-500 dark:border-emerald-600', bar: 'bg-emerald-600 dark:bg-emerald-800', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500', hover: 'hover:bg-emerald-50 dark:hover:bg-zinc-700' },
+            '아이템': { sidebar: 'border-l-purple-500 dark:border-l-purple-600', selected: 'border-purple-500 dark:border-purple-600', bar: 'bg-purple-600 dark:bg-purple-800', text: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500', hover: 'hover:bg-purple-50 dark:hover:bg-zinc-700' },
+            '세력': { sidebar: 'border-l-orange-500 dark:border-l-orange-600', selected: 'border-orange-500 dark:border-orange-600', bar: 'bg-orange-600 dark:bg-orange-800', text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500', hover: 'hover:bg-orange-50 dark:hover:bg-zinc-700' },
+            '복선': { sidebar: 'border-l-pink-500 dark:border-l-pink-600', selected: 'border-pink-500 dark:border-pink-600', bar: 'bg-pink-600 dark:bg-pink-800', text: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500', hover: 'hover:bg-pink-50 dark:hover:bg-zinc-700' },
+            '타임라인': { sidebar: 'border-l-teal-500 dark:border-l-teal-600', selected: 'border-teal-500 dark:border-teal-600', bar: 'bg-teal-600 dark:bg-teal-800', text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500', hover: 'hover:bg-teal-50 dark:hover:bg-zinc-700' },
+            '설정': { sidebar: 'border-l-indigo-500 dark:border-l-indigo-600', selected: 'border-indigo-500 dark:border-indigo-600', bar: 'bg-indigo-600 dark:bg-indigo-800', text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500', hover: 'hover:bg-indigo-50 dark:hover:bg-zinc-700' },
+            '대사': { sidebar: 'border-l-sky-500 dark:border-l-sky-600', selected: 'border-sky-500 dark:border-sky-600', bar: 'bg-sky-600 dark:bg-sky-800', text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500', hover: 'hover:bg-sky-50 dark:hover:bg-zinc-700' },
+            '갈등': { sidebar: 'border-l-rose-500 dark:border-l-rose-600', selected: 'border-rose-500 dark:border-rose-600', bar: 'bg-rose-600 dark:bg-rose-800', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500', hover: 'hover:bg-rose-50 dark:hover:bg-zinc-700' },
+            '그룹': { sidebar: 'border-l-slate-500 dark:border-l-slate-600', selected: 'border-slate-500 dark:border-slate-600', bar: 'bg-slate-600 dark:bg-slate-700', text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-500', hover: 'hover:bg-slate-50 dark:hover:bg-zinc-700' }
+        };
+        // 노드 타입별 기본 이모지
+        const NODE_TYPE_EMOJIS = {
+            '인물': '👤', '사건': '🔥', '메모': '💡', '장소': '📍', '아이템': '🎁',
+            '세력': '⚔️', '복선': '🎣', '타임라인': '⏰', '설정': '📚', '대사': '💬', '갈등': '⚡', '그룹': '📁'
+        };
+        const getSidebarItemAccent = (node) => {
+            return NODE_TYPE_COLORS[node.type]?.sidebar || 'border-l-transparent';
         };
         const getSelectedBorderColor = (node) => {
-            if (node.type === '인물') {
-                return 'border-blue-500 dark:border-blue-600';
-            } else if (node.type === '사건') {
-                return 'border-red-500 dark:border-red-600';
-            } else if (node.type === '메모') {
-                return 'border-amber-500 dark:border-amber-600';
-            }
-            return 'border-indigo-500 dark:border-indigo-600';
+            return NODE_TYPE_COLORS[node.type]?.selected || 'border-indigo-500 dark:border-indigo-600';
+        };
+        const getNodeBarColor = (node) => {
+            return NODE_TYPE_COLORS[node.type]?.bar || 'bg-slate-500 dark:bg-slate-700';
         };
         const getStrokeDashArray = (style) => { switch(style) { case 'dashed': return "4, 8"; default: return ""; } };
 
@@ -256,60 +265,173 @@
             </motion.div>
         );
 
-        // NodeCard
-        const NodeCard = memo(({ node, isTop, isSelected, isDragging, onMouseDown, onMouseUp, onDoubleClick, onDelete, onClick }) => {
+        // NodeCard - 노드 타입별 서브라인 렌더링
+        const getNodeSubline = (node) => {
+            switch(node.type) {
+                case '인물': return `${node.data.gender} · ${node.data.age ? `${node.data.age}세` : '나이 미상'} · ${node.data.job || '직업 없음'}`;
+                case '사건': return `📍 ${node.data.place || '장소 미상'} · 📅 ${node.data.year || '시기 미상'}`;
+                case '장소': return `🌍 ${node.data.region || '지역 미상'} · 🌤️ ${node.data.climate || '기후 미상'}`;
+                case '아이템': return `📦 ${node.data.category || '일반'} · ⭐ ${node.data.rarity || '보통'}`;
+                case '세력': return `👑 ${node.data.leader || '리더 미상'} · 🏰 ${node.data.territory || '영역 미상'}`;
+                case '복선': return `📖 ${node.data.chapter || '장 미상'} · ${node.data.status === '회수됨' ? '✅ 회수됨' : '🔄 미회수'}`;
+                case '타임라인': return `📅 ${node.data.date || '날짜 미상'} · 🏛️ ${node.data.era || '시대 미상'}`;
+                case '설정': return `📂 ${node.data.category || '세계관'} · 📏 ${node.data.scope || '범위 미상'}`;
+                case '대사': return `🗣️ ${node.data.speaker || '화자 미상'} · 💭 ${node.data.emotion || '감정 미상'}`;
+                case '갈등': return `⚔️ ${node.data.parties || '당사자 미상'} · ${node.data.status === '해결됨' ? '✅ 해결됨' : '🔥 진행중'}`;
+                case '그룹': return `📁 ${node.data.childNodes?.length || 0}개 항목`;
+                default: return '';
+            }
+        };
+        // 노드 타입별 뱃지 렌더링 (최상위 옵션은 빨간색)
+        const getNodeBadge = (node) => {
+            const topTierStyle = 'bg-red-600 text-white'; // 최상위 옵션 빨간색
+            switch(node.type) {
+                case '인물': return node.data.role ? { text: node.data.role, style: getRoleBadgeStyle(node.data.role) } : null;
+                case '복선': return { text: node.data.status || '미회수', style: node.data.status === '회수됨' ? 'bg-emerald-600 text-white' : 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' };
+                case '갈등': return { text: node.data.status || '진행중', style: node.data.status === '해결됨' ? 'bg-emerald-600 text-white' : node.data.status === '격화' ? topTierStyle : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' };
+                case '아이템': return node.data.rarity ? { text: node.data.rarity, style: (node.data.rarity === '전설' || node.data.rarity === '유일') ? topTierStyle : node.data.rarity === '영웅' ? 'bg-amber-500 text-white' : node.data.rarity === '희귀' ? 'bg-purple-500 text-white' : node.data.rarity === '고급' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300' } : null;
+                case '타임라인': return node.data.importance ? { text: node.data.importance, style: node.data.importance === '핵심' ? topTierStyle : node.data.importance === '중요' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600 dark:bg-zinc-700 dark:text-zinc-300' } : null;
+                default: return null;
+            }
+        };
+        const NodeCard = ({ node, isTop, isSelected, isDragging, onMouseDown, onMouseUp, onDoubleClick, onDelete, onClick }) => {
             const isIdea = node.type === '메모';
-            let styleClass = isIdea ? "node-postit" : "node-glass";
+            const isGroup = node.type === '그룹';
+            let styleClass = isIdea ? "node-postit" : isGroup ? "node-glass" : "node-glass";
+
+            // 인물 타입 특수 스타일
             if (node.type === '인물') {
                 if (node.data.role === '주인공') styleClass += " node-protagonist";
                 else if (node.data.role === '적대자') styleClass += " node-antagonist";
                 else if (node.data.role === '조력자') styleClass += " node-helper";
             } else if (node.type === '사건') styleClass += " node-event";
 
+            // 그룹 노드 특수 스타일
+            if (isGroup) {
+                styleClass += " border-2 border-dashed";
+            }
+
+            const subline = getNodeSubline(node);
+            const badge = getNodeBadge(node);
+
             return (
-                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : 10, width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0 }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
+                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : (isGroup ? 5 : 10), width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, ...(isGroup && node.data.color ? { borderColor: node.data.color } : {}) }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''} ${isDragging ? 'transition-none' : 'transition-all'}`}>
                     <button onClick={(e) => { e.stopPropagation(); if(confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"><IconTrash className="w-3 h-3" /></button>
                     <div className="w-full h-full flex flex-col overflow-hidden rounded-[inherit]">
-                        {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${node.type === '인물' ? 'bg-blue-600 dark:bg-blue-800' : node.type === '사건' ? 'bg-red-600 dark:bg-red-800' : 'bg-amber-500 dark:bg-amber-700'}`} />}
+                        {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${getNodeBarColor(node)}`} />}
                         <div className="flex-1 flex flex-col p-4 overflow-hidden pointer-events-none">
                             <div className="flex items-center justify-between mb-2">
                                 <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{node.type}</span>
-                                {node.type === '인물' && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-[3px] ${getRoleBadgeStyle(node.data.role)}`}>{node.data.role}</span>}
+                                {badge && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-[3px] ${badge.style}`}>{badge.text}</span>}
                             </div>
                             <div className={`text-xl font-black truncate mb-1.5 tracking-tight flex items-center ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
-                                <span className="mr-2 drop-shadow-sm text-2xl">{node.data.emoji || (node.type === '인물' ? '👤' : node.type === '사건' ? '🔥' : '💡')}</span>
-                                <span className={`truncate ${node.type === '사건' ? 'text-rose-700 dark:text-rose-400' : ''}`}>{node.label}</span>
-                            </div>  
-                            {node.type === '인물' && <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2">{node.data.gender} · {node.data.age ? `${node.data.age}세` : '나이 미상'} · {node.data.job || '직업 없음'} · {node.data.race || '인간'}</div>}
-                            {node.type === '사건' && (
-                                <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2 truncate">
-                                    📍 {node.data.place || '장소 미상'} · 📅 {node.data.year || '시기 미상'}
-                                </div>
-                            )}
+                                <span className="mr-2 drop-shadow-sm text-2xl">{node.data.emoji || NODE_TYPE_EMOJIS[node.type] || '📝'}</span>
+                                <span className={`truncate ${node.type === '사건' ? 'text-rose-700 dark:text-rose-400' : node.type === '갈등' ? 'text-rose-600 dark:text-rose-400' : ''}`}>{node.label}</span>
+                            </div>
+                            {subline && <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2 truncate">{subline}</div>}
                             <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 rounded-[3px] border border-slate-100 italic dark:bg-zinc-800/50 dark:border-zinc-700 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
                         </div>
                     </div>
                 </div>
             );
-        }, (prevProps, nextProps) => {
+        };  // NodeCard 컴포넌트 끝
+
+        // GroupNode - 그룹 영역 노드
+        const GroupNode = ({ node, isSelected, onMouseDown, onDoubleClick, onDelete, onResize }) => {
+            const width = node.data.width || 400;
+            const height = node.data.height || 300;
+            const color = node.data.color || '#94a3b8';
+            const [isResizing, setIsResizing] = useState(false);
+            const resizeStartRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+            const handleResizeStart = (e, corner) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setIsResizing(true);
+                resizeStartRef.current = { x: e.clientX, y: e.clientY, width, height };
+
+                const handleResizeMove = (moveEvent) => {
+                    moveEvent.preventDefault();
+                    const scale = window.currentScale || 1;
+                    const dx = (moveEvent.clientX - resizeStartRef.current.x) / scale;
+                    const dy = (moveEvent.clientY - resizeStartRef.current.y) / scale;
+                    let newWidth = resizeStartRef.current.width;
+                    let newHeight = resizeStartRef.current.height;
+
+                    if (corner.includes('e')) newWidth = Math.max(200, resizeStartRef.current.width + dx);
+                    if (corner.includes('s')) newHeight = Math.max(150, resizeStartRef.current.height + dy);
+
+                    onResize(node.id, newWidth, newHeight);
+                };
+
+                const handleResizeEnd = () => {
+                    setIsResizing(false);
+                    document.removeEventListener('mousemove', handleResizeMove);
+                    document.removeEventListener('mouseup', handleResizeEnd);
+                };
+
+                document.addEventListener('mousemove', handleResizeMove);
+                document.addEventListener('mouseup', handleResizeEnd);
+            };
+
             return (
-                prevProps.node.id === nextProps.node.id &&
-                prevProps.node.x === nextProps.node.x &&
-                prevProps.node.y === nextProps.node.y &&
-                prevProps.node.label === nextProps.node.label &&
-                prevProps.node.data?.emoji === nextProps.node.data?.emoji &&
-                prevProps.node.data?.memo === nextProps.node.data?.memo &&
-                prevProps.node.data?.role === nextProps.node.data?.role &&
-                prevProps.node.data?.gender === nextProps.node.data?.gender &&
-                prevProps.node.data?.age === nextProps.node.data?.age &&
-                prevProps.node.data?.job === nextProps.node.data?.job &&
-                prevProps.node.data?.race === nextProps.node.data?.race &&
-                prevProps.node.data?.place === nextProps.node.data?.place &&
-                prevProps.node.data?.year === nextProps.node.data?.year &&
-                prevProps.isTop === nextProps.isTop &&
-                prevProps.isSelected === nextProps.isSelected
+                <div
+                    onMouseDown={(e) => {
+                        if (e.target.classList.contains('resize-handle')) return;
+                        onMouseDown(e, node.id);
+                    }}
+                    onDoubleClick={() => onDoubleClick(node.id)}
+                    style={{
+                        zIndex: 1,
+                        width: width,
+                        height: height,
+                        transform: `translate(${node.x}px, ${node.y}px)`,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderColor: color,
+                        backgroundColor: `${color}15`,
+                    }}
+                    className={`cursor-grab active:cursor-grabbing group border-2 border-dashed rounded-[3px] ${isSelected ? 'border-solid shadow-lg' : ''} ${isResizing ? 'transition-none' : 'transition-shadow'}`}
+                >
+                    {/* 삭제 버튼 */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); if(confirm("이 그룹을 삭제하시겠습니까?")) onDelete(node.id); }}
+                        className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-700 dark:border-zinc-600 dark:text-zinc-300"
+                    >
+                        <IconTrash className="w-3 h-3" />
+                    </button>
+
+                    {/* 좌측 상단 제목 */}
+                    <div
+                        className="absolute top-6 left-8 flex items-center gap-1.5 pointer-events-none"
+                        style={{ color: color }}
+                    >
+                        <span className="opacity-70" style={{ fontSize: '40px' }}>{node.data.emoji || '📁'}</span>
+                        <span className="text-xl font-black opacity-50" style={{ fontSize: '40px' }}>{node.label}</span>
+                    </div>
+
+                    {/* 크기 조절 핸들 - 우하단 */}
+                    <div
+                        className="resize-handle absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                        onMouseDown={(e) => handleResizeStart(e, 'se')}
+                        style={{ backgroundColor: color }}
+                    />
+                    {/* 크기 조절 핸들 - 우측 */}
+                    <div
+                        className="resize-handle absolute top-1/2 right-0 w-2 h-8 -translate-y-1/2 cursor-e-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-l-sm"
+                        onMouseDown={(e) => handleResizeStart(e, 'e')}
+                        style={{ backgroundColor: color }}
+                    />
+                    {/* 크기 조절 핸들 - 하단 */}
+                    <div
+                        className="resize-handle absolute bottom-0 left-1/2 w-8 h-2 -translate-x-1/2 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-t-sm"
+                        onMouseDown={(e) => handleResizeStart(e, 's')}
+                        style={{ backgroundColor: color }}
+                    />
+                </div>
             );
-        });  // NodeCard 컴포넌트 끝
+        };
 
         // BookCover
         const BookCover = memo(({ book, onClick, onDelete, onEdit }) => {
@@ -386,13 +508,24 @@
                                                 new TextRun({ text: ` [${node.type}]`, size: 20, color: "666666" })
                                             ] 
                                         }),
-                                        new Paragraph({ 
-                                            text: node.type === '인물' 
-                                                ? `성별: ${node.data.gender} / 나이: ${node.data.age || '미상'} / 직업: ${node.data.job || '없음'}`
-                                                : node.type === '사건'
-                                                ? `장소: ${node.data.place || '미상'} / 시기: ${node.data.year || '미상'}`
-                                                : "메모",
-                                            italic: true 
+                                        new Paragraph({
+                                            text: (() => {
+                                                switch(node.type) {
+                                                    case '인물': return `성별: ${node.data.gender} / 나이: ${node.data.age || '미상'} / 직업: ${node.data.job || '없음'}`;
+                                                    case '사건': return `장소: ${node.data.place || '미상'} / 시기: ${node.data.year || '미상'}`;
+                                                    case '장소': return `지역: ${node.data.region || '미상'} / 기후: ${node.data.climate || '미상'}`;
+                                                    case '아이템': return `분류: ${node.data.category || '일반'} / 희귀도: ${node.data.rarity || '보통'} / 소유자: ${node.data.owner || '없음'}`;
+                                                    case '세력': return `리더: ${node.data.leader || '미상'} / 영역: ${node.data.territory || '미상'}`;
+                                                    case '복선': return `등장: ${node.data.chapter || '미상'} / 상태: ${node.data.status || '미회수'}`;
+                                                    case '타임라인': return `시점: ${node.data.date || '미상'} / 시대: ${node.data.era || '미상'}`;
+                                                    case '설정': return `분류: ${node.data.category || '세계관'} / 범위: ${node.data.scope || '미상'}`;
+                                                    case '대사': return `화자: ${node.data.speaker || '미상'} / 감정: ${node.data.emotion || '미상'}`;
+                                                    case '갈등': return `당사자: ${node.data.parties || '미상'} / 상태: ${node.data.status || '진행중'}`;
+                                                    case '그룹': return `하위 노드: ${node.data.childNodes?.length || 0}개`;
+                                                    default: return "메모";
+                                                }
+                                            })(),
+                                            italic: true
                                         }),
                                         new Paragraph({ text: node.data.memo || "내용 없음" }),
                                         new Paragraph({ text: "--------------------------------------------------" })
@@ -1180,6 +1313,7 @@
             const workspaceTimerRef = useRef(null);
             const [isNameGenOpen, setIsNameGenOpen] = useState(false); // 이름 생성기 토글 상태
             const [nameGenSettings, setNameGenSettings] = useState({ genre: 'korean', role: 'modern', gender: 'random' });
+            const [showNodeDropdown, setShowNodeDropdown] = useState(false); // 추가 노드 드롭다운
             const fitToScreen = useCallback((targetNodes = activeProject?.nodes || []) => {
                 if (!targetNodes || targetNodes.length === 0) {
                     setPan({ x: 0, y: 0 });
@@ -1260,6 +1394,19 @@
                 return () => document.removeEventListener('mousedown', handleClickOutside);
             }, [mention.active]);
 
+            useEffect(() => {
+                const handleDropdownClickOutside = (e) => {
+                    if (!showNodeDropdown) return;
+                    if (!e.target.closest('.relative')) {
+                        setShowNodeDropdown(false);
+                    }
+                };
+                if (showNodeDropdown) {
+                    document.addEventListener('mousedown', handleDropdownClickOutside);
+                }
+                return () => document.removeEventListener('mousedown', handleDropdownClickOutside);
+            }, [showNodeDropdown]);
+
             const activeProject = useMemo(() => projects.find(p => p.id === activeProjectId) || projects[0], [projects, activeProjectId]);
             
             const nodes = activeProject?.nodes || [];
@@ -1290,6 +1437,7 @@
             const [history, setHistory] = useState({ past: [], future: [] });
             const [isPanning, setIsPanning] = useState(false);
             const [draggingNodeId, setDraggingNodeId] = useState(null);
+            const [dragOffset, setDragOffset] = useState({ x: 0, y: 0, nodeIds: new Set() }); // 드래그 중 오프셋
             const [tempEdge, setTempEdge] = useState(null);
             const [selectedNodeId, setSelectedNodeId] = useState(null); // For modal
             const [selectedNodeIds, setSelectedNodeIds] = useState(new Set()); // For multi-select
@@ -1338,15 +1486,25 @@
                 const div = containerRef.current;
                 const handleWheel = (e) => { 
                     if (!div || e.target.closest('aside') || (activeProject && activeProject.type === 'doc')) return; 
-                    e.preventDefault(); 
+                    e.preventDefault(); // 브라우저 기본 줌 방지
+                    
                     const rect = div.getBoundingClientRect(); 
-                    const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top; 
-                    const delta = -e.deltaY * 0.0012; 
-                    const newScale = Math.min(Math.max(0.1, scale + delta), 3); 
+                    const mouseX = e.clientX - rect.left; 
+                    const mouseY = e.clientY - rect.top; 
+                    
+                    // 줌 속도 조절 (트랙패드 등 감안)
+                    const delta = -e.deltaY * 0.001; 
+                    
+                    // 줌 범위 제한 (0.1 ~ 3.0 -> 0.2 ~ 5.0 정도가 적당)
+                    const newScale = Math.min(Math.max(0.2, scale + delta), 5); 
+                    
                     const scaleRatio = newScale / scale; 
-                    setPan(prev => ({ x: mouseX - (mouseX - prev.x) * scaleRatio, y: mouseY - (mouseY - prev.y) * scaleRatio })); 
+                    setPan(prev => ({ 
+                        x: mouseX - (mouseX - prev.x) * scaleRatio, 
+                        y: mouseY - (mouseY - prev.y) * scaleRatio 
+                    })); 
                     setScale(newScale); 
-                }; 
+                };
                 if(div) { 
                     div.addEventListener('wheel', handleWheel, { passive: false }); 
                     return () => div.removeEventListener('wheel', handleWheel); 
@@ -1358,39 +1516,102 @@
                 const rect = containerRef.current.getBoundingClientRect(); 
                 return { x: (clientX - rect.left - pan.x) / scale, y: (clientY - rect.top - pan.y) / scale }; 
             };
-            const findNode = (id) => nodes.find(n => n.id === id);
+            const findNodeBase = (id) => nodes.find(n => n.id === id);
+            // 드래그 중 오프셋이 적용된 노드 위치 반환
+            const findNode = (id) => {
+                const node = nodes.find(n => n.id === id);
+                if (!node) return null;
+                if (draggingNodeId && dragOffset.nodeIds.has(id)) {
+                    return { ...node, x: node.x + dragOffset.x, y: node.y + dragOffset.y };
+                }
+                return node;
+            };
             
             const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 프로젝트', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
             const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: " ", status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
             const deleteProject = (id, e) => { if (e) e.stopPropagation(); if (confirm("삭제하시겠습니까?")) { saveHistory(); let newProjects = projects.filter(p => p.id !== id); if (newProjects.length === 0) { const dummyId = generateUUID(); newProjects = [{ id: dummyId, type: 'board', name: '새 프로젝트', nodes: [], edges: [] }]; handleSelectProject(dummyId); } else if (activeProjectId === id) handleSelectProject(newProjects[0].id); setProjects(newProjects); } };
             const handleProjectRename = (id, newName) => { saveHistory(); setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p)); setEditingProjectId(null); };
 
-            const addNode = (type) => { 
-                saveHistory(); 
-                const id = generateUUID(); 
-                const rect = containerRef.current.getBoundingClientRect(); 
-                const center = getCanvasCoords(rect.left + rect.width / 2, rect.top + rect.height / 2); 
-                
-                const defaultData = type === '인물' 
-                    ? { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' } 
-                    : (type === '사건' ? { emoji: '🔥', place: '', year: '', memo: '' } : { emoji: '💡', memo: '' }); 
-
-                updateActiveProject(prev => [...prev, { id, x: center.x - CARD_W / 2, y: center.y - CARD_H / 2, label: `새 ${type}`, type, data: defaultData }]); 
-                setTopNodeId(id); 
+            const getDefaultNodeData = (type) => {
+                switch(type) {
+                    case '인물': return { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' };
+                    case '사건': return { emoji: '🔥', place: '', year: '', memo: '' };
+                    case '메모': return { emoji: '💡', memo: '' };
+                    case '장소': return { emoji: '📍', region: '', climate: '', description: '', memo: '' };
+                    case '아이템': return { emoji: '🎁', category: '일반', rarity: '보통', owner: '', effect: '', memo: '' };
+                    case '세력': return { emoji: '⚔️', leader: '', members: '', territory: '', goal: '', memo: '' };
+                    case '복선': return { emoji: '🎣', chapter: '', status: '미회수', hint: '', reveal: '', memo: '' };
+                    case '타임라인': return { emoji: '⏰', date: '', era: '', importance: '보통', memo: '' };
+                    case '설정': return { emoji: '📚', category: '세계관', scope: '', memo: '' };
+                    case '대사': return { emoji: '💬', speaker: '', situation: '', emotion: '', memo: '' };
+                    case '갈등': return { emoji: '⚡', parties: '', cause: '', status: '진행중', resolution: '', memo: '' };
+                    case '그룹': return { emoji: '📁', color: '#94a3b8', width: 400, height: 300, childNodes: [], memo: '' };
+                    default: return { emoji: '📝', memo: '' };
+                }
             };
-            const deleteNode = (id) => { saveHistory(); updateActiveProject(prev => prev.filter(n => n.id !== id), prev => prev.filter(e => e.from !== id && e.to !== id)); if (selectedNodeId === id) setSelectedNodeId(null); setSelectedNodeIds(prev => { const next = new Set(prev); next.delete(id); return next; }); };
-            
+            const addNode = (type) => {
+                saveHistory();
+                const id = generateUUID();
+                const rect = containerRef.current.getBoundingClientRect();
+                const center = getCanvasCoords(rect.left + rect.width / 2, rect.top + rect.height / 2);
+
+                const defaultData = getDefaultNodeData(type);
+
+                updateActiveProject(prev => [...prev, { id, x: center.x - CARD_W / 2, y: center.y - CARD_H / 2, label: `새 ${type}`, type, data: defaultData }]);
+                setTopNodeId(id);
+            };
+            const deleteNode = (id) => { 
+                saveHistory(); 
+                
+                updateActiveProject(
+                    // 1. 노드 목록 업데이트
+                    prevNodes => {
+                        // 삭제 대상 노드 제거
+                        const filtered = prevNodes.filter(n => n.id !== id);
+                        
+                        // [추가된 로직] 남은 노드들 중 '그룹' 노드 내부에 삭제된 ID가 있다면 제거
+                        return filtered.map(node => {
+                            if (node.type === '그룹' && node.data.childNodes && node.data.childNodes.includes(id)) {
+                                return {
+                                    ...node,
+                                    data: {
+                                        ...node.data,
+                                        childNodes: node.data.childNodes.filter(childId => childId !== id)
+                                    }
+                                };
+                            }
+                            return node;
+                        });
+                    }, 
+                    // 2. 엣지 목록 업데이트 (기존과 동일)
+                    prevEdges => prevEdges.filter(e => e.from !== id && e.to !== id)
+                ); 
+                
+                if (selectedNodeId === id) setSelectedNodeId(null); 
+                setSelectedNodeIds(prev => { const next = new Set(prev); next.delete(id); return next; }); 
+            };
+
+            const resizeGroupNode = (id, width, height) => {
+                updateActiveProject(prev => prev.map(n =>
+                    n.id === id ? { ...n, data: { ...n.data, width, height } } : n
+                ));
+            };
+
+            const ALL_NODE_TYPES = ['인물', '사건', '메모', '장소', '아이템', '세력', '복선', '타임라인', '설정', '대사', '갈등', '그룹'];
             const handleReorderNodes = (type, newOrder) => {
                 saveHistory();
                 updateActiveProject(allNodes => {
                     const newOrderIds = newOrder.map(n => n.id);
-                    const otherNodes = allNodes.filter(n => n.type !== type);
                     const reorderedNodes = newOrderIds.map(id => allNodes.find(n => n.id === id)).filter(Boolean);
-                    const persons = type === '인물' ? reorderedNodes : otherNodes.filter(n => n.type === '인물');
-                    const events = type === '사건' ? reorderedNodes : otherNodes.filter(n => n.type === '사건');
-                    const memos = type === '메모' ? reorderedNodes : otherNodes.filter(n => n.type === '메모');
 
-                    return [...persons, ...events, ...memos];
+                    // 각 타입별로 노드 분리
+                    const nodesByType = {};
+                    ALL_NODE_TYPES.forEach(t => {
+                        nodesByType[t] = type === t ? reorderedNodes : allNodes.filter(n => n.type === t);
+                    });
+
+                    // 모든 타입의 노드를 순서대로 합침
+                    return ALL_NODE_TYPES.flatMap(t => nodesByType[t]);
                 });
             };
 
@@ -1504,63 +1725,87 @@
             const draggingNodeIdRef = useRef(draggingNodeId);
             const scaleRef = useRef(scale);
             const tempEdgeRef = useRef(tempEdge);
+            const nodesRef = useRef(nodes);
+            const dragOffsetRef = useRef({ x: 0, y: 0, nodeIds: new Set() });
 
             useEffect(() => { isPanningRef.current = isPanning; }, [isPanning]);
             useEffect(() => { draggingNodeIdRef.current = draggingNodeId; }, [draggingNodeId]);
-            useEffect(() => { scaleRef.current = scale; }, [scale]);
+            useEffect(() => { scaleRef.current = scale; window.currentScale = scale; }, [scale]);
             useEffect(() => { tempEdgeRef.current = tempEdge; }, [tempEdge]);
+            useEffect(() => { nodesRef.current = nodes; }, [nodes]);
 
             // 2. handleGlobalMouseMove 함수 교체
             const handleGlobalMouseMove = (e) => {
                 if (activeProject.type === 'doc') return;
-                
-                // 최신 마우스 좌표 저장
-                latestMousePos.current = { x: e.clientX, y: e.clientY };
 
-                // 이미 예약된 프레임이 있다면 취소하고 최신 좌표로 갱신 (선택 사항, 여기서는 간단히 처리)
-                if (rAF.current) return; 
+                const currentX = e.clientX;
+                const currentY = e.clientY;
+                const dx = currentX - lastMousePos.current.x;
+                const dy = currentY - lastMousePos.current.y;
 
-                rAF.current = requestAnimationFrame(() => {
-                    const currentX = latestMousePos.current.x;
-                    const currentY = latestMousePos.current.y;
-                    const dx = currentX - lastMousePos.current.x;
-                    const dy = currentY - lastMousePos.current.y;
-                    
-                    if (isMarqueeSelectingRef.current && marquee) {
-                        const currentCoords = getCanvasCoords(currentX, currentY);
-                        setMarquee(prev => {
-                            const x = Math.min(prev.startX, currentCoords.x);
-                            const y = Math.min(prev.startY, currentCoords.y);
-                            const width = Math.abs(currentCoords.x - prev.startX);
-                            const height = Math.abs(currentCoords.y - prev.startY);
-                            return { ...prev, x, y, width, height };
-                        });
-                    } else if (isPanningRef.current) {
-                        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
-                    } else if (draggingNodeIdRef.current) {
-                        const scaleFactor = 1 / scaleRef.current;
-                        const dragId = draggingNodeIdRef.current;
-                        const deltaX = dx * scaleFactor;
-                        const deltaY = dy * scaleFactor;
-                        const selectedIds = selectedNodeIdsRef.current;
+                if (isMarqueeSelectingRef.current && marquee) {
+                    const currentCoords = getCanvasCoords(currentX, currentY);
+                    setMarquee(prev => {
+                        const x = Math.min(prev.startX, currentCoords.x);
+                        const y = Math.min(prev.startY, currentCoords.y);
+                        const width = Math.abs(currentCoords.x - prev.startX);
+                        const height = Math.abs(currentCoords.y - prev.startY);
+                        return { ...prev, x, y, width, height };
+                    });
+                } else if (isPanningRef.current) {
+                    setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+                } else if (draggingNodeIdRef.current) {
+                    const scaleFactor = 1 / scaleRef.current;
+                    const dragId = draggingNodeIdRef.current;
+                    const deltaX = dx * scaleFactor;
+                    const deltaY = dy * scaleFactor;
+                    const selectedIds = selectedNodeIdsRef.current;
 
-                        ReactDOM.flushSync(() => {
-                            updateActiveProject(prevNodes => prevNodes.map(n =>
-                                (selectedIds.has(dragId) ? selectedIds.has(n.id) : n.id === dragId)
-                                    ? { ...n, x: n.x + deltaX, y: n.y + deltaY }
-                                    : n
-                            ));
-                        });
+                    // 이동할 노드 ID 집합을 미리 계산 (첫 프레임에서만)
+                    let nodesToMove = dragOffsetRef.current.nodeIds;
+                    if (nodesToMove.size === 0) {
+                        nodesToMove = new Set();
+                        const currentNodes = nodes;
+
+                        // 재귀적으로 그룹의 모든 자식 노드 수집
+                        const collectAllChildren = (nodeId, nodesList) => {
+                            nodesToMove.add(nodeId);
+                            const node = nodesList.find(n => n.id === nodeId);
+                            if (node?.type === '그룹' && node.data.childNodes) {
+                                node.data.childNodes.forEach(childId => {
+                                    if (!nodesToMove.has(childId)) {
+                                        collectAllChildren(childId, nodesList);
+                                    }
+                                });
+                            }
+                        };
+
+                        const draggedNode = currentNodes.find(n => n.id === dragId);
+                        const isGroupDrag = draggedNode?.type === '그룹';
+
+                        if (selectedIds.has(dragId) && selectedIds.size > 1) {
+                            selectedIds.forEach(id => nodesToMove.add(id));
+                        } else if (isGroupDrag) {
+                            collectAllChildren(dragId, currentNodes);
+                        } else {
+                            nodesToMove.add(dragId);
+                        }
+                        dragOffsetRef.current.nodeIds = nodesToMove;
                     }
 
-                    if (tempEdgeRef.current) {
-                        const c = getCanvasCoords(currentX, currentY);
-                        setTempEdge(prev => ({ ...prev, toX: c.x, toY: c.y }));
-                    }
+                    // 오프셋 누적
+                    const newOffsetX = dragOffsetRef.current.x + deltaX;
+                    const newOffsetY = dragOffsetRef.current.y + deltaY;
+                    dragOffsetRef.current = { x: newOffsetX, y: newOffsetY, nodeIds: nodesToMove };
+                    setDragOffset({ x: newOffsetX, y: newOffsetY, nodeIds: nodesToMove });
+                }
 
-                    lastMousePos.current = { x: currentX, y: currentY };
-                    rAF.current = null;
-                });
+                if (tempEdgeRef.current) {
+                    const c = getCanvasCoords(currentX, currentY);
+                    setTempEdge(prev => ({ ...prev, toX: c.x, toY: c.y }));
+                }
+
+                lastMousePos.current = { x: currentX, y: currentY };
             };
 
             const handleGlobalMouseUp = (e) => {
@@ -1589,7 +1834,74 @@
                     isMarqueeSelectingRef.current = false;
                     setMarquee(null);
 
-                    if (draggingNodeId) saveHistory();
+                    // 노드 드래그 종료 시 위치 저장 및 그룹 영역 체크
+                    if (draggingNodeId) {
+                        const offset = dragOffsetRef.current;
+                        const movedNodeIds = offset.nodeIds;
+
+                        // 오프셋이 있으면 실제 위치 저장
+                        if (offset.x !== 0 || offset.y !== 0) {
+                            saveHistory();
+                            updateActiveProject(prevNodes => prevNodes.map(n =>
+                                movedNodeIds.has(n.id) ? { ...n, x: n.x + offset.x, y: n.y + offset.y } : n
+                            ));
+                        }
+
+                        // 오프셋 초기화
+                        dragOffsetRef.current = { x: 0, y: 0, nodeIds: new Set() };
+                        setDragOffset({ x: 0, y: 0, nodeIds: new Set() });
+
+                        // 드래그된 노드의 최종 위치로 그룹 체크 (그룹 노드는 다른 그룹에 포함 안됨)
+                        const draggedNode = nodes.find(n => n.id === draggingNodeId);
+                        if (draggedNode && draggedNode.type !== '그룹') {
+                            // 드래그한 노드의 중심 좌표 (오프셋 적용)
+                            const nodeW = CARD_W;
+                            const nodeH = CARD_H;
+                            const nodeCenterX = draggedNode.x + offset.x + nodeW / 2;
+                            const nodeCenterY = draggedNode.y + offset.y + nodeH / 2;
+
+                            // 현재 속한 그룹 찾기
+                            const currentParentGroup = nodes.find(n => n.type === '그룹' && n.id !== draggingNodeId && n.data.childNodes?.includes(draggingNodeId));
+
+                            // 그룹 노드들 중 이 노드가 속할 수 있는 그룹 찾기
+                            const groupNodes = nodes.filter(n => n.type === '그룹');
+                            let targetGroup = null;
+
+                            for (const group of groupNodes) {
+                                const gx = group.x + (movedNodeIds.has(group.id) ? offset.x : 0);
+                                const gy = group.y + (movedNodeIds.has(group.id) ? offset.y : 0);
+                                const gw = group.data.width || 400;
+                                const gh = group.data.height || 300;
+
+                                // 노드 중심이 그룹 영역 안에 있는지 확인
+                                if (nodeCenterX >= gx && nodeCenterX <= gx + gw &&
+                                    nodeCenterY >= gy && nodeCenterY <= gy + gh) {
+                                    targetGroup = group;
+                                    break;
+                                }
+                            }
+
+                            // 그룹 멤버십 업데이트
+                            updateActiveProject(prevNodes => prevNodes.map(n => {
+                                // 기존 그룹에서 제거 (그룹 밖으로 나갔거나 다른 그룹으로 이동)
+                                if (currentParentGroup && n.id === currentParentGroup.id) {
+                                    if (!targetGroup || targetGroup.id !== currentParentGroup.id) {
+                                        // 그룹 밖으로 나감 또는 다른 그룹으로 이동
+                                        return { ...n, data: { ...n.data, childNodes: (n.data.childNodes || []).filter(id => id !== draggingNodeId) } };
+                                    }
+                                }
+                                // 새 그룹에 추가 (기존 그룹이 없거나 다른 그룹인 경우)
+                                if (targetGroup && n.id === targetGroup.id) {
+                                    if (!currentParentGroup || currentParentGroup.id !== targetGroup.id) {
+                                        if (!n.data.childNodes?.includes(draggingNodeId)) {
+                                            return { ...n, data: { ...n.data, childNodes: [...(n.data.childNodes || []), draggingNodeId] } };
+                                        }
+                                    }
+                                }
+                                return n;
+                            }));
+                        }
+                    }
                     if (tempEdge && !hasConnectedRef.current) {
                         const c = getCanvasCoords(e.clientX, e.clientY);
                         // 마우스 위치에 있는 노드 찾기 (출발 노드 제외)
@@ -1610,7 +1922,9 @@
                             } else {
                                 // 다른 노드 위에서 놓으면 연결
                                 saveHistory();
-                                updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: '관계' }]);
+                                const fromNode = findNode(tempEdge.fromId);
+                                const edgeLabel = '';
+                                updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: targetNode.id, label: edgeLabel }]);
                             }
                         } else {
                             // 빈 공간에서 놓으면 새 노드 생성
@@ -1618,10 +1932,9 @@
                             if (fromNode) {
                                 saveHistory();
                                 const newNodeId = generateUUID();
-                                const defaultData = fromNode.type === '인물'
-                                    ? { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' }
-                                    : (fromNode.type === '사건' ? { emoji: '🔥', place: '', year: '', memo: '' } : { emoji: '💡', memo: '' });
-                                updateActiveProject(prev => [...prev, { id: newNodeId, x: c.x - CARD_W/2, y: c.y - CARD_H/2, label: `새 ${fromNode.type}`, type: fromNode.type, data: defaultData }], prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: newNodeId, label: '관계' }]);
+                                const defaultData = getDefaultNodeData(fromNode.type);
+                                const edgeLabel = '';
+                                updateActiveProject(prev => [...prev, { id: newNodeId, x: c.x - CARD_W/2, y: c.y - CARD_H/2, label: `새 ${fromNode.type}`, type: fromNode.type, data: defaultData }], prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: newNodeId, label: edgeLabel }]);
                             }
                         }
                     }
@@ -1641,12 +1954,21 @@
                 if (!activeProject || activeProject.type !== 'board') return;
                 saveHistory();
 
-                const GAP_BETWEEN_GROUPS = 400; // 그룹 간 간격
+                const GAP_BETWEEN_GROUPS = 400;
 
                 const groups = {
                     '인물': activeProject.nodes.filter(n => n.type === '인물'),
                     '사건': activeProject.nodes.filter(n => n.type === '사건'),
-                    '메모': activeProject.nodes.filter(n => n.type !== '인물' && n.type !== '사건')
+                    '메모': activeProject.nodes.filter(n => n.type === '메모'),
+                    '장소': activeProject.nodes.filter(n => n.type === '장소'),
+                    '아이템': activeProject.nodes.filter(n => n.type === '아이템'),
+                    '세력': activeProject.nodes.filter(n => n.type === '세력'),
+                    '복선': activeProject.nodes.filter(n => n.type === '복선'),
+                    '타임라인': activeProject.nodes.filter(n => n.type === '타임라인'),
+                    '설정': activeProject.nodes.filter(n => n.type === '설정'),
+                    '대사': activeProject.nodes.filter(n => n.type === '대사'),
+                    '갈등': activeProject.nodes.filter(n => n.type === '갈등'),
+                    '그룹': activeProject.nodes.filter(n => n.type === '그룹')
                 };
 
                 const getInternalEdges = (groupNodes) => {
@@ -1654,156 +1976,160 @@
                     return activeProject.edges.filter(e => ids.has(e.from) && ids.has(e.to));
                 };
 
-                const layoutStandardGroup = (groupNodes, groupEdges) => {
-                    if (groupNodes.length === 0) return { nodes: [], width: 0, minX: 0 };
+                const layoutGroup = (groupNodes, groupEdges) => {
+                    if (groupNodes.length === 0) return { nodes: [], width: 0, height: 0 };
                     const g = new dagre.graphlib.Graph();
                     g.setGraph({ rankdir: 'TB', ranksep: 100, nodesep: 60 });
                     g.setDefaultEdgeLabel(() => ({}));
                     groupNodes.forEach(node => g.setNode(node.id, { width: CARD_W, height: CARD_H }));
                     groupEdges.forEach(edge => g.setEdge(edge.from, edge.to));
                     dagre.layout(g);
-                    
-                    let minX = Infinity, maxX = -Infinity;
+
+                    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                     const positioned = groupNodes.map(node => {
                         const pos = g.node(node.id);
                         const x = pos.x - CARD_W / 2;
                         const y = pos.y - CARD_H / 2;
                         if (x < minX) minX = x;
                         if (x + CARD_W > maxX) maxX = x + CARD_W;
+                        if (y < minY) minY = y;
+                        if (y + CARD_H > maxY) maxY = y + CARD_H;
                         return { ...node, x, y };
                     });
-                    return { 
-                        nodes: positioned.map(n => ({ ...n, x: n.x - minX })), 
-                        width: maxX - minX 
-                    };
-                };
-
-                const layoutPersonGroup = (groupNodes, groupEdges) => {
-                    if (groupNodes.length === 0) return { nodes: [], width: 0 };
-                    const rootNode = groupNodes.find(n => n.data?.role === '주인공') || groupNodes[0];
-                    const upNodes = [];
-                    const downNodes = [rootNode]; // 주인공은 하단 트리 계산의 기준점이 됨
-                    const downNodeIds = new Set([rootNode.id]);
-
-                    groupNodes.forEach(node => {
-                        if (node.id === rootNode.id) return; // 주인공 제외
-                        const myEdges = groupEdges.filter(e => e.from === node.id || e.to === node.id);
-                        const degree = myEdges.length;
-                        const isConnectedToRoot = myEdges.some(e => e.from === rootNode.id || e.to === rootNode.id);
-                        if (isConnectedToRoot && degree === 1) {
-                            upNodes.push(node);
-                        } else {
-                            downNodes.push(node);
-                            downNodeIds.add(node.id);
-                        }
-                    });
-
-                    const downEdges = groupEdges.filter(e => downNodeIds.has(e.from) && downNodeIds.has(e.to));
-                    const g = new dagre.graphlib.Graph();
-                    g.setGraph({ rankdir: 'TB', ranksep: 120, nodesep: 80 }); // 간격 넉넉히
-                    g.setDefaultEdgeLabel(() => ({}));
-
-                    downNodes.slice().reverse().forEach(n => g.setNode(n.id, { width: CARD_W, height: CARD_H }));
-                    downEdges.forEach(e => g.setEdge(e.from, e.to));
-                    
-                    dagre.layout(g);
-
-                    let minX = Infinity, maxX = -Infinity;
-                    let rootPos = { x: 0, y: 0 };
-
-                    const positionedDownNodes = downNodes.map(node => {
-                        const pos = g.node(node.id);
-                        const x = pos.x - CARD_W / 2;
-                        const y = pos.y - CARD_H / 2;
-
-                        if (node.id === rootNode.id) rootPos = { x, y };
-                        if (x < minX) minX = x;
-                        if (x + CARD_W > maxX) maxX = x + CARD_W;
-                        
-                        return { ...node, x, y };
-                    });
-
-                    const positionedUpNodes = [];
-                    if (upNodes.length > 0) {
-                        const gap = CARD_W + 20;
-                        const totalUpWidth = (upNodes.length - 1) * gap;
-                        const startX = rootPos.x + (CARD_W / 2) - (CARD_W / 2) - (totalUpWidth / 2);
-
-                        upNodes.slice().reverse().forEach((node, idx) => {
-                            positionedUpNodes.push({
-                                ...node,
-                                x: startX + (idx * gap),
-                                y: rootPos.y - 150 - CARD_H
-                            });
-
-                            const nx = startX + (idx * gap);
-                            if (nx < minX) minX = nx;
-                            if (nx + CARD_W > maxX) maxX = nx + CARD_W;
-                        });
-                    }
-
-                    const allPositioned = [...positionedDownNodes, ...positionedUpNodes];
-
                     return {
-                        nodes: allPositioned.map(n => ({ ...n, x: n.x - minX })),
-                        width: maxX - minX
+                        nodes: positioned.map(n => ({ ...n, x: n.x - minX, y: n.y - minY })),
+                        width: maxX - minX,
+                        height: maxY - minY
                     };
                 };
 
-                const personResult = layoutPersonGroup(groups['인물'], getInternalEdges(groups['인물']));
-                const eventResult = layoutStandardGroup(groups['사건'], getInternalEdges(groups['사건']));
-                const memoResult = layoutStandardGroup(groups['메모'], getInternalEdges(groups['메모']));
-                let currentOffset = 0;
-
-                const finalPersonNodes = personResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
-                if (personResult.nodes.length > 0) currentOffset += personResult.width + GAP_BETWEEN_GROUPS;
-
-                const finalEventNodes = eventResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
-                if (eventResult.nodes.length > 0) currentOffset += eventResult.width + GAP_BETWEEN_GROUPS;
-
-                const finalMemoNodes = memoResult.nodes.map(n => ({ ...n, x: n.x + currentOffset }));
-
-                const layoutedNodes = [...finalPersonNodes, ...finalEventNodes, ...finalMemoNodes];
-                const positionMap = new Map();
-                layoutedNodes.forEach(n => {
-                    positionMap.set(n.id, { x: n.x, y: n.y });
+                // 각 타입별 레이아웃
+                const results = {};
+                Object.keys(groups).forEach(type => {
+                    results[type] = layoutGroup(groups[type], getInternalEdges(groups[type]));
                 });
 
+                // Row 1: 인물, 사건, 메모
+                const ROW_GAP = 100;
+                let row1X = 0;
+                let row1Height = 0;
+
+                const finalNodes = [];
+
+                ['인물', '사건', '메모'].forEach(type => {
+                    if (results[type].nodes.length > 0) {
+                        results[type].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row1X, y: n.y }));
+                        row1X += results[type].width + GAP_BETWEEN_GROUPS;
+                        row1Height = Math.max(row1Height, results[type].height);
+                    }
+                });
+
+                // Row 2: 장소, 세력, 설정
+                let row2X = 0;
+                let row2Y = row1Height + ROW_GAP;
+                let row2Height = 0;
+
+                ['장소', '세력', '설정'].forEach(type => {
+                    if (results[type].nodes.length > 0) {
+                        results[type].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row2X, y: n.y + row2Y }));
+                        row2X += results[type].width + GAP_BETWEEN_GROUPS;
+                        row2Height = Math.max(row2Height, results[type].height);
+                    }
+                });
+
+                // Row 3: 복선, 타임라인, 대사, 갈등
+                let row3X = 0;
+                let row3Y = row2Y + row2Height + ROW_GAP;
+                let row3Height = 0;
+
+                ['복선', '타임라인', '대사', '갈등'].forEach(type => {
+                    if (results[type].nodes.length > 0) {
+                        results[type].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row3X, y: n.y + row3Y }));
+                        row3X += results[type].width + GAP_BETWEEN_GROUPS;
+                        row3Height = Math.max(row3Height, results[type].height);
+                    }
+                });
+
+                // Row 4: 아이템
+                let row4X = 0;
+                let row4Y = row3Y + row3Height + ROW_GAP;
+
+                if (results['아이템'].nodes.length > 0) {
+                    results['아이템'].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row4X, y: n.y + row4Y }));
+                }
+
+                // 그룹 노드는 대각선으로 겹쳐서 배치
+                const DIAGONAL_OFFSET = 50;
+                let groupX = (results['아이템'].width || 0) + GAP_BETWEEN_GROUPS;
+                let groupY = row4Y;
+                results['그룹'].nodes.forEach((n, idx) => {
+                    finalNodes.push({ ...n, x: groupX + idx * DIAGONAL_OFFSET, y: groupY + idx * DIAGONAL_OFFSET });
+                });
+
+                const positionMap = new Map();
+                finalNodes.forEach(n => positionMap.set(n.id, { x: n.x, y: n.y }));
+
+                // 자동 정렬 시 모든 그룹 노드의 childNodes 초기화
                 updateActiveProject(prevNodes =>
                     prevNodes.map(n => {
                         const newPos = positionMap.get(n.id);
+                        if (n.type === '그룹') {
+                            // 그룹 노드는 childNodes 초기화
+                            return newPos
+                                ? { ...n, x: newPos.x, y: newPos.y, data: { ...n.data, childNodes: [] } }
+                                : { ...n, data: { ...n.data, childNodes: [] } };
+                        }
                         return newPos ? { ...n, x: newPos.x, y: newPos.y } : n;
                     })
                 );
-                setTimeout(() => fitToScreen(layoutedNodes), 100);
 
-            }, [activeProject, saveHistory, updateActiveProject, showToast, fitToScreen]);
+                setTimeout(() => fitToScreen(finalNodes), 100);
+
+            }, [activeProject, saveHistory, updateActiveProject, fitToScreen]);
 
 
             const activeNode = useMemo(() => nodes.find(n => n.id === selectedNodeId), [nodes, selectedNodeId]);
             const activeEdge = useMemo(() => edges.find(e => e.id === selectedEdgeId), [edges, selectedEdgeId]);
-            const visibleNodes = useMemo(() => {
+
+            // 드래그 중인 노드에 오프셋 적용
+            const getDisplayNodes = () => {
+                if (!draggingNodeId || (dragOffset.x === 0 && dragOffset.y === 0)) return nodes;
+                return nodes.map(n =>
+                    dragOffset.nodeIds.has(n.id)
+                        ? { ...n, x: n.x + dragOffset.x, y: n.y + dragOffset.y }
+                        : n
+                );
+            };
+            const displayNodes = getDisplayNodes();
+
+            const visibleNodes = (() => {
                 if (activeProject?.type !== 'board') return [];
                 if (isPanning || draggingNodeId) {
-                    return nodes;
+                    return displayNodes;
                 }
 
                 const viewportW = window.innerWidth;
                 const viewportH = window.innerHeight;
                 const buffer = 300;
-                
-                return nodes.filter(node => {
+
+                return displayNodes.filter(node => {
                     const screenX = node.x * scale + pan.x;
                     const screenY = node.y * scale + pan.y;
+                    const nodeW = node.type === '그룹' ? (node.data.width || 400) : CARD_W;
+                    const nodeH = node.type === '그룹' ? (node.data.height || 300) : CARD_H;
                     return (
-                        screenX > -CARD_W * scale - buffer &&
+                        screenX > -nodeW * scale - buffer &&
                         screenX < viewportW + buffer &&
-                        screenY > -CARD_H * scale - buffer &&
+                        screenY > -nodeH * scale - buffer &&
                         screenY < viewportH + buffer
                     );
                 });
-            }, [nodes, scale, pan, activeProject?.type, isPanning, draggingNodeId]); 
-            const visibleEdges = useMemo(() => { if (activeProject?.type !== 'board') return []; const visibleIds = new Set(visibleNodes.map(n => n.id)); return edges.filter(edge => visibleIds.has(edge.from) || visibleIds.has(edge.to)); }, [edges, visibleNodes, activeProject?.type]);
+            })();
+
+            const visibleGroupNodes = visibleNodes.filter(n => n.type === '그룹');
+            const visibleRegularNodes = visibleNodes.filter(n => n.type !== '그룹');
+            // 엣지는 nodes에서 직접 참조하여 동기화 문제 해결
+            const visibleEdges = (() => { if (activeProject?.type !== 'board') return []; const nodeIds = new Set(nodes.map(n => n.id)); return edges.filter(edge => nodeIds.has(edge.from) && nodeIds.has(edge.to)); })();
 
             const renderProjectItem = (project) => {
                 const isActive = activeProjectId === project.id; const isDoc = project.type === 'doc'; const isExpanded = expandedProjects[project.id];
@@ -1860,7 +2186,7 @@
                                             <div className="pb-3 px-3 space-y-3 pt-2">
                                                 {(() => {
                                                     const cols = project.sidebarColumns || 1;
-                                                    return ['인물', '사건', '메모'].map(type => {
+                                                    return ALL_NODE_TYPES.map(type => {
                                                         const filtered = (project.nodes || []).filter(n => n.type === type); if (filtered.length === 0) return null;
                                                         return (
                                                             <div key={type} className="pl-1">
@@ -2133,20 +2459,68 @@
                                         <span className="text-xs font-black text-slate-800 uppercase tracking-widest dark:text-zinc-200">{activeProject.name}</span>
                                     </div>
                                     <div className="flex items-center gap-1 p-1 bg-white rounded-[3px] shadow-lg border border-slate-200 h-10 dark:bg-darkpanel dark:border-darkborder">
-                                            <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-indigo-50 text-indigo-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-indigo-400">
-                                                <div className="w-5 h-5 flex items-center justify-center bg-indigo-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
-                                                <span className="text-[11px] font-black">인물</span>
+                                            <button onClick={() => addNode('인물')} className="flex items-center gap-2 h-full px-3 rounded-[3px] hover:bg-blue-50 text-blue-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-blue-400" title="인물 추가">
+                                                <span className="text-sm">👤</span>
+                                                <span className="text-[10px] font-black hidden sm:inline">인물</span>
                                             </button>
                                             <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                            <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-rose-50 text-rose-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-rose-400">
-                                                <div className="w-5 h-5 flex items-center justify-center bg-rose-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
-                                                <span className="text-[11px] font-black">사건</span>
+                                            <button onClick={() => addNode('사건')} className="flex items-center gap-2 h-full px-3 rounded-[3px] hover:bg-red-50 text-red-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-red-400" title="사건 추가">
+                                                <span className="text-sm">🔥</span>
+                                                <span className="text-[10px] font-black hidden sm:inline">사건</span>
                                             </button>
                                             <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
-                                            <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-4 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400">
-                                                <div className="w-5 h-5 flex items-center justify-center bg-amber-500 rounded-[3px] text-white group-hover:scale-110 transition-transform"><IconPlus className="w-3 h-3" /></div>
-                                                <span className="text-[11px] font-black">메모</span>
+                                            <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-3 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400" title="메모 추가">
+                                                <span className="text-sm">💡</span>
+                                                <span className="text-[10px] font-black hidden sm:inline">메모</span>
                                             </button>
+                                            <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
+                                            <div className="relative">
+                                                <button onClick={() => setShowNodeDropdown(!showNodeDropdown)} className="flex items-center gap-1 h-full px-3 rounded-[3px] hover:bg-slate-100 text-slate-600 transition-all active:scale-95 dark:hover:bg-zinc-700 dark:text-slate-400" title="더 많은 노드 추가">
+                                                    <span className="text-sm">➕</span>
+                                                    <span className="text-[10px] font-black hidden sm:inline">더보기</span>
+                                                    <svg className={`w-3 h-3 transition-transform ${showNodeDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                                </button>
+                                                {showNodeDropdown && (
+                                                    <div className="absolute top-full left-0 mt-1 bg-white rounded-[3px] shadow-xl border border-slate-200 py-1 min-w-[140px] z-[200] dark:bg-darkpanel dark:border-darkborder">
+                                                        <button onClick={() => { addNode('장소'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 text-emerald-600 transition-all dark:hover:bg-zinc-700 dark:text-emerald-400">
+                                                            <span className="text-sm">📍</span>
+                                                            <span className="text-[11px] font-bold">장소</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('아이템'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-purple-50 text-purple-600 transition-all dark:hover:bg-zinc-700 dark:text-purple-400">
+                                                            <span className="text-sm">🎁</span>
+                                                            <span className="text-[11px] font-bold">아이템</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('세력'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-orange-50 text-orange-600 transition-all dark:hover:bg-zinc-700 dark:text-orange-400">
+                                                            <span className="text-sm">⚔️</span>
+                                                            <span className="text-[11px] font-bold">세력</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('복선'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-pink-50 text-pink-600 transition-all dark:hover:bg-zinc-700 dark:text-pink-400">
+                                                            <span className="text-sm">🎣</span>
+                                                            <span className="text-[11px] font-bold">복선</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('타임라인'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-teal-50 text-teal-600 transition-all dark:hover:bg-zinc-700 dark:text-teal-400">
+                                                            <span className="text-sm">⏰</span>
+                                                            <span className="text-[11px] font-bold">타임라인</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('설정'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 text-indigo-600 transition-all dark:hover:bg-zinc-700 dark:text-indigo-400">
+                                                            <span className="text-sm">📚</span>
+                                                            <span className="text-[11px] font-bold">설정</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('대사'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-sky-50 text-sky-600 transition-all dark:hover:bg-zinc-700 dark:text-sky-400">
+                                                            <span className="text-sm">💬</span>
+                                                            <span className="text-[11px] font-bold">대사</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('갈등'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-rose-50 text-rose-600 transition-all dark:hover:bg-zinc-700 dark:text-rose-400">
+                                                            <span className="text-sm">⚡</span>
+                                                            <span className="text-[11px] font-bold">갈등</span>
+                                                        </button>
+                                                        <button onClick={() => { addNode('그룹'); setShowNodeDropdown(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-100 text-slate-600 transition-all dark:hover:bg-zinc-700 dark:text-slate-400">
+                                                            <span className="text-sm">📁</span>
+                                                            <span className="text-[11px] font-bold">그룹</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                 </div>
 
@@ -2181,22 +2555,50 @@
                                         {visibleEdges.map(edge => {
                                             const from = findNode(edge.from); const to = findNode(edge.to); if (!from || !to) return null;
                                             let x1 = from.x + CARD_W/2, y1 = from.y + CARD_H/2, x2 = to.x + CARD_W/2, y2 = to.y + CARD_H/2;
-                                            const isEventToEvent = from.type === '사건' && to.type === '사건'; 
+                                            const coreTypes = ['인물', '사건', '메모'];
+                                            const isCoreType = (type) => coreTypes.includes(type);
+                                            const isEventToEvent = from.type === '사건' && to.type === '사건';
                                             const isIdeaInvolved = from.type === '메모' || to.type === '메모';
                                             const isPersonToEvent = (from.type === '인물' && to.type === '사건') || (from.type === '사건' && to.type === '인물');
                                             const isPersonToPerson = from.type === '인물' && to.type === '인물';
+                                            const isSameType = from.type === to.type;
+
+                                            // 노드 타입별 고유 색상 (hex)
+                                            const typeColors = {
+                                                '장소': '#10b981', '아이템': '#a855f7', '세력': '#f97316',
+                                                '복선': '#ec4899', '타임라인': '#14b8a6', '설정': '#6366f1',
+                                                '대사': '#0ea5e9', '갈등': '#f43f5e', '그룹': '#64748b'
+                                            };
+
+                                            // 엣지 색상 결정 로직
+                                            let edgeColor;
+                                            if (isCoreType(from.type) && isCoreType(to.type)) {
+                                                // 기존 인물/사건/메모 연결 로직 유지
+                                                edgeColor = isIdeaInvolved ? "#facc15" : isPersonToEvent ? "#3b82f6" : isPersonToPerson ? "#93c5fd" : "#ef4444";
+                                            } else if (!isCoreType(from.type) && !isCoreType(to.type)) {
+                                                // 둘 다 새 타입일 경우
+                                                if (isSameType) {
+                                                    edgeColor = typeColors[from.type] || "#64748b";
+                                                } else {
+                                                    edgeColor = "#94a3b8"; // 회색
+                                                }
+                                            } else {
+                                                // 기존 타입과 새 타입 간 연결
+                                                edgeColor = "#94a3b8"; // 회색
+                                            }
+
                                             let pathData = isEventToEvent ? `M ${x1} ${y1} L ${getEdgeTargetPos(from, to, 12).x} ${getEdgeTargetPos(from, to, 12).y}` : getBezierPath(x1, y1, x2, y2);
-                                            let edgeColor = isIdeaInvolved ? "#facc15" : isPersonToEvent ? "#3b82f6" : isPersonToPerson ? "#93c5fd" : "#ef4444";
-                                            const strokeWidth = edge.width || (isPersonToEvent ? 12 : isEventToEvent ? 4 : 2);
+                                            const strokeWidth = edge.width || (isPersonToEvent ? 12 : isEventToEvent ? 4 : isSameType && !isCoreType(from.type) ? 3 : 2);
                                             const strokeDash = edge.style ? getStrokeDashArray(edge.style) : (isIdeaInvolved ? "8, 6" : "");
                                             const labelWidth = Math.max(70, (edge.label || "").length * 10 + 20);
+                                            const showLabel = isSameType;
                                             return (
                                                 <g key={edge.id}>
                                                     <path d={pathData} className="edge-hitbox" onDoubleClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); saveHistory(); updateActiveProject(null, prev => prev.filter(ev => ev.id !== edge.id)); }} />
                                                     <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} strokeDasharray={strokeDash} className="edge-path opacity-80" />
-                                                    {isPersonToPerson && (
+                                                    {showLabel && edge.label && (
                                                         <g className="cursor-pointer pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }}>
-                                                            <rect x={(x1+x2)/2 - labelWidth/2} y={(y1+y2)/2-12} width={labelWidth} height="24" rx="3" fill="white" stroke={edgeColor} strokeWidth="1.5" className="dark:fill-zinc-800" /><text x={(x1+x2)/2} y={(y1+y2)/2+4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#334155" className="dark:fill-zinc-200">{edge.label}</text>
+                                                            <rect x={(x1+x2)/2 - labelWidth/2} y={(y1+y2)/2-16} width={labelWidth} height="32" rx="4" fill="white" stroke={edgeColor} strokeWidth="1.5" className="dark:fill-zinc-800" /><text x={(x1+x2)/2} y={(y1+y2)/2+5} textAnchor="middle" fontSize="14" fontWeight="900" fill="#334155" className="dark:fill-zinc-200">{edge.label}</text>
                                                         </g>
                                                     )}
                                                 </g>
@@ -2217,8 +2619,50 @@
                                         />
                                     )}
 
-                                    {visibleNodes.map(node => (
-                                        <NodeCard key={node.id} node={node} isTop={topNodeId === node.id} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id)} onClick={(e, id) => { if(!e.shiftKey) setSelectedNodeIds(new Set([id])); }} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); setTopNodeId(id); } else if (e.button === 2) { const node = findNode(id); if (node) { setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); } } }} onMouseUp={(e, id) => { if (tempEdge && id !== tempEdge.fromId) { const edgeExists = edges.some(e => (e.from === tempEdge.fromId && e.to === id) || (e.from === id && e.to === tempEdge.fromId)); if (!edgeExists) { saveHistory(); hasConnectedRef.current = true; updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); } } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} />
+                                    {/* 그룹 노드 먼저 렌더링 (뒤에 배치) */}
+                                    {visibleGroupNodes.map(node => (
+                                        <GroupNode key={node.id} node={node} isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} onMouseDown={(e, id) => { e.stopPropagation(); if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } lastMousePos.current = { x: e.clientX, y: e.clientY }; latestMousePos.current = { x: e.clientX, y: e.clientY }; if (e.button === 0) { if (e.shiftKey) { setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); return; } if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } setDraggingNodeId(id); } }} onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} onDelete={deleteNode} onResize={resizeGroupNode} />
+                                    ))}
+                                    {/* 일반 노드 나중에 렌더링 (앞에 배치) */}
+                                    {visibleRegularNodes.map(node => (
+                                        <NodeCard 
+                                            key={node.id} 
+                                            node={node} 
+                                            isTop={topNodeId === node.id} 
+                                            isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id} 
+                                            isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id || dragOffset.nodeIds.has(node.id))}
+                                            onClick={(e, id) => { if(!e.shiftKey) setSelectedNodeIds(new Set([id])); }} 
+                                            onMouseDown={(e, id) => { 
+                                                e.stopPropagation(); 
+                                                if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; } 
+                                                lastMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                                latestMousePos.current = { x: e.clientX, y: e.clientY }; 
+                                                if (e.button === 0) { 
+                                                    if (e.shiftKey) { 
+                                                        setSelectedNodeIds(prev => { const newSet = new Set(prev); if (newSet.has(id)) newSet.delete(id); else newSet.add(id); selectedNodeIdsRef.current = newSet; return newSet; }); 
+                                                        return; 
+                                                    } 
+                                                    if (!selectedNodeIds.has(id)) { const newSet = new Set([id]); setSelectedNodeIds(newSet); selectedNodeIdsRef.current = newSet; } 
+                                                    setDraggingNodeId(id); 
+                                                    setTopNodeId(id); 
+                                                } else if (e.button === 2) { 
+                                                    const node = findNode(id); 
+                                                    if (node) { setTempEdge({ fromId: id, toX: node.x + CARD_W/2, toY: node.y + CARD_H/2 }); } 
+                                                } 
+                                            }} 
+                                            onMouseUp={(e, id) => { 
+                                                if (tempEdge && id !== tempEdge.fromId) { 
+                                                    const edgeExists = edges.some(e => (e.from === tempEdge.fromId && e.to === id) || (e.from === id && e.to === tempEdge.fromId)); 
+                                                    if (!edgeExists) { 
+                                                        saveHistory(); 
+                                                        hasConnectedRef.current = true; 
+                                                        updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); 
+                                                    } 
+                                                } 
+                                            }} 
+                                            onDoubleClick={(id) => { setSelectedNodeIds(new Set()); setSelectedNodeId(id); }} 
+                                            onDelete={deleteNode} 
+                                        />
                                     ))}
                                 </div>
                             </>
@@ -2400,7 +2844,7 @@
                                                     <div className="flex gap-3">
                                                         <div className="w-14">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
-                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 rounded-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
+                                                            <input className="w-full mt-1 px-2 py-2 bg-slate-50 rounded-[3px] text-center text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji || (activeNode.type === '그룹' ? '📁' : '')} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
                                                         </div>
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
@@ -2463,7 +2907,7 @@
                                                 <div className="flex gap-3">
                                                     <div className="w-20">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이모지</label>
-                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] text-center text-xl border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] text-center text-xl border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emoji || (activeNode.type === '그룹' ? '📁' : '')} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emoji: e.target.value}} : n))} />
                                                     </div>
                                                     <div className="flex-1">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
@@ -2486,23 +2930,295 @@
                                                 </div>
                                             )}
 
+                                            {/* 장소 전용 필드 */}
+                                            {activeNode.type === '장소' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">지역/위치</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.region || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, region: e.target.value}} : n))} placeholder="지역 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">기후/환경</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.climate || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, climate: e.target.value}} : n))} placeholder="기후/환경 입력" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">장소 설명</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.description || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, description: e.target.value}} : n))} placeholder="장소에 대한 간단한 설명" />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 아이템 전용 필드 */}
+                                            {activeNode.type === '아이템' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">분류</label>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.category || '일반'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, category: e.target.value}} : n))}>
+                                                                <option value="일반">일반</option>
+                                                                <option value="무기">무기</option>
+                                                                <option value="방어구">방어구</option>
+                                                                <option value="장신구">장신구</option>
+                                                                <option value="소모품">소모품</option>
+                                                                <option value="재료">재료</option>
+                                                                <option value="열쇠/도구">열쇠/도구</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">희귀도</label>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.rarity || '보통'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, rarity: e.target.value}} : n))}>
+                                                                <option value="보통">보통</option>
+                                                                <option value="고급">고급</option>
+                                                                <option value="희귀">희귀</option>
+                                                                <option value="영웅">영웅</option>
+                                                                <option value="전설">전설</option>
+                                                                <option value="유일">유일</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">소유자</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.owner || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, owner: e.target.value}} : n))} placeholder="소유자 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">효과/능력</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.effect || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, effect: e.target.value}} : n))} placeholder="효과/능력 입력" />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 세력 전용 필드 */}
+                                            {activeNode.type === '세력' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">리더/수장</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.leader || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, leader: e.target.value}} : n))} placeholder="리더 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">영역/본거지</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.territory || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, territory: e.target.value}} : n))} placeholder="영역 입력" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">주요 구성원</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.members || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, members: e.target.value}} : n))} placeholder="주요 구성원 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">목표/이념</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.goal || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, goal: e.target.value}} : n))} placeholder="목표/이념 입력" />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 복선 전용 필드 */}
+                                            {activeNode.type === '복선' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">등장 장/회차</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.chapter || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, chapter: e.target.value}} : n))} placeholder="장/회차 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">상태</label>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.status || '미회수'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, status: e.target.value}} : n))}>
+                                                                <option value="미회수">🔄 미회수</option>
+                                                                <option value="진행중">🔥 진행중</option>
+                                                                <option value="회수됨">✅ 회수됨</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">힌트/복선 내용</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.hint || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, hint: e.target.value}} : n))} placeholder="복선 내용 입력" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">회수 계획</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.reveal || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, reveal: e.target.value}} : n))} placeholder="회수 계획 입력" />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 타임라인 전용 필드 */}
+                                            {activeNode.type === '타임라인' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">날짜/시점</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.date || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, date: e.target.value}} : n))} placeholder="날짜/시점 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">시대/배경</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.era || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, era: e.target.value}} : n))} placeholder="시대/배경 입력" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">중요도</label>
+                                                        <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.importance || '보통'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, importance: e.target.value}} : n))}>
+                                                            <option value="낮음">낮음</option>
+                                                            <option value="보통">보통</option>
+                                                            <option value="중요">중요</option>
+                                                            <option value="핵심">핵심</option>
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 설정 전용 필드 */}
+                                            {activeNode.type === '설정' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">분류</label>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.category || '세계관'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, category: e.target.value}} : n))}>
+                                                                <option value="세계관">세계관</option>
+                                                                <option value="마법체계">마법체계</option>
+                                                                <option value="종족">종족</option>
+                                                                <option value="역사">역사</option>
+                                                                <option value="문화">문화</option>
+                                                                <option value="규칙">규칙</option>
+                                                                <option value="기타">기타</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">적용 범위</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.scope || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, scope: e.target.value}} : n))} placeholder="적용 범위 입력" />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 대사 전용 필드 */}
+                                            {activeNode.type === '대사' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">화자</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.speaker || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, speaker: e.target.value}} : n))} placeholder="화자 입력" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">감정/톤</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.emotion || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, emotion: e.target.value}} : n))} placeholder="감정/톤 입력" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">상황/맥락</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.situation || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, situation: e.target.value}} : n))} placeholder="상황/맥락 입력" />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 갈등 전용 필드 */}
+                                            {activeNode.type === '갈등' && (
+                                                <>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">갈등 당사자</label>
+                                                            <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.parties || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, parties: e.target.value}} : n))} placeholder="당사자 입력 (예: A vs B)" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">상태</label>
+                                                            <select className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.status || '진행중'} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, status: e.target.value}} : n))}>
+                                                                <option value="잠재적">🔵 잠재적</option>
+                                                                <option value="진행중">🔥 진행중</option>
+                                                                <option value="격화">💥 격화</option>
+                                                                <option value="해결됨">✅ 해결됨</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">갈등 원인</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.cause || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, cause: e.target.value}} : n))} placeholder="갈등 원인 입력" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">해결 방안</label>
+                                                        <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-bold text-sm border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.resolution || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, resolution: e.target.value}} : n))} placeholder="해결 방안 입력" />
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {/* 그룹 전용 필드 */}
+                                            {activeNode.type === '그룹' && (
+                                                <>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">그룹 색상</label>
+                                                        <div className="flex gap-2 mt-2 flex-wrap">
+                                                            {['#94a3b8', '#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'].map(color => (
+                                                                <button key={color} onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, color}} : n))} className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${activeNode.data.color === color ? 'border-slate-800 dark:border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">너비</label>
+                                                            <input type="number" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.width || 400} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, width: Math.max(200, parseInt(e.target.value) || 200)}} : n))} min="200" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">높이</label>
+                                                            <input type="number" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.height || 300} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, height: Math.max(150, parseInt(e.target.value) || 150)}} : n))} min="150" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모</label>
+                                                        <input type="text" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.memo || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="그룹 메모..." />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">포함된 노드 ({(activeNode.data.childNodes || []).length}개)</label>
+                                                        <div className="mt-2 max-h-48 overflow-y-auto bg-slate-50 border border-slate-200 rounded-[3px] dark:bg-zinc-800 dark:border-zinc-700">
+                                                            {(activeNode.data.childNodes || []).length === 0 ? (
+                                                                <div className="p-4 text-center text-slate-400 text-xs">포함된 노드가 없습니다</div>
+                                                            ) : (
+                                                                <div className="divide-y divide-slate-200 dark:divide-zinc-700">
+                                                                    {(activeNode.data.childNodes || []).map(childId => {
+                                                                        const childNode = nodes.find(n => n.id === childId);
+                                                                        if (!childNode) return null;
+                                                                        return (
+                                                                            <div key={childId} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 dark:hover:bg-zinc-700 transition-colors">
+                                                                                <span className="text-lg">{childNode.data.emoji || '📄'}</span>
+                                                                                <span className="flex-1 text-sm font-medium text-slate-700 dark:text-zinc-300 truncate">{childNode.label}</span>
+                                                                                <span className="text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-zinc-600 rounded text-slate-500 dark:text-zinc-400">{childNode.type}</span>
+                                                                                <button
+                                                                                    onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, childNodes: (n.data.childNodes || []).filter(id => id !== childId)}} : n))}
+                                                                                    className="p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                                                                    title="그룹에서 제거"
+                                                                                >
+                                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
                                             {/* 메모 */}
-                                            <div>
-                                                <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모 및 세부 설정</label>
-                                                <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="메모를 입력하세요..." />
-                                                <AnimatePresence>
-                                                    {activeNode.type === '인물' && isNameGenOpen && (
-                                                        <NameGenerator 
-                                                            onClose={() => setIsNameGenOpen(false)}
-                                                            onConfirm={(name) => {
-                                                                updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: name} : n));
-                                                            }}
-                                                            settings={nameGenSettings}
-                                                            onSettingsChange={setNameGenSettings}
-                                                        />
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
+                                            {activeNode.type !== '그룹' && (
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모 및 세부 설정</label>
+                                                    <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="메모를 입력하세요..." />
+                                                    <AnimatePresence>
+                                                        {activeNode.type === '인물' && isNameGenOpen && (
+                                                            <NameGenerator
+                                                                onClose={() => setIsNameGenOpen(false)}
+                                                                onConfirm={(name) => {
+                                                                    updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: name} : n));
+                                                                }}
+                                                                settings={nameGenSettings}
+                                                                onSettingsChange={setNameGenSettings}
+                                                            />
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="p-6 border-t border-slate-200 dark:border-zinc-700 shrink-0">
