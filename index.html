@@ -409,6 +409,7 @@
                     >
                         <span className="opacity-70" style={{ fontSize: '40px' }}>{node.data.emoji || '📁'}</span>
                         <span className="text-xl font-black opacity-50" style={{ fontSize: '40px' }}>{node.label}</span>
+                        {node.data.memo && <span className="font-bold opacity-40 ml-3" style={{ fontSize: '20px' }}>{node.data.memo}</span>}
                     </div>
 
                     {/* 크기 조절 핸들 - 우하단 */}
@@ -3190,7 +3191,7 @@
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">포함된 노드 ({(activeNode.data.childNodes || []).length}개)</label>
-                                                        <div className="mt-2 max-h-48 overflow-y-auto bg-slate-50 border border-slate-200 rounded-[3px] dark:bg-zinc-800 dark:border-zinc-700">
+                                                        <div className="mt-2 max-h-70 overflow-y-auto bg-slate-50 border border-slate-200 rounded-[3px] dark:bg-zinc-800 dark:border-zinc-700">
                                                             {(activeNode.data.childNodes || []).length === 0 ? (
                                                                 <div className="p-4 text-center text-slate-400 text-xs">포함된 노드가 없습니다</div>
                                                             ) : (
