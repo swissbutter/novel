@@ -1524,6 +1524,12 @@
                 setActiveProjectId(id);
                 const target = projects.find(p => p.id === id);
                 if (target && target.type !== 'doc') setIsZenMode(false);
+                setIsTrashOpen(false);
+                // 프로젝트 전환 시 선택 상태 및 임시 상태 초기화 (메모리 관리)
+                setSelectedNodeIds(new Set());
+                setSelectedNodeId(null);
+                setSelectedEdgeId(null);
+                setTempEdge(null);
             };
             const toggleProjectFolder = (id, e) => { if (e) e.stopPropagation(); setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] })); };
             
@@ -1637,8 +1643,8 @@
                 return node;
             };
             
-            const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 보드', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
-            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: '　', status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
+            const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 보드', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); setIsTrashOpen(false); };
+            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: '　', status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setIsTrashOpen(false); };
 
             // 휴지통으로 이동
             const deleteProject = (id, e) => {
@@ -1670,6 +1676,7 @@
                 setProjects(prev => [...prev, restoredProject]);
                 setTrash(prev => prev.filter(p => p.id !== id));
                 showToast("복원됨");
+                setIsTrashOpen(false);
             };
 
             // 휴지통에서 완전 삭제
