@@ -1475,7 +1475,6 @@
 
             const [editingProjectId, setEditingProjectId] = useState(null);
             const [mention, setMention] = useState({ active: false, type: '', search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
-            const [hoverInfo, setHoverInfo] = useState({ visible: false, node: null, x: 0, y: 0 });
             const textareaRef = useRef(null);
             const containerRef = useRef(null);
 
@@ -2171,7 +2170,6 @@
                     }
                 }
             };
-            const handleDocMouseMove = (e) => { if (mention.active) return; const text = activeProject.content || ""; const pos = e.target.selectionStart; const word = getWordAtPos(text, pos); if (word.length > 0) { const found = allBoardNodes.find(n => n.label === word && (n.type === '인물' || n.type === '사건' || n.type === '메모')); if (found) { setHoverInfo({ visible: true, node: found, x: e.clientX, y: e.clientY }); return; } } setHoverInfo({ ...hoverInfo, visible: false }); };
 
             const handleAutoLayout = useCallback(() => {
                 if (!activeProject || activeProject.type !== 'board') return;
@@ -2926,9 +2924,6 @@
                                         // [중요] 클릭하거나 키보드로 커서 이동 시에도 중앙 정렬
                                         onClick={() => updateFocusScroll()}
                                         onKeyUp={() => updateFocusScroll()}
-                                        
-                                        onMouseMove={handleDocMouseMove} 
-                                        onMouseOut={() => setHoverInfo({ ...hoverInfo, visible: false })} 
                                         placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)" 
                                     />
                                     <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
@@ -2948,23 +2943,6 @@
                             </div>
                         )}
                     </main>
-
-                    <AnimatePresence>
-                        {hoverInfo.visible && (
-                            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ left: hoverInfo.x, top: hoverInfo.y + 20 }} className="fixed z-[1001] bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 p-3 rounded-[3px] shadow-2xl pointer-events-none min-w-[200px]">
-                                <div className="flex items-center gap-2 mb-1"> <span className="text-lg">{hoverInfo.node.data.emoji}</span> <span className="font-black text-slate-800 dark:text-zinc-100">{hoverInfo.node.label}</span> </div>
-                                <div className="text-[10px] text-slate-400 font-bold uppercase mb-2">{hoverInfo.node.projectName} · {hoverInfo.node.type}</div>
-                                
-                                {hoverInfo.node.type === '사건' && (
-                                    <div className="mb-2 text-[11px] font-bold text-rose-500">
-                                        📍 {hoverInfo.node.data.place || '미정'} · 📅 {hoverInfo.node.data.year || '미정'}
-                                    </div>
-                                )}
-
-                                <div className="text-[11px] text-slate-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">{hoverInfo.node.data.memo || "작성된 메모가 없습니다."}</div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
 
                     <AnimatePresence>
                         {mention.active && (
