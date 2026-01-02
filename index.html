@@ -120,8 +120,8 @@
         .dark .mention-item-active { background-color: #27272a; border-left: 4px solid #4f46e5; }
         .editor-textarea.zen-active {
             padding-bottom: 50vh !important;
-            -ms-overflow-style: none !important; 
-            scrollbar-width: none !important; 
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
         }
         .editor-textarea.zen-active::-webkit-scrollbar {
             display: none !important;
@@ -1414,17 +1414,22 @@
 
             const scrollTargetRef = useRef(0);
             const scrollAnimRef = useRef(null);
+            const scrollLockRef = useRef(false); // 스크롤 잠금 플래그
 
             const updateFocusScroll = useCallback(() => {
-                if (!isZenMode || !textareaRef.current) return;
-                
+                if (!isZenMode || !textareaRef.current || scrollLockRef.current) return;
+
                 const textarea = textareaRef.current;
                 const coords = getCaretCoordinates(textarea, textarea.selectionStart);
                 const rect = textarea.getBoundingClientRect();
                 const contentOffsetTop = coords.top - rect.top - textarea.scrollTop;
                 const targetScroll = contentOffsetTop - (textarea.clientHeight * 0.6);
-                
-                scrollTargetRef.current = targetScroll;
+
+                // 현재 스크롤과 목표의 차이가 일정 이상일 때만 업데이트 (흔들림 방지)
+                const currentDiff = Math.abs(targetScroll - scrollTargetRef.current);
+                if (currentDiff > 50) {
+                    scrollTargetRef.current = targetScroll;
+                }
             }, [isZenMode]);
 
             useEffect(() => {
@@ -1436,18 +1441,19 @@
                 updateFocusScroll();
 
                 const loop = () => {
-                    if (textareaRef.current) {
+                    // 잠금 상태면 애니메이션도 멈춤
+                    if (textareaRef.current && !scrollLockRef.current) {
                         const current = textareaRef.current.scrollTop;
                         const target = scrollTargetRef.current;
                         const diff = target - current;
 
-                        if (Math.abs(diff) > 1) {
-                            textareaRef.current.scrollTop = current + diff * 0.1;
+                        if (Math.abs(diff) > 3) {
+                            textareaRef.current.scrollTop = current + diff * 0.08;
                         }
                     }
                     scrollAnimRef.current = requestAnimationFrame(loop);
                 };
-                
+
                 loop();
                 return () => cancelAnimationFrame(scrollAnimRef.current);
             }, [isZenMode, updateFocusScroll]);
@@ -1532,7 +1538,7 @@
                 }));
             }, [activeProjectId]);
 
-            const updateDocContent = (content) => { setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, content } : p)); };
+            const updateDocContent = (content) => { const finalContent = (!content || content.trim() === '') ? '　' : content; setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, content: finalContent } : p)); if (!content || content.trim() === '') { requestAnimationFrame(() => { if (textareaRef.current) { textareaRef.current.setSelectionRange(1, 1); } }); } };
 
             const [history, setHistory] = useState({ past: [], future: [] });
             const [isPanning, setIsPanning] = useState(false);
@@ -1632,7 +1638,7 @@
             };
             
             const createNewProject = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'board', name: '새 보드', nodes: [], edges: [], sidebarColumns: 1 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); setPan({ x: 0, y: 0 }); setScale(1); setIsZenMode(false); };
-            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: " ", status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
+            const createNewDoc = () => { const newId = generateUUID(); saveHistory(); setProjects(prev => [...prev, { id: newId, type: 'doc', name: '새 문서', content: '　', status: '초고', targetCount: 5000 }]); setActiveProjectId(newId); setExpandedProjects(prev => ({ ...prev, [newId]: true })); setEditingProjectId(newId); };
             const deleteProject = (id, e) => { if (e) e.stopPropagation(); if (confirm("삭제하시겠습니까?")) { saveHistory(); let newProjects = projects.filter(p => p.id !== id); if (newProjects.length === 0) { const dummyId = generateUUID(); newProjects = [{ id: dummyId, type: 'board', name: '새 프로젝트', nodes: [], edges: [] }]; handleSelectProject(dummyId); } else if (activeProjectId === id) handleSelectProject(newProjects[0].id); setProjects(newProjects); } };
             const handleProjectRename = (id, newName) => { saveHistory(); setProjects(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p)); setEditingProjectId(null); };
 
@@ -2048,8 +2054,34 @@
             const handleDocInput = (e) => {
                 const inputType = e.nativeEvent.inputType;
                 let val = e.target.value;
-                const pos = e.target.selectionStart;
+                let pos = e.target.selectionStart;
                 const lastChar = val[pos - 1];
+
+                // 줄바꿈 시 자동 들여쓰기 (문단 첫줄 띄우기)
+                if (inputType === 'insertLineBreak') {
+                    const indent = '　'; // 공백으로 확실하게 들여쓰기
+                    const scrollTop = e.target.scrollTop; // 스크롤 위치 저장
+                    val = val.slice(0, pos) + indent + val.slice(pos);
+
+                    // 집중 모드일 때 스크롤 잠금으로 점프 방지
+                    if (isZenMode) {
+                        scrollLockRef.current = true;
+                    }
+
+                    updateDocContent(val);
+                    requestAnimationFrame(() => {
+                        if (textareaRef.current) {
+                            textareaRef.current.scrollTop = scrollTop; // 스크롤 위치 복원
+                            textareaRef.current.setSelectionRange(pos + indent.length, pos + indent.length);
+                            // 잠금 해제 (300ms 후)
+                            if (isZenMode) {
+                                scrollTargetRef.current = scrollTop;
+                                setTimeout(() => { scrollLockRef.current = false; }, 300);
+                            }
+                        }
+                    });
+                    return;
+                }
 
                 if (inputType === 'insertFromPaste') {
                     if (mention.active) {
@@ -2872,7 +2904,7 @@
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
                                             <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                                {['초고', '수정', '완료'].map(status => ( <button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, status} : p))} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button> ))}
+                                                {['초고', '수정', '완료'].map(status => ( <button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? {...p, status} : p))} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button> ))}
                                             </div>
                                         </div>
                                         <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
@@ -3370,14 +3402,6 @@
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모</label>
                                                         <input type="text" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.memo || ''} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, memo: e.target.value}} : n))} placeholder="그룹 메모..." />
                                                     </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">그룹 색상</label>
-                                                        <div className="flex gap-2 mt-2 flex-wrap">
-                                                            {['#94a3b8', '#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'].map(color => (
-                                                                <button key={color} onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, color}} : n))} className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${activeNode.data.color === color ? 'border-slate-800 dark:border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
-                                                            ))}
-                                                        </div>
-                                                    </div>
                                                     <div className="flex gap-4">
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">너비</label>
@@ -3386,6 +3410,14 @@
                                                         <div className="flex-1">
                                                             <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">높이</label>
                                                             <input type="number" className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.data.height || 300} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, height: Math.max(150, parseInt(e.target.value) || 150)}} : n))} min="150" />
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">그룹 색상</label>
+                                                        <div className="flex gap-2 mt-2 flex-wrap">
+                                                            {['#94a3b8', '#6366f1', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'].map(color => (
+                                                                <button key={color} onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, color}} : n))} className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${activeNode.data.color === color ? 'border-slate-800 dark:border-white scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+                                                            ))}
                                                         </div>
                                                     </div>
                                                     <div>
