@@ -281,6 +281,136 @@
             </motion.div>
         );
 
+        // PomodoroTimer
+        const PomodoroTimer = ({ 
+            minutes, setMinutes, 
+            seconds, setSeconds, 
+            isActive, setIsActive, 
+            initialTotal, setInitialTotal, 
+            remaining, setRemaining, 
+            isSetting, setIsSetting, 
+            showToast 
+        }) => {
+            const start = () => {
+                if (remaining <= 0) return;
+                setIsActive(true);
+            };
+            const stop = () => setIsActive(false);
+            const reset = () => {
+                setIsActive(false);
+                setRemaining(initialTotal);
+            };
+
+            const handleSetTime = () => {
+                const total = minutes * 60 + seconds;
+                if (total > 0) {
+                    setInitialTotal(total);
+                    setRemaining(total);
+                    setIsSetting(false);
+                } else {
+                    showToast("시간을 설정하세요", "error");
+                }
+            };
+
+            const format = (s) => {
+                const m = Math.floor(s / 60);
+                const sec = s % 60;
+                return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            };
+
+            return (
+                <motion.div 
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-white dark:bg-darkpanel border border-slate-200 dark:border-zinc-700 rounded-xl shadow-2xl overflow-hidden w-52 mt-2 pointer-events-auto"
+                >
+                    <div className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-indigo-700 rounded-full animate-pulse"></span>
+                                뽀모도로 타이머
+                            </span>
+                            <button onClick={() => setIsSetting(!isSetting)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-slate-400 hover:text-indigo-600">
+                                <IconSettings className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+
+                        {isSetting ? (
+                            <div className="space-y-4 py-1">
+                                <div className="flex gap-3">
+                                    <div className="flex-1">
+                                        <label className="text-[9px] font-black text-slate-400 block mb-1.5 uppercase">분</label>
+                                        <input type="number" value={minutes} onChange={e => setMinutes(parseInt(e.target.value) || 0)} className="w-full p-2 text-sm font-black bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded outline-none focus:border-indigo-500 dark:text-zinc-200" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-[9px] font-black text-slate-400 block mb-1.5 uppercase">초</label>
+                                        <input type="number" value={seconds} onChange={e => setSeconds(parseInt(e.target.value) || 0)} className="w-full p-2 text-sm font-black bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded outline-none focus:border-indigo-500 dark:text-zinc-200" />
+                                    </div>
+                                </div>
+                                <button onClick={handleSetTime} className="w-full py-2.5 bg-slate-900 dark:bg-indigo-600 text-white text-[11px] font-black rounded hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20">적용하기</button>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="relative w-32 h-32 mx-auto my-2">
+                                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                        {/* Background Circle */}
+                                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-100 dark:text-zinc-800" />
+                                        
+                                        {/* Time Wedge (Elapsed) */}
+                                        <path 
+                                            d={(() => {
+                                                const elapsed = initialTotal - remaining;
+                                                const angle = (elapsed / initialTotal) * 360;
+                                                const rad = angle * Math.PI / 180;
+                                                const x = 50 + 45 * Math.cos(rad);
+                                                const y = 50 + 45 * Math.sin(rad);
+                                                const largeArc = angle > 180 ? 1 : 0;
+                                                
+                                                if (elapsed <= 0) return "";
+                                                if (elapsed >= initialTotal) return "M 50 50 m -45 0 a 45 45 0 1 0 90 0 a 45 45 0 1 0 -90 0";
+                                                return `M 50 50 L 95 50 A 45 45 0 ${largeArc} 1 ${x} ${y} Z`;
+                                            })()}
+                                            fill="#ef4444"
+                                            className="opacity-80 transition-all duration-1000 ease-linear"
+                                        />
+
+                                        {/* Ticks */}
+                                        {[...Array(12)].map((_, i) => (
+                                            <line 
+                                                key={i}
+                                                x1="50" y1="10" x2="50" y2="15"
+                                                transform={`rotate(${i * 30} 50 50)`}
+                                                stroke="currentColor"
+                                                strokeWidth="1"
+                                                className="text-slate-300 dark:text-zinc-600"
+                                            />
+                                        ))}
+                                    </svg>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                        <span className="text-xs font-black text-slate-800 dark:text-zinc-100 font-mono bg-white/80 dark:bg-zinc-900/80 px-2 py-0.5 rounded-full shadow-sm border border-slate-100 dark:border-zinc-700 pointer-events-none">
+                                            {format(remaining)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 justify-center mt-4">
+                                    <button 
+                                        onClick={() => isActive ? stop() : start()}
+                                        className={`flex-1 py-2.5 rounded-lg font-black text-[11px] transition-all tracking-widest ${isActive ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/20'}`}
+                                    >
+                                        {isActive ? "멈춤" : "시작"}
+                                    </button>
+                                    <button onClick={reset} className="px-3.5 py-2.5 bg-slate-100 dark:bg-zinc-800 text-slate-400 hover:text-red-500 rounded-lg transition-colors border border-slate-200 dark:border-zinc-700">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </motion.div>
+            );
+        };
+
         // NodeCard - 노드 타입별 서브라인 렌더링
         const getNodeSubline = (node) => {
             switch(node.type) {
@@ -1329,33 +1459,29 @@
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
             const panAnimationRef = useRef(null);
             const [isZenMode, setIsZenMode] = useState(false); 
-            
-            // 집중모드 타이머 상태
-            const [zenTime, setZenTime] = useState(0);
-            const [isZenTimerRunning, setIsZenTimerRunning] = useState(false);
+            const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
+
+            // 뽀모도로 타이머 상태 (전역 관리)
+            const [pomoMinutes, setPomoMinutes] = useState(25);
+            const [pomoSeconds, setPomoSeconds] = useState(0);
+            const [isPomoActive, setIsPomoActive] = useState(false);
+            const [pomoInitialTotal, setPomoInitialTotal] = useState(1500);
+            const [pomoRemaining, setPomoRemaining] = useState(1500);
+            const [isPomoSetting, setIsPomoSetting] = useState(false);
 
             useEffect(() => {
-                let interval;
-                if (isZenMode && isZenTimerRunning) {
-                    interval = setInterval(() => setZenTime(prev => prev + 1), 1000);
+                let interval = null;
+                if (isPomoActive && pomoRemaining > 0) {
+                    interval = setInterval(() => {
+                        setPomoRemaining(prev => prev - 1);
+                    }, 1000);
+                } else if (pomoRemaining === 0 && isPomoActive) {
+                    setIsPomoActive(false);
+                    showToast("⏳ 설정하신 시간이 종료되었습니다!", "info");
                 }
                 return () => clearInterval(interval);
-            }, [isZenMode, isZenTimerRunning]);
-
-            useEffect(() => {
-                if (isZenMode) {
-                    setIsZenTimerRunning(true);
-                } else {
-                    setIsZenTimerRunning(false);
-                }
-            }, [isZenMode]);
-
-            const formatZenTime = (totalSeconds) => {
-                const min = Math.floor(totalSeconds / 60);
-                const sec = totalSeconds % 60;
-                return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-            };
-
+            }, [isPomoActive, pomoRemaining]);
+            
             // 통합 뷰포트 애니메이션 (Pan + Scale)
             const animateViewport = useCallback((targetPan, targetScale, duration = 600) => {
                 if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
@@ -3112,29 +3238,64 @@
                             </>
                         ) : (
                             <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
-                                <div className="fixed top-6 right-10 z-[110] flex items-center gap-2">
-                                    <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 scale-110 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
-                                        <button 
-                                            onClick={() => setIsZenMode(!isZenMode)} 
-                                            className={`flex items-center gap-2 py-2 rounded-full text-[11px] font-black tracking-widest transition-all ${isZenMode ? 'text-white pl-4 pr-2' : (zenTime > 0 ? 'text-indigo-600 pl-4 pr-2' : 'text-slate-400 hover:text-indigo-600 px-4')}`}
-                                        >
-                                            <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                                            {(isZenMode || zenTime > 0) ? `집중모드 : ${formatZenTime(zenTime)}` : '집중모드'}
-                                        </button>
-                                        {(isZenMode || zenTime > 0) && (
-                                            <div className="flex items-center pr-3">
-                                                <div className={`w-px h-3 mx-1 ${isZenMode ? 'bg-white/20' : 'bg-slate-200 dark:bg-zinc-700'}`} />
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); setZenTime(0); }}
-                                                    className={`p-1.5 rounded-full transition-all ${isZenMode ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 dark:text-indigo-600 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/30'}`}
-                                                    title="타이머 초기화"
-                                                >
-                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
+                                                                <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
+                                                                                                                                        <div className="flex items-center gap-2 pointer-events-auto">
+                                                                                                                                            <button 
+                                                                                                                                                onClick={() => setIsPomodoroOpen(!isPomodoroOpen)} 
+                                                                                                                                                className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
+                                                                                                                                                title="뽀모도로 타이머"
+                                                                                                                                            >
+                                                                                                                                                {!isPomodoroOpen && isPomoActive ? (
+                                                                                                                                                    <div className="relative w-6 h-6">
+                                                                                                                                                        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                                                                                                                                            {/* Background */}
+                                                                                                                                                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-100 dark:text-zinc-700" />
+                                                                                                                                                            
+                                                                                                                                                            {/* Red Wedge */}
+                                                                                                                                                            <path 
+                                                                                                                                                                d={(() => {
+                                                                                                                                                                    const elapsed = pomoInitialTotal - pomoRemaining;
+                                                                                                                                                                    const angle = (elapsed / pomoInitialTotal) * 360;
+                                                                                                                                                                    const rad = angle * Math.PI / 180;
+                                                                                                                                                                    const x = 50 + 45 * Math.cos(rad);
+                                                                                                                                                                    const y = 50 + 45 * Math.sin(rad);
+                                                                                                                                                                    const largeArc = angle > 180 ? 1 : 0;
+                                                                                                                                                                    
+                                                                                                                                                                    if (elapsed <= 0) return "";
+                                                                                                                                                                    if (elapsed >= pomoInitialTotal) return "M 50 50 m -45 0 a 45 45 0 1 0 90 0 a 45 45 0 1 0 -90 0";
+                                                                                                                                                                    return `M 50 50 L 95 50 A 45 45 0 ${largeArc} 1 ${x} ${y} Z`;
+                                                                                                                                                                })()}
+                                                                                                                                                                fill="#ef4444"
+                                                                                                                                                                className="opacity-90"
+                                                                                                                                                            />
+                                                                                                                                                        </svg>
+                                                                                                                                                    </div>
+                                                                                                                                                ) : (
+                                                                                                                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isPomodoroOpen ? 'text-white' : 'text-slate-400'}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                                                                                                                                )}
+                                                                                                                                            </button>
+                                                                                                                                            <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
+                                                                                                                                                <button 
+                                                                                                                                                    onClick={() => setIsZenMode(!isZenMode)} 
+                                                                                                                                                    className={`flex items-center justify-center gap-2 h-8 w-28 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
+                                                                                                                                                >
+                                                                                                                                                    <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                                                                                                                                                    {isZenMode ? '집중모드' : '집중모드'}
+                                                                                                                                                </button>
+                                                                                                                                            </div>
+                                                                                                                                        </div>                                                                                                        <AnimatePresence>
+                                                                                                            {isPomodoroOpen && (
+                                                                                                                <PomodoroTimer 
+                                                                                                                    minutes={pomoMinutes} setMinutes={setPomoMinutes}
+                                                                                                                    seconds={pomoSeconds} setSeconds={setPomoSeconds}
+                                                                                                                    isActive={isPomoActive} setIsActive={setIsPomoActive}
+                                                                                                                    initialTotal={pomoInitialTotal} setInitialTotal={setPomoInitialTotal}
+                                                                                                                    remaining={pomoRemaining} setRemaining={setPomoRemaining}
+                                                                                                                    isSetting={isPomoSetting} setIsSetting={setIsPomoSetting}
+                                                                                                                    showToast={showToast} 
+                                                                                                                />
+                                                                                                            )}
+                                                                                                        </AnimatePresence>                                                                </div>
                                 <motion.div layout className="editor-paper relative" style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
                                     <div className="editor-title-container">
                                         <div className="flex items-center justify-between mb-3">
