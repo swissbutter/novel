@@ -265,7 +265,14 @@
         const getNodeBarColor = (node) => {
             return NODE_TYPE_COLORS[node.type]?.bar || 'bg-slate-500 dark:bg-slate-700';
         };
-        const getStrokeDashArray = (style) => { switch(style) { case 'dashed': return "4, 8"; default: return ""; } };
+        const getStrokeDashArray = (style, width) => { 
+            const w = width || 2; 
+            switch(style) { 
+                case 'dashed': return `${w * 2}, ${w * 2}`; 
+                case 'dotted': return `0, ${w * 2}`; 
+                default: return ""; 
+            } 
+        };
 
         // Toast
         const Toast = ({ message, type, onClose }) => (
@@ -1312,7 +1319,7 @@
         };
 
         // Workspace
-        const Workspace = ({ currentBook, onUpdateBook, onExit, showToast }) => {
+        const Workspace = ({ currentBook, onUpdateBook, onExit, showToast, isDarkMode }) => {
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
             const [isTrashOpen, setIsTrashOpen] = useState(false); // 휴지통 열림 상태
@@ -2993,13 +3000,20 @@
 
                                             let pathData = isEventToEvent ? `M ${x1} ${y1} L ${getEdgeTargetPos(from, to, 12).x} ${getEdgeTargetPos(from, to, 12).y}` : getBezierPath(x1, y1, x2, y2);
                                             const strokeWidth = edge.width || (isPersonToEvent ? 12 : isEventToEvent ? 4 : isSameType && !isCoreType(from.type) ? 3 : 2);
-                                            const strokeDash = edge.style ? getStrokeDashArray(edge.style) : (isIdeaInvolved ? "8, 6" : "");
+                                            const strokeDash = edge.style ? getStrokeDashArray(edge.style, strokeWidth) : (isIdeaInvolved ? "8, 6" : "");
                                             const labelWidth = Math.max(70, (edge.label || "").length * 10 + 20);
-                                            const showLabel = isSameType;
+                                            const showLabel = true;
                                             return (
                                                 <g key={edge.id}>
                                                     <path d={pathData} className="edge-hitbox" onDoubleClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }} onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); saveHistory(); updateActiveProject(null, prev => prev.filter(ev => ev.id !== edge.id)); }} />
-                                                    <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} strokeDasharray={strokeDash} className="edge-path opacity-80" />
+                                                    {edge.style === 'double' ? (
+                                                        <>
+                                                            <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth * 3} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} className="edge-path opacity-80" />
+                                                            <path d={pathData} stroke={isDarkMode ? '#09080B' : '#f8fafc'} strokeWidth={strokeWidth} className="edge-path" />
+                                                        </>
+                                                    ) : (
+                                                        <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} strokeDasharray={strokeDash} className="edge-path opacity-80" />
+                                                    )}
                                                     {showLabel && edge.label && (
                                                         <g className="cursor-pointer pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }}>
                                                             <rect x={(x1+x2)/2 - labelWidth/2} y={(y1+y2)/2-16} width={labelWidth} height="32" rx="4" fill="white" stroke={edgeColor} strokeWidth="1.5" className="dark:fill-zinc-800" /><text x={(x1+x2)/2} y={(y1+y2)/2+5} textAnchor="middle" fontSize="14" fontWeight="900" fill="#334155" className="dark:fill-zinc-200">{edge.label}</text>
@@ -3060,7 +3074,7 @@
                                                     if (!edgeExists) { 
                                                         saveHistory(); 
                                                         hasConnectedRef.current = true; 
-                                                        updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '관계' }]); 
+                                                        updateActiveProject(null, prev => [...prev, { id: generateUUID(), from: tempEdge.fromId, to: id, label: '' }]); 
                                                     } 
                                                 } 
                                             }} 
@@ -3670,7 +3684,9 @@
                                                     onChange={e => updateActiveProject(null, prev => prev.map(ev => ev.id === activeEdge.id ? {...ev, style: e.target.value} : ev))}
                                                 >
                                                     <option value="solid">─ 실선 (Solid)</option>
-                                                    <option value="dashed">--- 점선 (Dashed)</option>
+                                                    <option value="dotted">··· 점선 (Dotted)</option>
+                                                    <option value="dashed">--- 파선 (Dashed)</option>
+                                                    <option value="double">══ 이중선 (Double)</option>
                                                 </select>
                                             </div>
                                             <div className="flex-[1.2]">
@@ -3962,7 +3978,7 @@
                         /> 
                     )} 
                     {view === 'workspace' && currentBook && ( 
-                        <Workspace currentBook={currentBook} onUpdateBook={handleUpdateBook} onExit={() => setView('library')} showToast={showToast} /> 
+                        <Workspace currentBook={currentBook} onUpdateBook={handleUpdateBook} onExit={() => setView('library')} showToast={showToast} isDarkMode={isDarkMode} /> 
                     )} 
                 </div> 
             ); 
