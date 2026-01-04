@@ -3,7 +3,7 @@
 > **작가를 위한 올인원 비주얼 기획 & 집필 도구**  
 > 설치 없이 브라우저에서 바로 실행하는 단일 파일(Single-File) 어플리케이션
 
-<img src="[https://url/image.png](https://github.com/swissbutter/novel/blob/main/sagak_icon.png" width="50" height="50"/>
+<img src="[/sagak_icon.png" width="50" height="50"/>
 
 **Sagak Studio**는 소설가, 시나리오 작가, 그리고 세계관 창작자를 위한 웹 기반의 기획 도구입니다. 인물 관계도, 사건의 흐름, 세계관 설정을 무한한 캔버스 위에서 시각적으로 정리하고, 집중 모드를 지원하는 에디터에서 바로 집필할 수 있습니다.
 
