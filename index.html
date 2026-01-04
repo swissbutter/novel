@@ -1616,7 +1616,7 @@
                 const coords = getCaretCoordinates(textarea, textarea.selectionStart);
                 const rect = textarea.getBoundingClientRect();
                 const contentOffsetTop = coords.top - rect.top - textarea.scrollTop;
-                const targetScroll = contentOffsetTop - (textarea.clientHeight * 0.6);
+                const targetScroll = contentOffsetTop - (textarea.clientHeight * 0.55);
 
                 // 현재 스크롤과 목표의 차이가 일정 이상일 때만 업데이트 (흔들림 방지)
                 const currentDiff = Math.abs(targetScroll - scrollTargetRef.current);
@@ -2207,56 +2207,48 @@
                         dragOffsetRef.current = { x: 0, y: 0, nodeIds: new Set() };
                         setDragOffset({ x: 0, y: 0, nodeIds: new Set() });
 
-                        // 드래그된 노드의 최종 위치로 그룹 체크 (그룹 노드는 다른 그룹에 포함 안됨)
-                        const draggedNode = nodes.find(n => n.id === draggingNodeId);
-                        if (draggedNode && draggedNode.type !== '그룹') {
-                            // 드래그한 노드의 중심 좌표 (오프셋 적용)
-                            const nodeW = CARD_W;
-                            const nodeH = CARD_H;
-                            const nodeCenterX = draggedNode.x + offset.x + nodeW / 2;
-                            const nodeCenterY = draggedNode.y + offset.y + nodeH / 2;
+                        // 이동된 모든 노드들에 대해 그룹 체크 (그룹 노드는 제외)
+                        movedNodeIds.forEach(mId => {
+                            const mNode = nodes.find(n => n.id === mId);
+                            if (mNode && mNode.type !== '그룹') {
+                                const nodeCenterX = mNode.x + offset.x + CARD_W / 2;
+                                const nodeCenterY = mNode.y + offset.y + CARD_H / 2;
 
-                            // 현재 속한 그룹 찾기
-                            const currentParentGroup = nodes.find(n => n.type === '그룹' && n.id !== draggingNodeId && n.data.childNodes?.includes(draggingNodeId));
+                                const currentParentGroup = nodes.find(n => n.type === '그룹' && n.id !== mId && n.data.childNodes?.includes(mId));
+                                const groupNodes = nodes.filter(n => n.type === '그룹');
+                                let targetGroup = null;
 
-                            // 그룹 노드들 중 이 노드가 속할 수 있는 그룹 찾기
-                            const groupNodes = nodes.filter(n => n.type === '그룹');
-                            let targetGroup = null;
+                                for (const group of groupNodes) {
+                                    const gx = group.x + (movedNodeIds.has(group.id) ? offset.x : 0);
+                                    const gy = group.y + (movedNodeIds.has(group.id) ? offset.y : 0);
+                                    const gw = group.data.width || 400;
+                                    const gh = group.data.height || 300;
 
-                            for (const group of groupNodes) {
-                                const gx = group.x + (movedNodeIds.has(group.id) ? offset.x : 0);
-                                const gy = group.y + (movedNodeIds.has(group.id) ? offset.y : 0);
-                                const gw = group.data.width || 400;
-                                const gh = group.data.height || 300;
+                                    if (nodeCenterX >= gx && nodeCenterX <= gx + gw &&
+                                        nodeCenterY >= gy && nodeCenterY <= gy + gh) {
+                                        targetGroup = group;
+                                        break;
+                                    }
+                                }
 
-                                // 노드 중심이 그룹 영역 안에 있는지 확인
-                                if (nodeCenterX >= gx && nodeCenterX <= gx + gw &&
-                                    nodeCenterY >= gy && nodeCenterY <= gy + gh) {
-                                    targetGroup = group;
-                                    break;
+                                // 그룹 상태 변경이 필요한 경우에만 업데이트
+                                if (currentParentGroup?.id !== targetGroup?.id) {
+                                    updateActiveProject(prevNodes => prevNodes.map(n => {
+                                        // 기존 그룹에서 제거
+                                        if (currentParentGroup && n.id === currentParentGroup.id) {
+                                            return { ...n, data: { ...n.data, childNodes: (n.data.childNodes || []).filter(id => id !== mId) } };
+                                        }
+                                        // 새 그룹에 추가
+                                        if (targetGroup && n.id === targetGroup.id) {
+                                            if (!n.data.childNodes?.includes(mId)) {
+                                                return { ...n, data: { ...n.data, childNodes: [...(n.data.childNodes || []), mId] } };
+                                            }
+                                        }
+                                        return n;
+                                    }));
                                 }
                             }
-
-                            // 그룹 멤버십 업데이트
-                            updateActiveProject(prevNodes => prevNodes.map(n => {
-                                // 기존 그룹에서 제거 (그룹 밖으로 나갔거나 다른 그룹으로 이동)
-                                if (currentParentGroup && n.id === currentParentGroup.id) {
-                                    if (!targetGroup || targetGroup.id !== currentParentGroup.id) {
-                                        // 그룹 밖으로 나감 또는 다른 그룹으로 이동
-                                        return { ...n, data: { ...n.data, childNodes: (n.data.childNodes || []).filter(id => id !== draggingNodeId) } };
-                                    }
-                                }
-                                // 새 그룹에 추가 (기존 그룹이 없거나 다른 그룹인 경우)
-                                if (targetGroup && n.id === targetGroup.id) {
-                                    if (!currentParentGroup || currentParentGroup.id !== targetGroup.id) {
-                                        if (!n.data.childNodes?.includes(draggingNodeId)) {
-                                            return { ...n, data: { ...n.data, childNodes: [...(n.data.childNodes || []), draggingNodeId] } };
-                                        }
-                                    }
-                                }
-                                return n;
-                            }));
-                        }
+                        });
                     }
                     if (tempEdge && !hasConnectedRef.current) {
                         const c = getCanvasCoords(e.clientX, e.clientY);
@@ -2412,6 +2404,10 @@
             };
 
             const handleAutoLayout = useCallback(() => {
+                if (!window.dagre) {
+                    showToast("정렬 라이브러리가 아직 로드되지 않았습니다. 잠시 후 다시 시도해 주세요.", "error");
+                    return;
+                }
                 if (!activeProject || activeProject.type !== 'board') return;
                 saveHistory();
 
@@ -4169,7 +4165,12 @@
             useEffect(() => { 
                 if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
                 saveTimerRef.current = setTimeout(() => {
-                    localStorage.setItem('sagak_library', JSON.stringify(books)); 
+                    try {
+                        localStorage.setItem('sagak_library', JSON.stringify(books)); 
+                    } catch (e) {
+                        console.error('저장 실패:', e);
+                        showToast("브라우저 저장 공간이 부족합니다! 데이터를 파일로 백업해 주세요.", "error");
+                    }
                 }, 1000);
                 return () => { if(saveTimerRef.current) clearTimeout(saveTimerRef.current); };
             }, [books]); 
