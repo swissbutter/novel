@@ -1328,7 +1328,34 @@
             const [scale, setScale] = useState(currentBook.scale || 1);
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
             const panAnimationRef = useRef(null);
+            const [isZenMode, setIsZenMode] = useState(false); 
             
+            // 집중모드 타이머 상태
+            const [zenTime, setZenTime] = useState(0);
+            const [isZenTimerRunning, setIsZenTimerRunning] = useState(false);
+
+            useEffect(() => {
+                let interval;
+                if (isZenMode && isZenTimerRunning) {
+                    interval = setInterval(() => setZenTime(prev => prev + 1), 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isZenMode, isZenTimerRunning]);
+
+            useEffect(() => {
+                if (isZenMode) {
+                    setIsZenTimerRunning(true);
+                } else {
+                    setIsZenTimerRunning(false);
+                }
+            }, [isZenMode]);
+
+            const formatZenTime = (totalSeconds) => {
+                const min = Math.floor(totalSeconds / 60);
+                const sec = totalSeconds % 60;
+                return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+            };
+
             // 통합 뷰포트 애니메이션 (Pan + Scale)
             const animateViewport = useCallback((targetPan, targetScale, duration = 600) => {
                 if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
@@ -1364,7 +1391,6 @@
             }, [pan, scale]);
 
             const [isEditingTitle, setIsEditingTitle] = useState(false);
-            const [isZenMode, setIsZenMode] = useState(false); 
             const [docFilter, setDocFilter] = useState(null); // null이면 모두 보기
             const titleInputRef = useRef(null);
             const workspaceTimerRef = useRef(null);
@@ -3086,11 +3112,28 @@
                             </>
                         ) : (
                             <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
-                                <div className="fixed top-6 right-10 z-[110] flex gap-2">
-                                    <button onClick={() => setIsZenMode(!isZenMode)} className={`flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black tracking-widest transition-all shadow-xl border ${isZenMode ? 'bg-indigo-600 text-white border-indigo-500 scale-110 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
-                                        <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                                        {isZenMode ? '집중모드' : '집중모드'}
-                                    </button>
+                                <div className="fixed top-6 right-10 z-[110] flex items-center gap-2">
+                                    <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 scale-110 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
+                                        <button 
+                                            onClick={() => setIsZenMode(!isZenMode)} 
+                                            className={`flex items-center gap-2 py-2 rounded-full text-[11px] font-black tracking-widest transition-all ${isZenMode ? 'text-white pl-4 pr-2' : (zenTime > 0 ? 'text-indigo-600 pl-4 pr-2' : 'text-slate-400 hover:text-indigo-600 px-4')}`}
+                                        >
+                                            <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                                            {(isZenMode || zenTime > 0) ? `집중모드 : ${formatZenTime(zenTime)}` : '집중모드'}
+                                        </button>
+                                        {(isZenMode || zenTime > 0) && (
+                                            <div className="flex items-center pr-3">
+                                                <div className={`w-px h-3 mx-1 ${isZenMode ? 'bg-white/20' : 'bg-slate-200 dark:bg-zinc-700'}`} />
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); setZenTime(0); }}
+                                                    className={`p-1.5 rounded-full transition-all ${isZenMode ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 dark:text-indigo-600 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/30'}`}
+                                                    title="타이머 초기화"
+                                                >
+                                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <motion.div layout className="editor-paper relative" style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
                                     <div className="editor-title-container">
