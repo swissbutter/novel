@@ -1510,20 +1510,13 @@
                     } catch (e) { console.error("Audio error:", e); }
 
                     showToast("⏳ 설정하신 시간이 종료되었습니다!", "info");
+                    setTimeout(() => {
+                        alert("⏰ 시간이 모두 종료되었습니다! 고생하셨습니다.");
+                    }, 100);
                 }
                 return () => clearInterval(interval);
             }, [isPomoActive, pomoRemaining]);
-
-            // panAnimationRef cleanup (컴포넌트 언마운트 시)
-            useEffect(() => {
-                return () => {
-                    if (panAnimationRef.current) {
-                        cancelAnimationFrame(panAnimationRef.current);
-                        panAnimationRef.current = null;
-                    }
-                };
-            }, []);
-
+            
             // 통합 뷰포트 애니메이션 (Pan + Scale)
             const animateViewport = useCallback((targetPan, targetScale, duration = 600) => {
                 if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
@@ -3323,10 +3316,9 @@
                                                                                                                                             <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
                                                                                                                                                 <button 
                                                                                                                                                     onClick={() => setIsZenMode(!isZenMode)} 
-                                                                                                                                                    className={`flex items-center justify-center gap-2 h-8 w-28 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
+                                                                                                                                                    className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
                                                                                                                                                 >
                                                                                                                                                     <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                                                                                                                                                    {isZenMode ? '집중모드' : '집중모드'}
                                                                                                                                                 </button>
                                                                                                                                             </div>
                                                                                                                                         </div>                                                                                                        <AnimatePresence>
