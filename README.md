@@ -60,15 +60,13 @@
 
 | 키 (Key) | 기능 (Action) |
 | :--- | :--- |
-| `Space` + `Drag` | 캔버스 이동 (Panning) |
-| `Wheel` | 줌 인/아웃 (Zoom) |
 | `Ctrl` + `Z` | 실행 취소 (Undo) |
 | `Delete` / `Backspace` | 선택한 노드/연결 삭제 |
 | `Ctrl` + `J` | 에디터 집중 모드 (Zen Mode) 토글 |
-| `Shift` + `Left Click` | 노드 다중 선택 |
-| `Shift` + `Drag` | 노드 영역 선택 |
-| `Double Click` (Node) | 노드 상세 편집 |
-| `Double Click` (Edge) | 연결선 상세 편집 |
+| `Shift` + `좌클릭` | 노드 복수 선택 |
+| `Shift` + `좌클릭 드래그` | 노드 사각 영역 선택 |
+| `Double Click` (노드) | 노드 상세 편집 |
+| `Double Click` (선) | 관계선 상세 편집 |
 
 ---
 
