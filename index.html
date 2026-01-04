@@ -358,21 +358,17 @@
                                         <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-100 dark:text-zinc-800" />
                                         
                                         {/* Time Wedge (Elapsed) */}
-                                        <path 
-                                            d={(() => {
-                                                const elapsed = initialTotal - remaining;
-                                                const angle = (elapsed / initialTotal) * 360;
-                                                const rad = angle * Math.PI / 180;
-                                                const x = 50 + 45 * Math.cos(rad);
-                                                const y = 50 + 45 * Math.sin(rad);
-                                                const largeArc = angle > 180 ? 1 : 0;
-                                                
-                                                if (elapsed <= 0) return "";
-                                                if (elapsed >= initialTotal) return "M 50 50 m -45 0 a 45 45 0 1 0 90 0 a 45 45 0 1 0 -90 0";
-                                                return `M 50 50 L 95 50 A 45 45 0 ${largeArc} 1 ${x} ${y} Z`;
-                                            })()}
-                                            fill="#ef4444"
-                                            className="opacity-80 transition-all duration-1000 ease-linear"
+                                        <circle 
+                                            cx="50" cy="50" r="22.5" 
+                                            fill="none" 
+                                            stroke="#ef4444" 
+                                            strokeWidth="45" 
+                                            strokeDasharray={2 * Math.PI * 22.5}
+                                            style={{ 
+                                                strokeDashoffset: (2 * Math.PI * 22.5) * (remaining / initialTotal),
+                                                transition: isActive ? 'stroke-dashoffset 1s linear' : 'none',
+                                            }}
+                                            className="opacity-80"
                                         />
 
                                         {/* Ticks */}
@@ -1510,9 +1506,6 @@
                     } catch (e) { console.error("Audio error:", e); }
 
                     showToast("⏳ 설정하신 시간이 종료되었습니다!", "info");
-                    setTimeout(() => {
-                        alert("⏰ 시간이 모두 종료되었습니다! 고생하셨습니다.");
-                    }, 100);
                 }
                 return () => clearInterval(interval);
             }, [isPomoActive, pomoRemaining]);
@@ -3319,6 +3312,7 @@
                                                                                                                                                     className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
                                                                                                                                                 >
                                                                                                                                                     <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                                                                                                                                                    {isZenMode ? '' : ''}
                                                                                                                                                 </button>
                                                                                                                                             </div>
                                                                                                                                         </div>                                                                                                        <AnimatePresence>
