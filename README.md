@@ -65,7 +65,8 @@
 | `Ctrl` + `Z` | 실행 취소 (Undo) |
 | `Delete` / `Backspace` | 선택한 노드/연결 삭제 |
 | `Ctrl` + `J` | 에디터 집중 모드 (Zen Mode) 토글 |
-| `Double Click` (Canvas) | 선택 해제 |
+| `Shift` + `Left Click` | 노드 다중 선택 |
+| `Shift` + `Drag` | 노드 영역 선택 |
 | `Double Click` (Node) | 노드 상세 편집 |
 | `Double Click` (Edge) | 연결선 상세 편집 |
 
