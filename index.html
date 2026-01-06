@@ -469,7 +469,7 @@
                         {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${getNodeBarColor(node)}`} />}
                         <div className="flex-1 flex flex-col p-4 overflow-hidden pointer-events-none">
                             <div className="flex items-center justify-between mb-2">
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{node.type}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{isIdea ? (node.data.category || '메모') : node.type}</span>
                                 {badge && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-[3px] ${badge.style}`}>{badge.text}</span>}
                             </div>
                             <div className={`text-xl font-black truncate mb-1.5 tracking-tight flex items-center ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
@@ -1896,7 +1896,7 @@
                 switch(type) {
                     case '인물': return { emoji: '👤', age: '', gender: '미지정', job: '', race: '인간', role: '조연', memo: '' };
                     case '사건': return { emoji: '🔥', place: '', year: '', memo: '' };
-                    case '메모': return { emoji: '💡', memo: '' };
+                    case '메모': return { emoji: '💡', category: '메모', memo: '' };
                     case '장소': return { emoji: '📍', region: '', climate: '', description: '', memo: '' };
                     case '아이템': return { emoji: '🎁', category: '일반', rarity: '보통', owner: '', effect: '', memo: '' };
                     case '세력': return { emoji: '⚔️', leader: '', members: '', territory: '', goal: '', memo: '' };
@@ -3477,7 +3477,7 @@
 
                                                 {filteredMentionNodes[mention.selectedIndex].type === '메모' && (
                                                     <div className="mb-2 pb-2 border-b border-slate-50 dark:border-zinc-800 flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-bold uppercase text-amber-500">
-                                                        <span>📝 메모</span>
+                                                        <span>📝 {filteredMentionNodes[mention.selectedIndex].data.category || '메모'}</span>
                                                     </div>
                                                 )}
 
@@ -3601,6 +3601,18 @@
                                                     <div className="flex-1">
                                                         <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">이름</label>
                                                         <input className="w-full mt-1 px-3 py-2 bg-slate-50 rounded-[3px] font-black text-lg border border-slate-200 outline-none h-[42px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200" value={activeNode.label} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, label: e.target.value} : n))} />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 메모 전용 필드 */}
+                                            {activeNode.type === '메모' && (
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">분류</label>
+                                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                                        {['메모', '장소', '아이템', '세력', '복선', '타임라인', '설정', '대사', '갈등'].map(cat => (
+                                                            <button key={cat} onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? {...n, data: {...n.data, category: cat}} : n))} className={`px-3 py-1.5 rounded-[3px] text-xs font-bold transition-all ${(activeNode.data.category || '메모') === cat ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600'}`}>{cat}</button>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             )}
