@@ -127,6 +127,24 @@
         .editor-textarea.zen-active::-webkit-scrollbar {
             display: none !important;
         }
+        /* 비교 모드 스타일 */
+        .compare-container { background: #f8fafc; }
+        .dark .compare-container { background: #09090b; }
+        .compare-container textarea {
+            line-height: 2.2;
+            color: #334155;
+        }
+        .dark .compare-container textarea {
+            color: #d4d4d8;
+        }
+        .compare-container .zen-active {
+            padding-bottom: 50vh !important;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+        }
+        .compare-container .zen-active::-webkit-scrollbar {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1479,9 +1497,18 @@
             const [scale, setScale] = useState(currentBook.scale || 1);
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
             const panAnimationRef = useRef(null);
-            const [isZenMode, setIsZenMode] = useState(false); 
+            const [isZenMode, setIsZenMode] = useState(false);
             const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
             const [showSystemSettings, setShowSystemSettings] = useState(false);
+
+            // 문서 비교 모드 상태
+            const [compareMode, setCompareMode] = useState(false);
+            const [compareDocIds, setCompareDocIds] = useState([null, null]); // [왼쪽 문서 ID, 오른쪽 문서 ID]
+            const [activeComparePane, setActiveComparePane] = useState(0); // 0: 왼쪽, 1: 오른쪽
+            const [splitRatio, setSplitRatio] = useState(50); // 분할 비율 (%)
+            const [isSplitterDragging, setIsSplitterDragging] = useState(false); // 드래그 중 여부 (transition 제어용)
+            const compareTextareaRefs = useRef([null, null]);
+            const isDraggingSplitter = useRef(false);
 
             // 뽀모도로 타이머 상태 (전역 관리)
             const [pomoMinutes, setPomoMinutes] = useState(25);
@@ -1665,12 +1692,16 @@
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
                         e.preventDefault();
                         setIsZenMode(prev => !prev);
-                        showToast(!isZenMode ? "집중 모드 활성화" : "집중 모드 해제");
+                        if (compareMode) {
+                            showToast(!isZenMode ? `집중 모드: ${activeComparePane === 0 ? '왼쪽' : '오른쪽'} 패널` : "비교 모드로 복귀");
+                        } else {
+                            showToast(!isZenMode ? "집중 모드 활성화" : "집중 모드 해제");
+                        }
                     }
                 };
                 window.addEventListener('keydown', handleZenShortcut);
                 return () => window.removeEventListener('keydown', handleZenShortcut);
-            }, [isZenMode, showToast]);
+            }, [isZenMode, showToast, compareMode, activeComparePane]);
 
             const [editingProjectId, setEditingProjectId] = useState(null);
             const [mention, setMention] = useState({ active: false, type: '', search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
@@ -1718,9 +1749,46 @@
             const allBoardNodes = useMemo(() => projects.filter(p => p.type === 'board').flatMap(p => (p.nodes || []).map(node => ({ ...node, projectName: p.name }))), [projects]);
             const filteredMentionNodes = useMemo(() => { if (!mention.active) return []; return allBoardNodes.filter(n => n.type === (mention.type === '@' ? '인물' : mention.type === '#' ? '사건' : '메모') && (n.label.includes(mention.search) || mention.search === "")); }, [allBoardNodes, mention]);
 
-            const handleSelectProject = (id) => {
-                setActiveProjectId(id);
+            const handleSelectProject = (id, e) => {
                 const target = projects.find(p => p.id === id);
+
+                // Shift+클릭으로 문서 비교 모드 활성화 (doc 타입만)
+                if (e && e.shiftKey && target && target.type === 'doc') {
+                    if (!compareMode) {
+                        // 현재 활성 문서가 doc이면 비교 모드 시작
+                        const currentDoc = projects.find(p => p.id === activeProjectId);
+                        if (currentDoc && currentDoc.type === 'doc' && activeProjectId !== id) {
+                            setCompareMode(true);
+                            setCompareDocIds([activeProjectId, id]);
+                            setActiveComparePane(1);
+                            showToast("📖 문서 비교 모드 활성화 (ESC로 종료)");
+                            return;
+                        } else if (!currentDoc || currentDoc.type !== 'doc') {
+                            // 현재가 doc이 아니면 선택한 문서를 왼쪽에 배치하고 다음 선택 대기
+                            setActiveProjectId(id);
+                            showToast("📝 Shift+클릭으로 비교할 다른 문서를 선택하세요");
+                            return;
+                        }
+                    } else {
+                        // 이미 비교 모드 중이면 활성 패널의 문서 교체
+                        setCompareDocIds(prev => {
+                            const newIds = [...prev];
+                            newIds[activeComparePane] = id;
+                            return newIds;
+                        });
+                        showToast("문서가 교체되었습니다");
+                        return;
+                    }
+                }
+
+                // 비교 모드 종료 (일반 클릭 시)
+                if (compareMode) {
+                    setCompareMode(false);
+                    setCompareDocIds([null, null]);
+                    setIsZenMode(false);
+                }
+
+                setActiveProjectId(id);
                 if (target && target.type !== 'doc') setIsZenMode(false);
                 setIsTrashOpen(false);
                 // 프로젝트 전환 시 선택 상태 및 임시 상태 초기화 (메모리 관리)
@@ -1729,6 +1797,25 @@
                 setSelectedEdgeId(null);
                 setTempEdge(null);
             };
+
+            // 비교 모드 키보드 단축키 (ESC: 종료, Tab: 패널 전환)
+            useEffect(() => {
+                if (!compareMode) return;
+                const handleCompareKeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        setCompareMode(false);
+                        setCompareDocIds([null, null]);
+                        setIsZenMode(false);
+                        showToast("비교 모드 종료");
+                    } else if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        setActiveComparePane(prev => prev === 0 ? 1 : 0);
+                        showToast(`${activeComparePane === 0 ? '오른쪽' : '왼쪽'} 패널로 전환`);
+                    }
+                };
+                window.addEventListener('keydown', handleCompareKeydown);
+                return () => window.removeEventListener('keydown', handleCompareKeydown);
+            }, [compareMode, activeComparePane]);
             const toggleProjectFolder = (id, e) => { if (e) e.stopPropagation(); setExpandedProjects(prev => ({ ...prev, [id]: !prev[id] })); };
             
             const updateActiveProject = useCallback((nodeUpdater, edgeUpdater) => {
@@ -1743,6 +1830,79 @@
             }, [activeProjectId]);
 
             const updateDocContent = (content) => { const finalContent = (!content || content.trim() === '') ? '　' : content; setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, content: finalContent } : p)); if (!content || content.trim() === '') { requestAnimationFrame(() => { if (textareaRef.current) { textareaRef.current.setSelectionRange(1, 1); } }); } };
+
+            // 비교 모드용 문서 내용 업데이트
+            const updateCompareDocContent = (docId, content) => {
+                const finalContent = (!content || content.trim() === '') ? '　' : content;
+                setProjects(prev => prev.map(p => p.id === docId ? { ...p, content: finalContent } : p));
+            };
+
+            // 비교 모드용 프로젝트 가져오기
+            const getCompareDoc = (index) => {
+                const docId = compareDocIds[index];
+                return projects.find(p => p.id === docId) || null;
+            };
+
+            // 분할선 드래그 핸들러 - DOM 직접 조작으로 실시간 반응
+            const splitterRafId = useRef(null);
+            const compareContainerRef = useRef(null);
+
+            const handleSplitterMouseDown = (e) => {
+                e.preventDefault();
+                isDraggingSplitter.current = true;
+                setIsSplitterDragging(true);
+                compareContainerRef.current = document.querySelector('.compare-container');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            };
+
+            useEffect(() => {
+                if (!compareMode) return;
+
+                const handleMouseMove = (e) => {
+                    if (!isDraggingSplitter.current || !compareContainerRef.current) return;
+
+                    // 이전 애니메이션 프레임 취소
+                    if (splitterRafId.current) {
+                        cancelAnimationFrame(splitterRafId.current);
+                    }
+
+                    // requestAnimationFrame으로 실시간 DOM 업데이트
+                    splitterRafId.current = requestAnimationFrame(() => {
+                        const rect = compareContainerRef.current.getBoundingClientRect();
+                        const newRatio = Math.max(20, Math.min(80, ((e.clientX - rect.left) / rect.width) * 100));
+
+                        // DOM 직접 조작으로 즉시 반영
+                        const leftPane = compareContainerRef.current.children[0];
+                        const rightPane = compareContainerRef.current.children[2];
+                        if (leftPane && rightPane) {
+                            leftPane.style.width = `${newRatio}%`;
+                            rightPane.style.width = `${100 - newRatio}%`;
+                        }
+
+                        // state도 업데이트 (나중에 동기화용)
+                        setSplitRatio(newRatio);
+                    });
+                };
+
+                const handleMouseUp = () => {
+                    if (splitterRafId.current) {
+                        cancelAnimationFrame(splitterRafId.current);
+                    }
+                    isDraggingSplitter.current = false;
+                    setIsSplitterDragging(false);
+                    compareContainerRef.current = null;
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                };
+
+                window.addEventListener('mousemove', handleMouseMove);
+                window.addEventListener('mouseup', handleMouseUp);
+                return () => {
+                    window.removeEventListener('mousemove', handleMouseMove);
+                    window.removeEventListener('mouseup', handleMouseUp);
+                };
+            }, [compareMode]);
 
             const [history, setHistory] = useState({ past: [], future: [] });
             const [isPanning, setIsPanning] = useState(false);
@@ -2606,7 +2766,7 @@
                     
                 const projectContent = (
                     <div className={containerClasses}>
-                        <div onClick={() => handleSelectProject(project.id)} onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
+                        <div onClick={(e) => handleSelectProject(project.id, e)} onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
                             {isActive && <div className={`absolute left-0 top-0 bottom-0 ${isDoc ? 'w-[3px]' : 'w-1'} bg-indigo-600 dark:bg-indigo-500`} />}
                             <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                 <span onClick={(e) => !isDoc && toggleProjectFolder(project.id, e)} className={`${isDoc ? 'text-sm opacity-50' : 'text-base'} shrink-0 dark:text-zinc-300`}>{isDoc ? '📄' : (isExpanded ? '📂' : '📁')}</span>
@@ -2852,8 +3012,9 @@
                             </div>
                             <div>
                                 <div className="flex items-center justify-between mb-3 px-2 group h-7">
-                                    <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 문서함
+                                    <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2" title="Shift+클릭으로 두 문서 비교">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${compareMode ? 'bg-amber-500 animate-pulse' : 'bg-indigo-500'}`}></span>
+                                        {compareMode ? '비교 모드' : '문서함'}
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {/* 문서 필터 버튼 (회색/검은 배경 스타일) */}
@@ -2897,9 +3058,9 @@
                                                 dragElastic={0.5}
                                                 transition={{ type: "tween", duration: 0.15 }}
                                                 whileDrag={{ scale: 1.02, boxShadow: '0 5px 15px rgba(0,0,0,0.1)', zIndex: 100 }}
-                                                onClick={() => handleSelectProject(project.id)}
+                                                onClick={(e) => handleSelectProject(project.id, e)}
                                                 onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }}
-                                                className={`border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 cursor-grab active:cursor-grabbing ${isActive ? 'bg-white dark:bg-zinc-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}`}
+                                                className={`border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 cursor-grab active:cursor-grabbing ${isActive ? 'bg-white dark:bg-zinc-700' : (compareMode && compareDocIds.includes(project.id)) ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}`}
                                             >
                                                 <div className="flex items-center px-4 h-[30px] py-0 group relative overflow-hidden">
                                                     {isActive && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 dark:bg-indigo-500" />}
@@ -3009,9 +3170,15 @@
                                     )}
                                 </button>
                                 <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
-                                    <button 
-                                        onClick={() => setIsZenMode(!isZenMode)} 
+                                    <button
+                                        onClick={() => {
+                                            setIsZenMode(!isZenMode);
+                                            if (compareMode) {
+                                                showToast(!isZenMode ? `집중 모드: ${activeComparePane === 0 ? '왼쪽' : '오른쪽'} 패널` : "비교 모드로 복귀");
+                                            }
+                                        }}
                                         className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
+                                        title={compareMode ? "현재 활성 패널 집중 모드" : "집중 모드 (Ctrl+J)"}
                                     >
                                         <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
                                     </button>
@@ -3348,7 +3515,153 @@
                                     ))}
                                 </div>
                             </>
+                        ) : compareMode && compareDocIds[0] && compareDocIds[1] ? (
+                            /* 문서 비교 모드 UI - 원본 editor-paper 디자인 유지 */
+                            <div className="compare-container w-full h-full flex relative">
+                                {/* 왼쪽 패널 */}
+                                <div
+                                    className={`h-full overflow-y-auto custom-scroll ${isSplitterDragging ? '' : 'transition-all duration-500 ease-in-out'} ${isZenMode ? (activeComparePane === 0 ? 'px-0' : 'w-0 overflow-hidden opacity-0') : 'px-6'}`}
+                                    style={{ width: isZenMode ? (activeComparePane === 0 ? '100%' : '0%') : `${splitRatio}%` }}
+                                    onClick={() => setActiveComparePane(0)}
+                                >
+                                    {(() => {
+                                        const doc = getCompareDoc(0);
+                                        if (!doc) return null;
+                                        return (
+                                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ maxWidth: isZenMode ? '' : '100%', margin: isZenMode ? '40px auto' : '20px auto', minHeight: 'calc(100vh - 120px)', boxShadow: isZenMode && activeComparePane === 0 ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
+                                                <div className="editor-title-container">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 0 ? 'Focus Mode' : 'DOC TITLE'}</span>
+                                                        <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                                            {['초고', '수정', '완료'].map(status => (
+                                                                <button key={status} onClick={(e) => { e.stopPropagation(); setProjects(prev => prev.map(p => p.id === doc.id ? {...p, status} : p)); }} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(doc.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent"
+                                                        value={doc.name}
+                                                        onChange={(e) => setProjects(prev => prev.map(p => p.id === doc.id ? {...p, name: e.target.value} : p))}
+                                                        placeholder="문서 제목"
+                                                    />
+                                                </div>
+                                                <textarea
+                                                    ref={el => compareTextareaRefs.current[0] = el}
+                                                    className={`editor-textarea custom-scroll ${isZenMode && activeComparePane === 0 ? 'zen-active' : ''}`}
+                                                    style={{ fontSize: `${editorFontSize}px` }}
+                                                    value={doc.content || ""}
+                                                    onChange={(e) => updateCompareDocContent(doc.id, e.target.value)}
+                                                    onFocus={() => setActiveComparePane(0)}
+                                                    placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
+                                                />
+                                                <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                                    <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
+                                                        <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
+                                                            <div className="flex gap-4 items-center">
+                                                                <div className="flex flex-col gap-1"><span className="text-slate-400 uppercase">Statistics</span><div className="flex gap-3 text-slate-600 dark:text-zinc-400"><span>공백 포함: <b className="text-slate-900 dark:text-zinc-200">{(doc.content || "").length.toLocaleString()}</b>자</span><span>공백 제외: <b className="text-slate-900 dark:text-zinc-200">{(doc.content || "").replace(/\s+/g, '').length.toLocaleString()}</b>자</span></div></div>
+                                                                <div className="w-px h-6 bg-slate-100 mx-2 dark:bg-zinc-700"></div>
+                                                                <div className="flex flex-col gap-1"><span className="text-indigo-400 uppercase">Achievement</span><span className="text-[14px] text-indigo-600 italic dark:text-indigo-400">{Math.min(Math.round(((doc.content || "").length / defaultTargetCount) * 100), 100)}%</span></div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="text-slate-400 uppercase">Target Goal</span>
+                                                                <div className="text-slate-600 dark:text-zinc-400 text-[14px] font-black">
+                                                                    <span><b className="text-slate-900 dark:text-zinc-200">{defaultTargetCount.toLocaleString()}</b>자</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.min(((doc.content || "").length / defaultTargetCount) * 100, 100)}%` }}
+                                                                style={{ backgroundColor: (doc.content || "").length >= defaultTargetCount ? "#10b981" : "#4f46e5" }}
+                                                                className="h-full transition-all duration-500 ease-out rounded-[3px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })()}
+                                </div>
+
+                                {/* 분할선 (집중 모드가 아닐 때만 표시) */}
+                                {!isZenMode && (
+                                    <div
+                                        className="w-2 h-full cursor-col-resize bg-slate-300 dark:bg-zinc-600 hover:bg-indigo-400 dark:hover:bg-indigo-500 transition-colors flex items-center justify-center group shrink-0"
+                                        onMouseDown={handleSplitterMouseDown}
+                                    >
+                                        <div className="w-1 h-12 bg-slate-400 dark:bg-zinc-500 group-hover:bg-white rounded-full transition-colors"></div>
+                                    </div>
+                                )}
+
+                                {/* 오른쪽 패널 */}
+                                <div
+                                    className={`h-full overflow-y-auto custom-scroll ${isSplitterDragging ? '' : 'transition-all duration-500 ease-in-out'} ${isZenMode ? (activeComparePane === 1 ? 'px-0' : 'w-0 overflow-hidden opacity-0') : 'px-6'}`}
+                                    style={{ width: isZenMode ? (activeComparePane === 1 ? '100%' : '0%') : `${100 - splitRatio}%` }}
+                                    onClick={() => setActiveComparePane(1)}
+                                >
+                                    {(() => {
+                                        const doc = getCompareDoc(1);
+                                        if (!doc) return null;
+                                        return (
+                                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ maxWidth: isZenMode ? '' : '100%', margin: isZenMode ? '40px auto' : '20px auto', minHeight: 'calc(100vh - 120px)', boxShadow: isZenMode && activeComparePane === 1 ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
+                                                <div className="editor-title-container">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 1 ? 'Focus Mode' : 'DOC TITLE'}</span>
+                                                        <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                                            {['초고', '수정', '완료'].map(status => (
+                                                                <button key={status} onClick={(e) => { e.stopPropagation(); setProjects(prev => prev.map(p => p.id === doc.id ? {...p, status} : p)); }} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(doc.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <input
+                                                        className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent"
+                                                        value={doc.name}
+                                                        onChange={(e) => setProjects(prev => prev.map(p => p.id === doc.id ? {...p, name: e.target.value} : p))}
+                                                        placeholder="문서 제목"
+                                                    />
+                                                </div>
+                                                <textarea
+                                                    ref={el => compareTextareaRefs.current[1] = el}
+                                                    className={`editor-textarea custom-scroll ${isZenMode && activeComparePane === 1 ? 'zen-active' : ''}`}
+                                                    style={{ fontSize: `${editorFontSize}px` }}
+                                                    value={doc.content || ""}
+                                                    onChange={(e) => updateCompareDocContent(doc.id, e.target.value)}
+                                                    onFocus={() => setActiveComparePane(1)}
+                                                    placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
+                                                />
+                                                <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                                    <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
+                                                        <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
+                                                            <div className="flex gap-4 items-center">
+                                                                <div className="flex flex-col gap-1"><span className="text-slate-400 uppercase">Statistics</span><div className="flex gap-3 text-slate-600 dark:text-zinc-400"><span>공백 포함: <b className="text-slate-900 dark:text-zinc-200">{(doc.content || "").length.toLocaleString()}</b>자</span><span>공백 제외: <b className="text-slate-900 dark:text-zinc-200">{(doc.content || "").replace(/\s+/g, '').length.toLocaleString()}</b>자</span></div></div>
+                                                                <div className="w-px h-6 bg-slate-100 mx-2 dark:bg-zinc-700"></div>
+                                                                <div className="flex flex-col gap-1"><span className="text-indigo-400 uppercase">Achievement</span><span className="text-[14px] text-indigo-600 italic dark:text-indigo-400">{Math.min(Math.round(((doc.content || "").length / defaultTargetCount) * 100), 100)}%</span></div>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                <span className="text-slate-400 uppercase">Target Goal</span>
+                                                                <div className="text-slate-600 dark:text-zinc-400 text-[14px] font-black">
+                                                                    <span><b className="text-slate-900 dark:text-zinc-200">{defaultTargetCount.toLocaleString()}</b>자</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.min(((doc.content || "").length / defaultTargetCount) * 100, 100)}%` }}
+                                                                style={{ backgroundColor: (doc.content || "").length >= defaultTargetCount ? "#10b981" : "#4f46e5" }}
+                                                                className="h-full transition-all duration-500 ease-out rounded-[3px]"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
                         ) : (
+                            /* 일반 문서 편집 모드 */
                             <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
                                 <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
                                     <div className="editor-title-container">
@@ -3396,11 +3709,11 @@
                                                 </div>
                                             </div>
                                             <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700">
-                                                <motion.div 
-                                                    initial={{ width: 0 }} 
+                                                <motion.div
+                                                    initial={{ width: 0 }}
                                                     animate={{ width: `${Math.min(((activeProject.content || "").length / defaultTargetCount) * 100, 100)}%` }}
                                                     style={{ backgroundColor: (activeProject.content || "").length >= defaultTargetCount ? "#10b981" : "#4f46e5" }}
-                                                    className="h-full transition-all duration-500 ease-out rounded-[3px]" 
+                                                    className="h-full transition-all duration-500 ease-out rounded-[3px]"
                                                 />
                                             </div>
                                         </div>
