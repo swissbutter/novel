@@ -128,8 +128,8 @@
             display: none !important;
         }
         /* 비교 모드 스타일 */
-        .compare-container { background: #f8fafc; }
-        .dark .compare-container { background: #09090b; }
+        .compare-container { background-color: #f8fafc; background-image: radial-gradient(#cbd5e1 1px, transparent 0); background-size: 20px 20px; background-position: 0 0; }
+        .dark .compare-container { background-color: #09080B; background-image: radial-gradient(#27272a 1px, transparent 0); }
         .compare-container textarea {
             line-height: 2.2;
             color: #334155;
@@ -1646,9 +1646,15 @@
             const scrollLockRef = useRef(false); // 스크롤 잠금 플래그
 
             const updateFocusScroll = useCallback(() => {
-                if (!isZenMode || !textareaRef.current || scrollLockRef.current) return;
+                if (!isZenMode || scrollLockRef.current) return;
 
-                const textarea = textareaRef.current;
+                // 비교 모드일 때는 활성 패널의 textarea 사용
+                const textarea = compareMode
+                    ? compareTextareaRefs.current[activeComparePane]
+                    : textareaRef.current;
+
+                if (!textarea) return;
+
                 const coords = getCaretCoordinates(textarea, textarea.selectionStart);
                 const rect = textarea.getBoundingClientRect();
                 const contentOffsetTop = coords.top - rect.top - textarea.scrollTop;
@@ -1659,7 +1665,7 @@
                 if (currentDiff > 30) {
                     scrollTargetRef.current = targetScroll;
                 }
-            }, [isZenMode]);
+            }, [isZenMode, compareMode, activeComparePane]);
 
             useEffect(() => {
                 if (!isZenMode) {
@@ -1670,14 +1676,19 @@
                 updateFocusScroll();
 
                 const loop = () => {
+                    // 비교 모드일 때는 활성 패널의 textarea 사용
+                    const textarea = compareMode
+                        ? compareTextareaRefs.current[activeComparePane]
+                        : textareaRef.current;
+
                     // 잠금 상태면 애니메이션도 멈춤
-                    if (textareaRef.current && !scrollLockRef.current) {
-                        const current = textareaRef.current.scrollTop;
+                    if (textarea && !scrollLockRef.current) {
+                        const current = textarea.scrollTop;
                         const target = scrollTargetRef.current;
                         const diff = target - current;
 
                         if (Math.abs(diff) > 3) {
-                            textareaRef.current.scrollTop = current + diff * 0.09;
+                            textarea.scrollTop = current + diff * 0.09;
                         }
                     }
                     scrollAnimRef.current = requestAnimationFrame(loop);
@@ -1685,18 +1696,13 @@
 
                 loop();
                 return () => cancelAnimationFrame(scrollAnimRef.current);
-            }, [isZenMode, updateFocusScroll]);
+            }, [isZenMode, updateFocusScroll, compareMode, activeComparePane]);
 
             useEffect(() => {
                 const handleZenShortcut = (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
                         e.preventDefault();
                         setIsZenMode(prev => !prev);
-                        if (compareMode) {
-                            showToast(!isZenMode ? `집중 모드: ${activeComparePane === 0 ? '왼쪽' : '오른쪽'} 패널` : "비교 모드로 복귀");
-                        } else {
-                            showToast(!isZenMode ? "집중 모드 활성화" : "집중 모드 해제");
-                        }
                     }
                 };
                 window.addEventListener('keydown', handleZenShortcut);
@@ -1761,12 +1767,10 @@
                             setCompareMode(true);
                             setCompareDocIds([activeProjectId, id]);
                             setActiveComparePane(1);
-                            showToast("📖 문서 비교 모드 활성화 (ESC로 종료)");
                             return;
                         } else if (!currentDoc || currentDoc.type !== 'doc') {
                             // 현재가 doc이 아니면 선택한 문서를 왼쪽에 배치하고 다음 선택 대기
                             setActiveProjectId(id);
-                            showToast("📝 Shift+클릭으로 비교할 다른 문서를 선택하세요");
                             return;
                         }
                     } else {
@@ -1809,8 +1813,7 @@
                         showToast("비교 모드 종료");
                     } else if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                         e.preventDefault();
-                        setActiveComparePane(prev => prev === 0 ? 1 : 0);
-                        showToast(`${activeComparePane === 0 ? '오른쪽' : '왼쪽'} 패널로 전환`);
+                        setCompareDocIds(prev => [prev[1], prev[0]]);
                     }
                 };
                 window.addEventListener('keydown', handleCompareKeydown);
@@ -3173,9 +3176,6 @@
                                     <button
                                         onClick={() => {
                                             setIsZenMode(!isZenMode);
-                                            if (compareMode) {
-                                                showToast(!isZenMode ? `집중 모드: ${activeComparePane === 0 ? '왼쪽' : '오른쪽'} 패널` : "비교 모드로 복귀");
-                                            }
                                         }}
                                         className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
                                         title={compareMode ? "현재 활성 패널 집중 모드" : "집중 모드 (Ctrl+J)"}
@@ -3550,8 +3550,10 @@
                                                     className={`editor-textarea custom-scroll ${isZenMode && activeComparePane === 0 ? 'zen-active' : ''}`}
                                                     style={{ fontSize: `${editorFontSize}px` }}
                                                     value={doc.content || ""}
-                                                    onChange={(e) => updateCompareDocContent(doc.id, e.target.value)}
+                                                    onChange={(e) => { updateCompareDocContent(doc.id, e.target.value); updateFocusScroll(); }}
                                                     onFocus={() => setActiveComparePane(0)}
+                                                    onClick={() => updateFocusScroll()}
+                                                    onKeyUp={() => updateFocusScroll()}
                                                     placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
                                                 />
                                                 <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
@@ -3587,7 +3589,7 @@
                                 {/* 분할선 (집중 모드가 아닐 때만 표시) */}
                                 {!isZenMode && (
                                     <div
-                                        className="w-2 h-full cursor-col-resize bg-slate-300 dark:bg-zinc-600 hover:bg-indigo-400 dark:hover:bg-indigo-500 transition-colors flex items-center justify-center group shrink-0"
+                                        className="w-1 h-full cursor-col-resize bg-slate-300 dark:bg-zinc-600 hover:bg-indigo-400 dark:hover:bg-indigo-500 transition-colors flex items-center justify-center group shrink-0 rounded-none"
                                         onMouseDown={handleSplitterMouseDown}
                                     >
                                         <div className="w-1 h-12 bg-slate-400 dark:bg-zinc-500 group-hover:bg-white rounded-full transition-colors"></div>
@@ -3626,8 +3628,10 @@
                                                     className={`editor-textarea custom-scroll ${isZenMode && activeComparePane === 1 ? 'zen-active' : ''}`}
                                                     style={{ fontSize: `${editorFontSize}px` }}
                                                     value={doc.content || ""}
-                                                    onChange={(e) => updateCompareDocContent(doc.id, e.target.value)}
+                                                    onChange={(e) => { updateCompareDocContent(doc.id, e.target.value); updateFocusScroll(); }}
                                                     onFocus={() => setActiveComparePane(1)}
+                                                    onClick={() => updateFocusScroll()}
+                                                    onKeyUp={() => updateFocusScroll()}
                                                     placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
                                                 />
                                                 <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
