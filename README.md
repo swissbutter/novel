@@ -79,22 +79,11 @@
 
 이 프로젝트는 별도의 번들링 과정 없이 브라우저에서 즉시 실행되도록 설계되었습니다.
 
-- **Core**: React 18 (Standalone via CDN)
-- **Styling**: Tailwind CSS (via CDN)
-- **Animation**: Framer Motion
-- **Encryption**: Crypto-JS (AES)
-- **Export**: JSZip, FileSaver.js, docx.js
-- **Icons**: SVG Icons
+- **Frontend**: React 18, Tailwind CSS, Framer Motion
+- **Layout Engine**: Dagre.js (Graph Visualization)
+- **Security**: Crypto-JS (AES-256)
+- **File Processing**: JSZip, FileSaver.js, docx.js
 
 ---
 
-## 🎨 업데이트 내역 (Recent Updates)
-
-- **연결선 스타일 고도화**: 실선 외에 파선, 점선, 이중선 스타일 추가
-- **가독성 개선**: 선 굵기 변화에 따른 점선 패턴 자동 보정 알고리즘 적용
-- **메모 기능 개선**: 이종 노드 간 연결 시에도 관계 메모(Label) 작성 가능하도록 변경
-- **최적화**: 렌더링 성능 개선 및 드래그 인터랙션 최적화
-
----
-
-> **Note**: 이 프로그램은 로컬 브라우저 저장소(LocalStorage)를 사용합니다. 브라우저 캐시를 삭제하면 데이터가 날아갈 수 있으니, 중요한 작업물은 주기적으로 **[파일 저장]** 기능을 이용해 백업해주세요.
+> **주의**: 데이터는 브라우저의 로컬 스토리지에 저장됩니다. 캐시 삭제 시 데이터가 유실될 수 있으므로, 주기적으로 [파일 저장] 기능을 통해 백업 파일을 생성하시기 바랍니다.
