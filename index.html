@@ -175,7 +175,11 @@
             Galmuri14: "갈무리14",
             pretendard: "프리텐다드"
         };
-        const BOOK_COLORS = ['#18181b', '#3c3c3c', '#881337', '#7c2d12', '#424034', '#73734e', '#2e3b36', '#134e4a', '#1e3a8a', '#33272c', '#4c1d95', '#451a03'];
+        const BOOK_COLORS = [
+            '#1c1917', '#44403c', '#78716c', '#9f1239', '#be4d67', '#c2724c',
+            '#a3703c', '#8b7355', '#5c6d4a', '#4a766e', '#3d6a73', '#456b8a',
+            '#4a5d7a', '#5b5d8a', '#6b5b7a', '#7a5b6d', '#8c6478', '#6d5c5c'
+        ];
         const NAME_DB = {
             fantasy: {
                 royalty: {
@@ -642,17 +646,18 @@
                     style={{ perspective: '1200px' }}
                     onClick={onClick}
                 >
-                    <div className="absolute top-[8px] bottom-[8px] left-0 w-full bg-white shadow-sm transform translate-x-[9px] z-[1] border border-slate-200 opacity-40 dark:bg-zinc-800 dark:border-zinc-700"></div>
-                    <div className="absolute top-[6px] bottom-[6px] left-0 w-full bg-white shadow-sm transform translate-x-[6px] z-[2] border border-slate-200 opacity-70 dark:bg-zinc-800 dark:border-zinc-700"></div>
-                    <div className="absolute top-[4px] bottom-[4px] left-0 w-full bg-white shadow-sm transform translate-x-[3px] z-[3] border border-slate-200 opacity-90 dark:bg-zinc-800 dark:border-zinc-700"></div>
-                    <div className="absolute top-[2px] bottom-[3px] left-[-1px] w-full page-bg shadow-sm transform translate-x-[1px] z-[4] border-l border-slate-200 dark:border-zinc-700"></div>
+                    <div className="absolute top-[8px] bottom-[8px] left-0 w-full bg-white shadow-sm transform translate-x-[9px] z-[1] border border-slate-200 opacity-40"></div>
+                    <div className="absolute top-[6px] bottom-[6px] left-0 w-full bg-white shadow-sm transform translate-x-[6px] z-[2] border border-slate-200 opacity-70"></div>
+                    <div className="absolute top-[4px] bottom-[4px] left-0 w-full bg-white shadow-sm transform translate-x-[3px] z-[3] border border-slate-200 opacity-90"></div>
+                    <div className="absolute top-[2px] bottom-[3px] left-[-1px] w-full page-bg shadow-sm transform translate-x-[1px] z-[4] border-l border-slate-200"></div>
 
-                    <motion.div initial={{ rotateY: 0 }} whileHover={(isDragging || isDropTarget) ? {} : { rotateY: -20 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className={`book-card relative rounded-[3px] shadow-lg cursor-pointer flex flex-col origin-left z-10 h-full ${isDragging ? 'shadow-2xl ring-2 ring-indigo-400' : ''}`} style={{ backgroundColor: book.color || '#475569', aspectRatio: '2 / 3', outline: isDropTarget ? '2px dotted #818cf8' : 'none', outlineOffset: '-2px', opacity: isDropTarget ? 0.7 : 1 }}>
+                    <motion.div initial={{ rotateY: 0 }} whileHover={(isDragging || isDropTarget) ? {} : { rotateY: -20 }} transition={{ type: "spring", stiffness: 200, damping: 15 }} className={`book-card relative rounded-[3px] shadow-lg cursor-pointer flex flex-col origin-left z-10 h-full backdrop-blur-sm ${isDragging ? 'shadow-2xl ring-2 ring-indigo-400' : ''}`} style={{ backgroundColor: (book.color || '#475569') + 'd9', aspectRatio: '2 / 3', outline: isDropTarget ? '2px dotted #818cf8' : 'none', outlineOffset: '-2px', opacity: isDropTarget ? 0.7 : 1 }}>
                         <div className="absolute inset-0 book-spine pointer-events-none z-10"></div>
                         <div className="absolute left-0 top-0 bottom-0 w-[15px] bg-black/10 z-10"></div>
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/8 via-transparent to-black/5 z-15 pointer-events-none rounded-[3px]"></div>
                         <div className="flex-1 p-8 flex flex-col relative z-20 text-white">
                             <div className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-4 border-b border-white/20 pb-2">NOVEL PROJECT</div>
-                            <h3 className="text-2xl font-black leading-tight tracking-tight break-keep drop-shadow-md">{book.title}</h3>
+                            <h3 className="text-xl font-black leading-tight tracking-tight break-keep drop-shadow-md">{book.title}</h3>
                             <div className="mt-2 text-xs opacity-70">{book.author || "작가 미상"}</div>
                             <div className="mt-auto pt-4 space-y-1">
                                 <div className="flex items-center gap-2 text-[11px] font-bold opacity-80">
@@ -870,7 +875,7 @@
                         </div>
                         <div className="mb-8">
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-3 uppercase tracking-wide">표지 색상</label>
-                            <div className="flex flex-wrap gap-2"> {BOOK_COLORS.map(color => ( <button key={color} onClick={() => setSelectedColor(color)} className={`w-8 h-8 rounded-full shadow-sm transition-transform hover:scale-110 flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-darkpanel' : ''}`} style={{ backgroundColor: color }}> {selectedColor === color && <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>} </button> ))} </div>
+                            <div className="flex flex-wrap gap-2"> {BOOK_COLORS.map(color => ( <button key={color} onClick={() => setSelectedColor(color)} className={`w-8 h-8 rounded-[3px] shadow-sm transition-transform hover:scale-110 flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-darkpanel' : ''}`} style={{ backgroundColor: color }}> {selectedColor === color && <svg className="w-4 h-4 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>} </button> ))} </div>
                         </div>
                         <div className="flex gap-2">
                             <button onClick={onClose} className="flex-1 py-3 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-[3px] transition-colors">취소</button>
@@ -3064,7 +3069,7 @@
                                 ) : ( 
                                     <h1 
                                         onDoubleClick={() => setIsEditingTitle(true)} 
-                                        className="text-2xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
+                                        className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
                                         title="더블클릭하여 제목 수정"
                                     >
                                         {currentBook.title}
@@ -4873,7 +4878,7 @@
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
                                     <h2 className="text-lg font-bold text-slate-700 dark:text-zinc-200">나의 책장</h2>
-                                    <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-full">{books.length}권</span>
+                                    <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-[3px]">{books.length}권</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button onClick={openSavePanel} className={`h-8 px-3 flex items-center gap-1.5 rounded-sm transition-all text-sm font-medium ${filePanel.isOpen && filePanel.mode === 'save' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="전체 저장"><IconSave className="w-4 h-4" />저장하기</button>
@@ -4916,7 +4921,7 @@
                                     onClick={() => setModalConfig({ isOpen: true, mode: 'create', targetBook: null })}
                                     className="group flex flex-col items-center justify-center gap-4 aspect-[2/3] rounded-lg border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-all duration-300"
                                 >
-                                    <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                                    <div className="w-14 h-14 rounded-[3px] bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
                                         <IconPlus className="w-6 h-6" />
                                     </div>
                                     <div className="text-center">
