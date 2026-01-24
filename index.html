@@ -256,7 +256,7 @@
         }
 
         .custom-scroll::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         .custom-scroll::-webkit-scrollbar-track {
@@ -2216,24 +2216,86 @@
                 );
             };
 
+            const scrollTargetRef = useRef(0);
+            const scrollAnimRef = useRef(null);
+            const scrollLockRef = useRef(false);
+            const getCaretCoordinates = (element, position) => {
+                const div = document.createElement('div');
+                const style = window.getComputedStyle(element);
+                const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'padding', 'border', 'width', 'boxSizing', 'whiteSpace', 'wordWrap'];
+                props.forEach(prop => div.style[prop] = style[prop]);
+                div.style.position = 'absolute';
+                div.style.visibility = 'hidden';
+                div.textContent = element.value.substring(0, position);
+                const span = document.createElement('span');
+                span.textContent = element.value.substring(position) || '.';
+                div.appendChild(span);
+                document.body.appendChild(div);
+                const rect = element.getBoundingClientRect();
+                const coordinates = { top: rect.top + span.offsetTop + element.scrollTop, left: rect.left + span.offsetLeft };
+                document.body.removeChild(div);
+                return coordinates;
+            };
+
             const updateFocusScroll = useCallback(() => {
-                if (!isZenMode) return;
-                const textarea = activeComparePane === 0 || !compareMode ? (compareMode ? compareTextareaRefs.current[0] : textareaRef.current) : compareTextareaRefs.current[1];
+                if (!isZenMode || scrollLockRef.current) return;
+
+                const textarea = compareMode
+                    ? compareTextareaRefs.current[activeComparePane]
+                    : textareaRef.current;
+
                 if (!textarea) return;
 
-                const cursorPosition = textarea.selectionStart;
-                const textBeforeCursor = textarea.value.substring(0, cursorPosition);
-                const lines = textBeforeCursor.split('\n');
-                const lineCount = lines.length;
-                const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
-                
-                const targetY = lineCount * lineHeight - (window.innerHeight * focusPosition);
-                
-                textarea.scrollTo({
-                    top: targetY,
-                    behavior: 'smooth'
-                });
-            }, [isZenMode, focusPosition, activeComparePane, compareMode]);
+                const coords = getCaretCoordinates(textarea, textarea.selectionStart);
+                const rect = textarea.getBoundingClientRect();
+                const contentOffsetTop = coords.top - rect.top - textarea.scrollTop;
+                const targetScroll = contentOffsetTop - (textarea.clientHeight * focusPosition);
+
+                const currentDiff = Math.abs(targetScroll - scrollTargetRef.current);
+                if (currentDiff > 30) {
+                    scrollTargetRef.current = targetScroll;
+                }
+            }, [isZenMode, compareMode, activeComparePane, focusPosition]);
+
+            useEffect(() => {
+                if (!isZenMode) {
+                    if (scrollAnimRef.current) cancelAnimationFrame(scrollAnimRef.current);
+                    return;
+                }
+
+                // Zen 모드 진입 시 현재 스크롤 위치로 초기화
+                const textarea = compareMode
+                    ? compareTextareaRefs.current[activeComparePane]
+                    : textareaRef.current;
+                if (textarea) {
+                    scrollTargetRef.current = textarea.scrollTop;
+                }
+
+                // 약간의 딜레이 후 목표 위치 계산
+                setTimeout(() => {
+                    updateFocusScroll();
+                }, 100);
+
+                const loop = () => {
+                    const textarea = compareMode
+                        ? compareTextareaRefs.current[activeComparePane]
+                        : textareaRef.current;
+
+                    if (textarea && !scrollLockRef.current) {
+                        const current = textarea.scrollTop;
+                        const target = scrollTargetRef.current;
+                        const diff = target - current;
+
+                        if (Math.abs(diff) > 3) {
+                            textarea.scrollTop = current + diff * 0.04;
+                        }
+                    }
+                    scrollAnimRef.current = requestAnimationFrame(loop);
+                };
+
+                loop();
+                return () => cancelAnimationFrame(scrollAnimRef.current);
+            }, [isZenMode, updateFocusScroll, compareMode, activeComparePane]);
 
             const animateViewport = useCallback((targetPan, targetScale) => {
                 if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
@@ -2668,6 +2730,19 @@
                 window.addEventListener('keydown', handleUndoKeyDown);
                 return () => window.removeEventListener('keydown', handleUndoKeyDown);
             }, [undo]);
+
+            useEffect(() => {
+                const handleZenModeKeyDown = (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+                        e.preventDefault();
+                        if (activeProject && activeProject.type === 'doc') {
+                            setIsZenMode(prev => !prev);
+                        }
+                    }
+                };
+                window.addEventListener('keydown', handleZenModeKeyDown);
+                return () => window.removeEventListener('keydown', handleZenModeKeyDown);
+            }, [activeProject]);
 
             useEffect(() => {
                 const div = containerRef.current;
@@ -3694,24 +3769,9 @@
                                     <span className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30">Novel project</span>
                                 </div>
 
-                                {isEditingTitle ? (
-                                    <input
-                                        ref={titleInputRef}
-                                        className="w-full text-2xl font-black text-slate-900 tracking-tighter leading-tight bg-slate-50 p-2 Galmuri14 border-b-2 border-slate-800 outline-none dark:bg-zinc-800 dark:text-white"
-                                        value={currentBook.title}
-                                        onChange={(e) => onUpdateBook({ ...currentBook, title: e.target.value })}
-                                        onBlur={() => setIsEditingTitle(false)}
-                                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                                    />
-                                ) : (
-                                    <h1
-                                        onDoubleClick={() => setIsEditingTitle(true)}
-                                        className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
-                                        title="더블클릭하여 제목 수정"
-                                    >
-                                        {currentBook.title}
-                                    </h1>
-                                )}
+                                <h1 className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight">
+                                    {currentBook.title}
+                                </h1>
 
                                 <div className="flex items-center gap-2 mt-2 opacity-60">
                                     <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-wide">
@@ -4056,11 +4116,11 @@
                         
                                                                                                                         </div>
                         
-                                                                                                                        <div className="flex-1 overflow-hidden mb-2 relative -mr-3">
-                        
-                                                                                                                            <textarea 
-                        
-                                                                                                                                className="w-full h-full resize-none outline-none text-sm text-slate-600 dark:text-zinc-300 leading-relaxed bg-transparent border-none pr-3 placeholder:italic custom-scroll"
+                                                                                                                        <div className="flex-1 overflow-hidden mb-2 relative -mr-2">
+
+                                                                                                                            <textarea
+
+                                                                                                                                className="w-full h-full resize-none outline-none text-sm text-slate-600 dark:text-zinc-300 leading-relaxed bg-transparent border-none pr-2 placeholder:italic custom-scroll"
                         
                                                                                                                                 placeholder="시놉시스를 입력하세요..."
                         
@@ -4584,7 +4644,7 @@
                                 <div className="editor-title-container">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-1">
                                             <button
                                                 onClick={() => setShowSynopsisModal(true)}
                                                 className={`p-1 transition-all ${isZenMode ? 'opacity-10 hover:opacity-100' : ''} text-slate-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400`}
@@ -4605,14 +4665,12 @@
                                     value={activeProject.content || ""}
                                     onChange={(e) => {
                                         handleDocInput(e);
-                                        updateFocusScroll(); // [중요] 입력할 때마다 목표 스크롤 갱신
+                                        updateFocusScroll();
                                     }}
                                     onKeyDown={(e) => {
                                         handleDocKeyDown(e);
-                                        // 엔터나 백스페이스 누를 때도 갱신
                                         if (e.key === 'Enter' || e.key === 'Backspace') requestAnimationFrame(updateFocusScroll);
                                     }}
-                                    // [중요] 클릭하거나 키보드로 커서 이동 시에도 중앙 정렬
                                     onClick={() => updateFocusScroll()}
                                     onKeyUp={() => updateFocusScroll()}
                                     placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
