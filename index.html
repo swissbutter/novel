@@ -5634,6 +5634,38 @@
         const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
             const [showSystemSettings, setShowSystemSettings] = useState(false);
+            
+            const quote = useMemo(() => {
+                const quotes = [
+                    { "author": "어니스트 헤밍웨이", "quote": "모든 초고는 쓰레기다." },
+                    { "author": "안톤 체호프", "quote": "달이 빛난다고 말하지 말고, 깨진 유리 조각에 비치는 빛을 보여줘라." },
+                    { "author": "프란츠 카프카", "quote": "책은 우리 내면의 얼어붙은 바다를 깨는 도끼여야 한다." },
+                    { "author": "조디 피콜트", "quote": "나쁜 글은 고칠 수 있지만, 빈 페이지는 고칠 수 없다." },
+                    { "author": "토니 모리슨", "quote": "읽고 싶은 책이 있는데 아직 쓰이지 않았다면, 당신이 직접 써야 한다." },
+                    { "author": "커트 보니것", "quote": "낯선 사람의 시간을 낭비하지 않도록 글을 써라." },
+                    { "author": "앤 라모트", "quote": "인생이 갈지자로 비틀거리거나 마구 짓밟힐 때 조차 그 모든 상황이 관찰의 대상이 된다." },
+                    { "author": "플래너리 오코너", "quote": "작가는 관찰하는 사람이다. 눈앞의 세상을 정직하게 응시하는 법부터 배워라." },
+                    { "author": "무라카미 하루키", "quote": "글쓰기는 자기 자신을 향한 정직한 노동이다." },
+                    { "author": "잭 하트", "quote": "위대한 문장의 신화는 없다. 글쓰기는 마술이 아니라 기술이다." },
+                    { "author": "애거사 크리스티", "quote": "설거지를 하다가 최고의 아이디어가 떠오른다." },
+                    { "author": "랄프 왈도 에머슨", "quote": "자신의 생각을 믿는 것, 그것이 천재성이다." },
+                    { "author": "E.B. 화이트", "quote": "글을 쓰는 것은 믿음의 행위이지, 요령의 행위가 아니다." },
+                    { "author": "장 폴 사르트르", "quote": "글쓰기는 세계에 질문을 던지는 방식이다." },
+                    { "author": "블라디미르 나보코프", "quote": "최고의 작가는 마법사다." },
+                    { "author": "표도르 도스토옙스키", "quote": "작가는 영혼의 해부학자다." },
+                    { "author": "스티븐 킹", "quote": "많이 읽고, 많이 써라. 지름길은 없다." },
+                    { "author": "스티븐 킹", "quote": "많이 읽고, 많이 써라. 지름길은 없다." },
+                    { "author": "스티븐 킹", "quote": "여러분이 해야 할 일은 날마다 작업을 한다는 사실을 뮤즈에게 알려주는 것이다." },
+                    { "author": "앨런 무어", "quote": "예술은 사람들의 인식을 바꾸는 유일한 도구다." },
+                    { "author": "월트 휘트먼", "quote": "단순함은 모든 예술의 마지막 단계다." },
+                    { "author": "제임스 디키", "quote": "글을 쓰는 것은 어둠 속에서 빛을 찾는 과정이다." },
+                    { "author": "조안 디디온", "quote": "내가 무슨 생각을 하는지 알기 위해 나는 글을 쓴다." },
+                    { "author": "작자 미상", "quote": "작품은 세계에 대한 작가의 논문이다." },
+                    { "author": "앤 라모트", "quote": "완벽주의는 당신의 글쓰기를 망치고, 창조성과 장난기와 생명력을 방해한다." },
+                    { "author": "앤 라모트", "quote": "좋은 글쓰기는 진실을 말하는 것이다." }
+                ];
+                return quotes[Math.floor(Math.random() * quotes.length)];
+            }, []);
 
             // 드래그 앤 드롭 상태
             const [dragState, setDragState] = useState({ draggingId: null, overId: null });
@@ -5879,15 +5911,21 @@
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mb-8"
+                                className="mb-8 flex items-end justify-between"
                             >
-                                <div className="flex items-center gap-4 mb-2">
+                                <div className="flex items-center gap-4">
                                     <span className="text-3xl">{greeting.emoji}</span>
                                     <div>
                                         <h1 className="text-2xl font-black text-slate-800 dark:text-zinc-100 tracking-tight">{greeting.text}</h1>
                                         <p className="text-slate-500 dark:text-zinc-500 text-sm">{greeting.sub}</p>
                                     </div>
                                 </div>
+                                {quote && (
+                                    <div className="text-right max-w-md hidden md:block pb-1">
+                                        <p className="text-[13px] font-bold text-slate-600 dark:text-zinc-400 italic">"{quote.quote}"</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 font-black uppercase tracking-wider">- {quote.author}</p>
+                                    </div>
+                                )}
                             </motion.div>
 
                             {/* 통계 카드 */}
