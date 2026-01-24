@@ -251,6 +251,10 @@
             outline: 4px solid rgba(255, 3, 3, 0.3);
         }
 
+        .node-todo-complete {
+            outline: 8px solid rgba(34, 211, 238, 0.15);
+        }
+
         .custom-scroll::-webkit-scrollbar {
             width: 6px;
         }
@@ -529,6 +533,7 @@
         const IconMoon = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>);
         const IconZen = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /></svg>);
         const IconFont = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>);
+        const IconFileText = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><line x1="10" y1="9" x2="8" y2="9" /></svg>);
         const IconLayout = ({ className }) => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><line x1="10" x2="14" y1="6.5" y2="6.5" /><line x1="10" x2="14" y1="17.5" y2="17.5" /><line x1="6.5" x2="6.5" y1="10" y2="14" /><line x1="17.5" x2="17.5" y1="10" y2="14" /></svg>);
         const getCaretCoordinates = (element, position) => { const div = document.createElement('div'); const style = window.getComputedStyle(element); const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'padding', 'border', 'width', 'boxSizing', 'whiteSpace', 'wordWrap']; props.forEach(prop => div.style[prop] = style[prop]); div.style.position = 'absolute'; div.style.visibility = 'hidden'; div.textContent = element.value.substring(0, position); const span = document.createElement('span'); span.textContent = element.value.substring(position) || '.'; div.appendChild(span); document.body.appendChild(div); const rect = element.getBoundingClientRect(); const coordinates = { top: rect.top + span.offsetTop + element.scrollTop, left: rect.left + span.offsetLeft }; document.body.removeChild(div); return coordinates; };
         const getWordAtPos = (text, pos) => { if (!text) return ""; const left = text.slice(0, pos).search(/[^\s#@]*$/); const right = text.slice(pos).search(/[\s\n\r]/); const word = text.slice(left, right === -1 ? undefined : right + pos); return word.replace(/[#@]/g, '').trim(); };
@@ -549,12 +554,13 @@
             '설정': { sidebar: 'border-l-indigo-500 dark:border-l-indigo-400', selected: 'border-indigo-500 dark:border-indigo-400', bar: 'bg-indigo-600 dark:bg-indigo-600', text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-500', hover: 'hover:bg-indigo-50 dark:hover:bg-indigo-950/50' },
             '대사': { sidebar: 'border-l-sky-500 dark:border-l-sky-400', selected: 'border-sky-500 dark:border-sky-400', bar: 'bg-sky-600 dark:bg-sky-600', text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-500', hover: 'hover:bg-sky-50 dark:hover:bg-sky-950/50' },
             '갈등': { sidebar: 'border-l-rose-500 dark:border-l-rose-400', selected: 'border-rose-500 dark:border-rose-400', bar: 'bg-rose-600 dark:bg-rose-600', text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-500', hover: 'hover:bg-rose-50 dark:hover:bg-rose-950/50' },
+            '할일': { sidebar: 'border-l-cyan-500 dark:border-l-cyan-400', selected: 'border-cyan-500 dark:border-cyan-400', bar: 'bg-cyan-600 dark:bg-cyan-600', text: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-500', hover: 'hover:bg-cyan-50 dark:hover:bg-cyan-950/50' },
             '그룹': { sidebar: 'border-l-slate-500 dark:border-l-slate-400', selected: 'border-slate-500 dark:border-slate-400', bar: 'bg-slate-600 dark:bg-slate-600', text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-500', hover: 'hover:bg-slate-50 dark:hover:bg-slate-800/50' }
         };
         // 노드 타입별 기본 이모지
         const NODE_TYPE_EMOJIS = {
             '인물': '👤', '사건': '🔥', '메모': '💡', '장소': '📍', '아이템': '🎁',
-            '세력': '⚔️', '복선': '🎣', '타임라인': '⏰', '설정': '📚', '대사': '💬', '갈등': '⚡', '그룹': '📁'
+            '세력': '⚔️', '복선': '🎣', '타임라인': '⏰', '설정': '📚', '대사': '💬', '갈등': '⚡', '할일': '✅', '그룹': '📁'
         };
         const getSidebarItemAccent = (node) => {
             return NODE_TYPE_COLORS[node.type]?.sidebar || 'border-l-transparent';
@@ -720,6 +726,11 @@
                 case '설정': return `📂 ${node.data.category || '세계관'} · 📏 ${node.data.scope || '범위 미상'}`;
                 case '대사': return `🗣️ ${node.data.speaker || '화자 미상'} · 💭 ${node.data.emotion || '감정 미상'}`;
                 case '갈등': return `⚔️ ${node.data.parties || '당사자 미상'} · ${node.data.status === '해결됨' ? '✅ 해결됨' : '🔥 진행중'}`;
+                case '할일': {
+                    const items = node.data.items || [];
+                    const done = items.filter(i => i.done).length;
+                    return `📋 ${done}/${items.length} 완료 · ${done === items.length && items.length > 0 ? '🎉 완료됨' : '🔥 진행중'}`;
+                }
                 case '그룹': return `📁 ${node.data.childNodes?.length || 0}개 항목`;
                 default: return '';
             }
@@ -736,10 +747,11 @@
                 default: return null;
             }
         };
-        const NodeCard = ({ node, isTop, isSelected, isDragging, onMouseDown, onMouseUp, onDoubleClick, onDelete, onClick }) => {
+        const NodeCard = ({ node, isTop, isSelected, isDragging, onMouseDown, onMouseUp, onDoubleClick, onDelete, onClick, onUpdateNode }) => {
             const isIdea = node.type === '메모';
             const isGroup = node.type === '그룹';
-            let styleClass = isIdea ? "node-postit" : isGroup ? "node-glass" : "node-glass";
+            const isTodo = node.type === '할일';
+            let styleClass = isIdea ? "node-postit" : isGroup ? "node-glass" : isTodo ? "" : "node-glass";
 
             // 인물 타입 특수 스타일
             if (node.type === '인물') {
@@ -747,6 +759,14 @@
                 else if (node.data.role === '적대자') styleClass += " node-antagonist";
                 else if (node.data.role === '조력자') styleClass += " node-helper";
             } else if (node.type === '사건') styleClass += " node-event";
+            else if (isTodo) {
+                styleClass += " border border-cyan-300 bg-cyan-100 dark:bg-[#0c1e24] dark:border-cyan-900 shadow-sm rounded-[3px]";
+                // 모든 항목이 완료되었는지 확인
+                const items = node.data.items || [];
+                if (items.length > 0 && items.every(i => i.done)) {
+                    styleClass += " node-todo-complete";
+                }
+            }
 
             // 그룹 노드 특수 스타일
             if (isGroup) {
@@ -756,22 +776,70 @@
             const subline = getNodeSubline(node);
             const badge = getNodeBadge(node);
 
+            // 투두 리스트 핸들러
+            const handleToggleTodo = (itemId) => {
+                const newItems = (node.data.items || []).map(item => 
+                    item.id === itemId ? { ...item, done: !item.done } : item
+                );
+                onUpdateNode(node.id, { items: newItems });
+            };
+
+            const handleDeleteTodo = (itemId) => {
+                const newItems = (node.data.items || []).filter(item => item.id !== itemId);
+                onUpdateNode(node.id, { items: newItems });
+            };
+
+            const handleAddTodo = (e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.target.value.trim()) {
+                    const newItem = {
+                        id: generateUUID(),
+                        text: e.target.value.trim(),
+                        done: false
+                    };
+                    onUpdateNode(node.id, { items: [...(node.data.items || []), newItem] });
+                    e.target.value = '';
+                }
+            };
+
             return (
-                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : (isGroup ? 5 : 10), width: CARD_W, height: CARD_H, transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, transition: isDragging ? 'none' : 'transform 0.15s ease-out, box-shadow 0.2s', ...(isGroup && node.data.color ? { borderColor: node.data.color } : {}) }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''}`}>
+                <div onMouseDown={(e) => onMouseDown(e, node.id)} onMouseUp={(e) => onMouseUp(e, node.id)} onClick={(e) => { if (onClick && e.detail === 1) { e.stopPropagation(); onClick(e, node.id); } }} onDoubleClick={() => onDoubleClick(node.id)} style={{ zIndex: isTop ? 50 : (isGroup ? 5 : 10), width: CARD_W, height: isTodo ? 'auto' : CARD_H, minHeight: isTodo ? CARD_H : 'auto', transform: `translate(${node.x}px, ${node.y}px)`, position: 'absolute', top: 0, left: 0, transition: isDragging ? 'none' : 'transform 0.15s ease-out, box-shadow 0.2s', ...(isGroup && node.data.color ? { borderColor: node.data.color } : {}) }} className={`flex flex-col cursor-grab active:cursor-grabbing shadow-lg hover:shadow-xl group relative ${styleClass} ${isSelected ? `border-2 ${getSelectedBorderColor(node)}` : ''}`}>
                     <button onClick={(e) => { e.stopPropagation(); if (confirm("이 노드를 삭제하시겠습니까?")) onDelete(node.id); }} className="absolute top-0 right-0 z-[100] w-6 h-6 flex items-center justify-center bg-white hover:bg-red-500 hover:text-white text-slate-400 border border-slate-200 rounded-[3px] shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1/2 -translate-y-1/2 dark:bg-zinc-800 dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-red-600"><IconTrash className="w-3 h-3" /></button>
-                    <div className="w-full h-full flex flex-col overflow-hidden rounded-[inherit]">
-                        {!isIdea && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${getNodeBarColor(node)}`} />}
-                        <div className="flex-1 flex flex-col p-4 overflow-hidden pointer-events-none">
+                    <div className={`w-full flex flex-col rounded-[inherit] ${isTodo ? '' : 'h-full overflow-hidden'}`}>
+                        {(!isIdea && !isTodo) && <div className={`h-1.5 w-[calc(100%+4px)] -ml-[2px] -mt-[2px] shrink-0 ${getNodeBarColor(node)}`} />}
+                        <div className={`flex-1 flex flex-col p-4 pointer-events-none ${isTodo ? '' : 'overflow-hidden'}`}>
                             <div className="flex items-center justify-between mb-2">
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-500'}`}>{isIdea ? (node.data.category || '메모') : node.type}</span>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isIdea ? 'text-yellow-800 dark:text-yellow-100' : 'text-slate-400 dark:text-zinc-50'}`}>{isIdea ? (node.data.category || '메모') : node.type}</span>
                                 {badge && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-[3px] ${badge.style}`}>{badge.text}</span>}
                             </div>
-                            <div className={`text-xl font-black truncate mb-1.5 tracking-tight flex items-center ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
+                            <div className={`${isTodo ? 'text-lg' : 'text-xl'} font-black truncate mb-1.5 tracking-tight flex items-center ${isIdea ? 'text-slate-950 dark:text-yellow-50' : 'text-slate-900 dark:text-white'}`}>
                                 <span className="mr-2 drop-shadow-sm text-2xl">{node.data.emoji || NODE_TYPE_EMOJIS[node.type] || '📝'}</span>
                                 <span className={`truncate ${node.type === '사건' ? 'text-rose-700 dark:text-rose-400' : node.type === '갈등' ? 'text-rose-600 dark:text-rose-400' : ''}`}>{node.label}</span>
                             </div>
-                            {subline && <div className="text-[11px] text-slate-500 dark:text-zinc-400 font-bold mb-2 truncate">{subline}</div>}
-                            <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 rounded-[3px] border border-slate-100 italic dark:bg-zinc-900/60 dark:border-zinc-700/50 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
+                            {subline && <div className={`${isTodo ? 'text-sm' : 'text-[11px]'} text-slate-500 dark:text-zinc-400 font-bold mb-2 truncate`}>{subline}</div>}
+                            
+                            {isTodo ? (
+                                <div className="flex-1 pointer-events-auto pr-1">
+                                    <div className="space-y-1 pb-2">
+                                        {(node.data.items || []).map(item => (
+                                            <div key={item.id} className="flex items-center gap-2 group/item">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={item.done} 
+                                                    onChange={() => handleToggleTodo(item.id)}
+                                                    onMouseDown={e => e.stopPropagation()}
+                                                    className="w-3 h-3 rounded-sm border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                                                />
+                                                <span className={`text-base flex-1 break-words ${item.done ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-700 dark:text-zinc-300'}`}>{item.text}</span>
+                                            </div>
+                                        ))}
+                                        {(node.data.items || []).length === 0 && (
+                                            <div className="text-[10px] text-slate-400 text-center py-2 italic">더블클릭하여 할 일 추가</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={`text-[12px] font-medium leading-tight line-clamp-3 grow ${isIdea ? 'text-slate-700 dark:text-yellow-100/80' : 'text-slate-500 bg-slate-50 p-2 rounded-[3px] border border-slate-100 italic dark:bg-zinc-900/60 dark:border-zinc-700/50 dark:text-zinc-400'}`}>{node.data.memo || "작성된 메모가 없습니다."}</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -997,12 +1065,25 @@
                                                     case '설정': return `분류: ${node.data.category || '세계관'} / 범위: ${node.data.scope || '미상'}`;
                                                     case '대사': return `화자: ${node.data.speaker || '미상'} / 감정: ${node.data.emotion || '미상'}`;
                                                     case '갈등': return `당사자: ${node.data.parties || '미상'} / 상태: ${node.data.status || '진행중'}`;
+                                                    case '할일': {
+                                                        const items = node.data.items || [];
+                                                        const done = items.filter(i => i.done).length;
+                                                        return `진행률: ${done}/${items.length} (${items.length > 0 ? Math.round(done/items.length*100) : 0}%)`;
+                                                    }
                                                     case '그룹': return `하위 노드: ${node.data.childNodes?.length || 0}개`;
                                                     default: return "메모";
                                                 }
                                             })(),
                                             italic: true
                                         }),
+                                        // 할일 목록 상세 출력
+                                        ...(node.type === '할일' && node.data.items && node.data.items.length > 0 ? [
+                                            new Paragraph({ text: "<할일 목록>", bold: true, spacing: { before: 100 } }),
+                                            ...node.data.items.map(item => new Paragraph({ 
+                                                text: `${item.done ? '☑' : '☐'} ${item.text}`,
+                                                bullet: { level: 0 }
+                                            }))
+                                        ] : []),
                                         new Paragraph({ text: node.data.memo || "내용 없음" }),
                                         new Paragraph({ text: "--------------------------------------------------" })
                                     ])
@@ -1021,7 +1102,13 @@
                             sections: [{
                                 children: [
                                     new Paragraph({ text: proj.name, heading: HeadingLevel.HEADING_1 }),
-                                    new Paragraph({ text: `상태: ${proj.status || '초고'} / 공백포함 ${proj.content?.length || 0}자`, spacing: { after: 400 } }),
+                                    new Paragraph({ text: `상태: ${proj.status || '초고'} / 공백포함 ${proj.content?.length || 0}자`, spacing: { after: 200 } }),
+                                    // 시놉시스 추가
+                                    ...(proj.synopsis ? [
+                                        new Paragraph({ text: "<시놉시스>", heading: HeadingLevel.HEADING_3, spacing: { before: 200, after: 100 } }),
+                                        new Paragraph({ text: proj.synopsis, spacing: { after: 400 } }),
+                                        new Paragraph({ text: "--------------------------------------------------", spacing: { after: 400 } })
+                                    ] : []),
                                     ...lines.map(line => new Paragraph({
                                         children: [new TextRun({ text: line })],
                                         spacing: { line: 360, before: 120 }
@@ -2051,7 +2138,9 @@
             const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
             const [showSystemSettings, setShowSystemSettings] = useState(false);
             const [showHistoryModal, setShowHistoryModal] = useState(false);
+            const [showSynopsisModal, setShowSynopsisModal] = useState(false);
             const [openStatusDropdownId, setOpenStatusDropdownId] = useState(null);
+            const [corkboardMode, setCorkboardMode] = useState(false);
 
             const [mention, setMention] = useState({ active: false, type: null, search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
             const [showNodeDropdown, setShowNodeDropdown] = useState(false);
@@ -2059,6 +2148,7 @@
             const [compareDocIds, setCompareDocIds] = useState([null, null]);
             const [activeComparePane, setActiveComparePane] = useState(0);
             const [editingProjectId, setEditingProjectId] = useState(null);
+            const [corkboardEditingId, setCorkboardEditingId] = useState(null);
             const textareaRef = useRef(null);
             const [pomoMinutes, setPomoMinutes] = useState(25);
             const [pomoSeconds, setPomoSeconds] = useState(0);
@@ -2068,6 +2158,7 @@
             const [isPomoSetting, setIsPomoSetting] = useState(false);
             const [isNameGenOpen, setIsNameGenOpen] = useState(false);
             const [nameGenSettings, setNameGenSettings] = useState(null);
+            const [todoInput, setTodoInput] = useState('');
             const [docFilter, setDocFilter] = useState(null);
             const [isEditingTitle, setIsEditingTitle] = useState(false);
             const titleInputRef = useRef(null);
@@ -2304,7 +2395,16 @@
                 let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
                 nodesToFit.forEach(node => {
                     const w = node.type === '그룹' ? (node.data.width || 400) : CARD_W;
-                    const h = node.type === '그룹' ? (node.data.height || 300) : CARD_H;
+                    let h = CARD_H;
+                    if (node.type === '그룹') {
+                        h = node.data.height || 300;
+                    } else if (node.type === '할일') {
+                        // 할일 노드는 높이가 가변적이므로, 항목 수에 따라 대략적으로 계산하거나 넉넉하게 잡음
+                        // 기본 헤더 + 패딩(60px) + 항목당 높이(24px) + 입력창(30px) + 여유분
+                        const itemsHeight = (node.data.items || []).length * 24 + 100; 
+                        h = Math.max(CARD_H, itemsHeight);
+                    }
+
                     minX = Math.min(minX, node.x);
                     maxX = Math.max(maxX, node.x + w);
                     minY = Math.min(minY, node.y);
@@ -2313,27 +2413,55 @@
 
                 const contentW = maxX - minX;
                 const contentH = maxY - minY;
-                const containerW = window.innerWidth;
-                const containerH = window.innerHeight;
+                
+                const containerEl = containerRef.current;
+                const containerW = containerEl ? containerEl.clientWidth : window.innerWidth;
+                const containerH = containerEl ? containerEl.clientHeight : window.innerHeight;
                 
                 const padding = 100;
                 const scaleX = (containerW - padding * 2) / contentW;
                 const scaleY = (containerH - padding * 2) / contentH;
-                const newScale = Math.min(Math.max(scaleX, scaleY, 0.2), 1.5);
+                
+                // Use Math.min(scaleX, scaleY) to ensure both dimensions fit.
+                // Clamp the result between 0.05 (to allow zooming out for huge boards) and 1.5.
+                const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.05), 1.5);
 
                 const centerX = minX + contentW / 2;
                 const centerY = minY + contentH / 2;
                 
-                setPan({
+                const targetPan = {
                     x: containerW / 2 - centerX * newScale,
                     y: containerH / 2 - centerY * newScale
-                });
-                setScale(newScale);
-            }, [nodes]);
+                };
+                
+                animateViewport(targetPan, newScale);
+            }, [nodes, animateViewport]);
 
             const edges = activeProject?.edges || [];
-            const allBoardNodes = useMemo(() => projects.filter(p => p.type === 'board').flatMap(p => (p.nodes || []).map(node => ({ ...node, projectName: p.name }))), [projects]);
-            const filteredMentionNodes = useMemo(() => { if (!mention.active) return []; return allBoardNodes.filter(n => n.type === (mention.type === '@' ? '인물' : mention.type === '#' ? '사건' : '메모') && (n.label.includes(mention.search) || mention.search === "")); }, [allBoardNodes, mention]);
+            const allBoardNodes = useMemo(() => projects.filter(p => p.type === 'board').flatMap(p => (p.nodes || []).map(node => ({ ...node, projectName: p.name, projectId: p.id }))), [projects]);
+            const filteredMentionNodes = useMemo(() => { 
+                if (!mention.active) return []; 
+                return allBoardNodes.filter(n => {
+                    const targetType = mention.type === '@' ? '인물' : mention.type === '#' ? '사건' : mention.type === '$' ? '메모' : mention.type === '%' ? '할일' : '메모';
+                    return n.type === targetType && (n.label.includes(mention.search) || mention.search === "");
+                }); 
+            }, [allBoardNodes, mention]);
+
+            const handleToggleTodoInMention = (projectId, nodeId, itemId) => {
+                setProjects(prev => prev.map(p => {
+                    if (p.id !== projectId) return p;
+                    return {
+                        ...p,
+                        nodes: p.nodes.map(n => {
+                            if (n.id !== nodeId) return n;
+                            const newItems = (n.data.items || []).map(item => 
+                                item.id === itemId ? { ...item, done: !item.done } : item
+                            );
+                            return { ...n, data: { ...n.data, items: newItems } };
+                        })
+                    };
+                }));
+            };
 
             const handleSelectProject = (id, e) => {
                 const target = projects.find(p => p.id === id);
@@ -2375,6 +2503,7 @@
                 setActiveProjectId(id);
                 if (target && target.type !== 'doc') setIsZenMode(false);
                 setIsTrashOpen(false);
+                setCorkboardMode(false); // Disable corkboard mode
                 // 프로젝트 전환 시 선택 상태 및 임시 상태 초기화 (메모리 관리)
                 setSelectedNodeIds(new Set());
                 setSelectedNodeId(null);
@@ -2543,7 +2672,7 @@
             useEffect(() => {
                 const div = containerRef.current;
                 const handleWheel = (e) => {
-                    if (!div || e.target.closest('aside') || (activeProject && activeProject.type === 'doc')) return;
+                    if (!div || e.target.closest('aside') || (activeProject && activeProject.type === 'doc') || corkboardMode) return;
                     e.preventDefault(); // 브라우저 기본 줌 방지
 
                     const rect = div.getBoundingClientRect();
@@ -2567,7 +2696,7 @@
                     div.addEventListener('wheel', handleWheel, { passive: false });
                     return () => div.removeEventListener('wheel', handleWheel);
                 }
-            }, [scale, activeProject]);
+            }, [scale, activeProject, corkboardMode]);
 
             const getCanvasCoords = (clientX, clientY) => {
                 if (!containerRef.current) return { x: 0, y: 0 };
@@ -2650,6 +2779,7 @@
                     case '설정': return { emoji: '📚', category: '세계관', scope: '', memo: '' };
                     case '대사': return { emoji: '💬', speaker: '', situation: '', emotion: '', memo: '' };
                     case '갈등': return { emoji: '⚡', parties: '', cause: '', status: '진행중', resolution: '', memo: '' };
+                    case '할일': return { emoji: '✅', items: [], memo: '' };
                     case '그룹': return { emoji: '📁', color: '#94a3b8', width: 400, height: 300, childNodes: [], memo: '' };
                     default: return { emoji: '📝', memo: '' };
                 }
@@ -2702,7 +2832,7 @@
                 ));
             };
 
-            const ALL_NODE_TYPES = ['인물', '사건', '메모', '장소', '아이템', '세력', '복선', '타임라인', '설정', '대사', '갈등', '그룹'];
+            const ALL_NODE_TYPES = ['인물', '사건', '메모', '장소', '아이템', '세력', '복선', '타임라인', '설정', '대사', '갈등', '할일', '그룹'];
             const handleReorderNodes = (type, newOrder) => {
                 saveHistory();
                 updateActiveProject(allNodes => {
@@ -3076,7 +3206,7 @@
                     return;
                 }
 
-                if (lastChar === '#' || lastChar === '@' || lastChar === '$') {
+                if (lastChar === '#' || lastChar === '@' || lastChar === '$' || lastChar === '%') {
                     const coords = getCaretCoordinates(e.target, pos);
                     const rect = e.target.getBoundingClientRect();
                     const visualY = coords.top - (e.target.scrollTop * 2);
@@ -3174,6 +3304,7 @@
                     '설정': activeProject.nodes.filter(n => n.type === '설정'),
                     '대사': activeProject.nodes.filter(n => n.type === '대사'),
                     '갈등': activeProject.nodes.filter(n => n.type === '갈등'),
+                    '할일': activeProject.nodes.filter(n => n.type === '할일'),
                     '그룹': activeProject.nodes.filter(n => n.type === '그룹')
                 };
 
@@ -3215,14 +3346,14 @@
                     results[type] = layoutGroup(groups[type], getInternalEdges(groups[type]));
                 });
 
-                // Row 1: 인물, 사건, 메모
+                // Row 1: 인물, 사건, 메모, 할일
                 const ROW_GAP = 100;
                 let row1X = 0;
                 let row1Height = 0;
 
                 const finalNodes = [];
 
-                ['인물', '사건', '메모'].forEach(type => {
+                ['인물', '사건', '메모', '할일'].forEach(type => {
                     if (results[type].nodes.length > 0) {
                         results[type].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row1X, y: n.y }));
                         row1X += results[type].width + GAP_BETWEEN_GROUPS;
@@ -3260,13 +3391,16 @@
                 let row4X = 0;
                 let row4Y = row3Y + row3Height + ROW_GAP;
 
-                if (results['아이템'].nodes.length > 0) {
-                    results['아이템'].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row4X, y: n.y + row4Y }));
-                }
+                ['아이템'].forEach(type => {
+                    if (results[type].nodes.length > 0) {
+                        results[type].nodes.forEach(n => finalNodes.push({ ...n, x: n.x + row4X, y: n.y + row4Y }));
+                        row4X += results[type].width + GAP_BETWEEN_GROUPS;
+                    }
+                });
 
                 // 그룹 노드는 대각선으로 겹쳐서 배치
                 const DIAGONAL_OFFSET = 50;
-                let groupX = (results['아이템'].width || 0) + GAP_BETWEEN_GROUPS;
+                let groupX = row4X + GAP_BETWEEN_GROUPS;
                 let groupY = row4Y;
                 results['그룹'].nodes.forEach((n, idx) => {
                     finalNodes.push({ ...n, x: groupX + idx * DIAGONAL_OFFSET, y: groupY + idx * DIAGONAL_OFFSET });
@@ -3338,7 +3472,7 @@
             const visibleEdges = (() => { if (activeProject?.type !== 'board') return []; const nodeIds = new Set(nodes.map(n => n.id)); return edges.filter(edge => nodeIds.has(edge.from) && nodeIds.has(edge.to)); })();
 
             const renderProjectItem = (project) => {
-                const isActive = activeProjectId === project.id; const isDoc = project.type === 'doc'; const isExpanded = expandedProjects[project.id];
+                const isActive = !isTrashOpen && activeProjectId === project.id; const isDoc = project.type === 'doc'; const isExpanded = expandedProjects[project.id];
                 const cols = project.sidebarColumns || 1;
                 const containerClasses = isDoc
                     ? `transition-all duration-200 border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 ${isActive ? 'bg-white dark:bg-zinc-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}`
@@ -3349,37 +3483,39 @@
 
                 const projectContent = (
                     <div className={containerClasses}>
-                        <div onClick={(e) => handleSelectProject(project.id, e)} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
+                        <div onClick={(e) => handleSelectProject(project.id, e)} onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
                             {isActive && <div className={`absolute left-0 top-0 bottom-0 ${isDoc ? 'w-[3px]' : 'w-1'} bg-indigo-600 dark:bg-indigo-500`} />}
                             <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                 <span onClick={(e) => !isDoc && toggleProjectFolder(project.id, e)} className={`${isDoc ? 'text-sm opacity-50' : 'text-base'} shrink-0 dark:text-zinc-300`}>{isDoc ? '📄' : (isExpanded ? '📂' : '📁')}</span>
-                                <div className="flex items-center min-w-0 flex-1 justify-between">
-                                    <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
-                                    {isExpanded && !isDoc && (
-                                        <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                            {[1, 2, 3, 4].map(col => (
-                                                <button
-                                                    key={col}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSidebarCols(project.id, col);
-                                                    }}
-                                                    className={`w-5 h-5 flex items-center justify-center text-[10px] font-black rounded-sm transition-colors ${cols === col
-                                                        ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-sm'
-                                                        : 'text-slate-400 hover:bg-white/50 dark:text-zinc-500 dark:hover:bg-zinc-700/50'
-                                                        }`}
-                                                    title={`${col}열 보기`}
-                                                >
-                                                    {col}
-                                                </button>
-                                            ))}
+                                {editingProjectId === project.id ? (<input autoFocus className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white" defaultValue={project.name} onBlur={(e) => handleProjectRename(project.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)} />) : (
+                                    <div className="flex items-center min-w-0 flex-1 justify-between">
+                                        <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
+                                        {isExpanded && !isDoc && (
+                                            <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                {[1, 2, 3, 4].map(col => (
+                                                    <button
+                                                        key={col}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSidebarCols(project.id, col);
+                                                        }}
+                                                        className={`w-5 h-5 flex items-center justify-center text-[10px] font-black rounded-sm transition-colors ${cols === col
+                                                            ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-sm'
+                                                            : 'text-slate-400 hover:bg-white/50 dark:text-zinc-500 dark:hover:bg-zinc-700/50'
+                                                            }`}
+                                                        title={`${col}열 보기`}
+                                                    >
+                                                        {col}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center shrink-0">
+                                            {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
+                                            <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                         </div>
-                                    )}
-                                    <div className="flex items-center shrink-0">
-                                        {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
-                                        <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                         {!isDoc && (
@@ -3531,31 +3667,51 @@
                     <aside className={`h-full bg-[#f5f5f5] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#141417] dark:border-zinc-700/50 transition-all duration-500 ease-in-out ${isZenMode ? 'w-0 -translate-x-full opacity-0' : 'w-80 opacity-100'
                         }`} style={{ borderRadius: 0 }}>
 
-                        <div className="w-full bg-slate-800 hover:bg-slate-700 rounded-none">
+                        <div className="w-full bg-slate-800 rounded-none">
                             <div
                                 onClick={onExit}
-                                className="w-full py-2 px-5 flex items-center gap-3 group transition-all duration-300 cursor-pointer"
+                                className="w-full py-2 px-5 flex items-center gap-3 transition-all duration-300 cursor-pointer hover:bg-slate-700"
                             >
-                                <div className="w-4 h-4 bg-white/10 flex items-center justify-center group-hover:text-slate-200 transition-all">
-                                    <IconBack className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
+                                <div className="w-4 h-4 bg-white/10 flex items-center justify-center transition-all">
+                                    <IconBack className="w-4 h-4 text-slate-400" />
                                 </div>
-                                <div className="flex flex-col items-start dark:hover:bg-zinc-800/80">
-                                    <span className="text-[12px] text-slate-400 tracking-tight group-hover:text-slate-200">내 서재로 돌아가기</span>
+                                <div className="flex flex-col items-start">
+                                    <span className="text-[12px] text-slate-400 tracking-tight">내 서재로 돌아가기</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="px-6 pt-6 pb-5 bg-white dark:bg-[#161618] border-b border-slate-200/60 dark:border-zinc-800/60">
+                        <div 
+                            className="px-6 pt-6 pb-5 border-b border-slate-200/60 dark:border-zinc-800/60"
+                            style={{ 
+                                backgroundColor: `${currentBook.color}26`, 
+                                backdropFilter: 'blur(12px)', 
+                                WebkitBackdropFilter: 'blur(12px)' 
+                            }}
+                        >
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30">Novel project</span>
                                 </div>
 
-                                <h1
-                                    className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight"
-                                >
-                                    {currentBook.title}
-                                </h1>
+                                {isEditingTitle ? (
+                                    <input
+                                        ref={titleInputRef}
+                                        className="w-full text-2xl font-black text-slate-900 tracking-tighter leading-tight bg-slate-50 p-2 Galmuri14 border-b-2 border-slate-800 outline-none dark:bg-zinc-800 dark:text-white"
+                                        value={currentBook.title}
+                                        onChange={(e) => onUpdateBook({ ...currentBook, title: e.target.value })}
+                                        onBlur={() => setIsEditingTitle(false)}
+                                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+                                    />
+                                ) : (
+                                    <h1
+                                        onDoubleClick={() => setIsEditingTitle(true)}
+                                        className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
+                                        title="더블클릭하여 제목 수정"
+                                    >
+                                        {currentBook.title}
+                                    </h1>
+                                )}
 
                                 <div className="flex items-center gap-2 mt-2 opacity-60">
                                     <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-wide">
@@ -3569,8 +3725,17 @@
                         <div className="flex-1 overflow-y-auto px-3 pt-4 custom-scroll pb-10">
                                                                 <div className="mb-5">
                                                             <div className="flex items-center justify-between mb-3 px-2">
-                                                                <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2">
-                                                                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 아이디어 보드 ({projects.filter(p => p.type === 'board').length})
+                                                                <div 
+                                                                    onClick={() => {
+                                                                        const firstBoard = projects.find(p => p.type === 'board');
+                                                                        if (firstBoard) {
+                                                                            handleSelectProject(firstBoard.id);
+                                                                            setCorkboardMode(false);
+                                                                        }
+                                                                    }}
+                                                                    className={`text-[9px] font-black px-2 py-0.5 rounded-[2px] tracking-widest uppercase border flex items-center gap-2 cursor-pointer transition-colors ${activeProject?.type === 'board' && !corkboardMode && !isTrashOpen ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 border-slate-200/50 dark:border-zinc-700/30 hover:bg-slate-200 dark:hover:bg-zinc-700'}`}
+                                                                >
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${activeProject?.type === 'board' && !corkboardMode && !isTrashOpen ? 'bg-indigo-500 animate-pulse' : 'bg-slate-400'}`}></span> 아이디어 보드 ({projects.filter(p => p.type === 'board').length})
                                                                 </div>
                                                                 <button onClick={createNewProject} className="text-slate-400 hover:text-indigo-600 transition-colors" title="새 보드 추가">
                                                                     <IconPlus className="w-4 h-4" />
@@ -3580,12 +3745,29 @@
                                                                 {projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}
                                                             </Reorder.Group>
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center justify-between mb-3 px-2 group h-7">
-                                                                <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2" title="Shift+클릭으로 두 문서 비교">
-                                                                    <span className={`w-1.5 h-1.5 rounded-full ${compareMode ? 'bg-amber-500 animate-pulse' : 'bg-indigo-500'}`}></span>
-                                                                    {compareMode ? '비교 모드' : `문서함 (${projects.filter(p => p.type === 'doc').length})`}
-                                                                </div>                                    <div className="flex items-center gap-1">
+                                                                                    <div>
+                                                                                        <div className="flex items-center justify-between mb-3 px-2 group h-7">
+                                                                                                                                <div className="flex gap-1">
+                                                                                                                                                                                                                                                                                                                                            <div 
+                                                                                                                                                                                                                                                                                                                                                onClick={() => {
+                                                                                                                                                                                                                                                                                                                                                    const firstDoc = projects.find(p => p.type === 'doc');
+                                                                                                                                                                                                                                                                                                                                                    if (firstDoc) {
+                                                                                                                                                                                                                                                                                                                                                        handleSelectProject(firstDoc.id);
+                                                                                                                                                                                                                                                                                                                                                        setCorkboardMode(false);
+                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                }}
+                                                                                                                                                                                                                                                                                                                                                className={`text-[9px] font-black px-2 py-0.5 rounded-[2px] tracking-widest uppercase border flex items-center gap-2 cursor-pointer transition-colors ${(activeProject?.type === 'doc' || compareMode) && !corkboardMode && !isTrashOpen ? 'bg-indigo-50 text-indigo-600 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 border-slate-200/50 dark:border-zinc-700/30 hover:bg-slate-200 dark:hover:bg-zinc-700'}`}
+                                                                                                                                                                                                                                                                                                                                                title="문서함"
+                                                                                                                                                                                                                                                                                                                                            >
+                                                                                                                                                                                                                                                                                                                                                <span className={`w-1.5 h-1.5 rounded-full ${(activeProject?.type === 'doc' || compareMode) && !corkboardMode && !isTrashOpen ? 'bg-indigo-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                                                                                                                                                                                                                                                                                                                                                {compareMode ? '비교 모드' : `문서함 (${projects.filter(p => p.type === 'doc').length})`}
+                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                            <div 
+                                                                                                                                                                                                                                                                                                                                                onClick={() => { setCorkboardMode(true); setCompareMode(false); setActiveProjectId(null); }}                                                                                                                                            className={`text-[9px] font-black px-2 py-0.5 rounded-[2px] tracking-widest uppercase border flex items-center gap-2 cursor-pointer transition-colors ${corkboardMode ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 border-slate-200/50 dark:border-zinc-700/30 hover:bg-slate-200 dark:hover:bg-zinc-700'}`}
+                                                                                                                                                                                                                                                                                                                                                title="코르크 보드 모드"
+                                                                                                                                                                                                                                                                                                                                            >
+                                                                                                                                                                                                                                                                                                                                                코르크보드
+                                                                                                                                                                                                                                                                                                                                            </div>                                                                                            </div>                                    <div className="flex items-center gap-1">
                                         {/* 문서 필터 버튼 (회색/검은 배경 스타일) */}
                                         <div className="w-0 group-hover:w-[95px] overflow-hidden transition-all duration-500 ease-in-out">
                                             <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm min-w-[95px] opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
@@ -3614,7 +3796,7 @@
                                     </div>                                </div>
                                 <Reorder.Group axis="y" values={projects.filter(p => p.type === 'doc')} onReorder={handleReorderDocs} className="space-y-0 border-t border-slate-200/50 dark:border-zinc-700/50">
                                     {projects.filter(p => p.type === 'doc').filter(p => docFilter === null || (p.status || '초고') === docFilter).map(project => {
-                                        const isActive = activeProjectId === project.id;
+                                        const isActive = !isTrashOpen && activeProjectId === project.id;
                                         return (
                                             <Reorder.Item
                                                 key={project.id}
@@ -3627,20 +3809,32 @@
                                                 transition={{ type: "tween", duration: 0.15 }}
                                                 whileDrag={{ scale: 1.02, boxShadow: '0 5px 15px rgba(0,0,0,0.1)', zIndex: 100 }}
                                                 onClick={(e) => handleSelectProject(project.id, e)}
+                                                onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }}
                                                 className={`border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 cursor-grab active:cursor-grabbing ${isActive ? 'bg-white dark:bg-zinc-700' : (compareMode && compareDocIds.includes(project.id)) ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}`}
                                             >
                                                 <div className="flex items-center px-4 h-[30px] py-0 group relative overflow-hidden">
                                                     {isActive && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 dark:bg-indigo-500" />}
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                                         <span className="text-sm opacity-50 shrink-0 dark:text-zinc-300">📄</span>
-                                                        <div className="flex items-center min-w-0 flex-1 justify-between">
-                                                            <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
-                                                            {showDocWordCount && <span className="text-[10px] text-slate-400/90 dark:text-zinc-500/90 font-medium shrink-0 mr-1.5">{(project.content || '').length.toLocaleString()}자</span>}
-                                                            <div className="flex items-center shrink-0">
-                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
-                                                                <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
+                                                        {editingProjectId === project.id ? (
+                                                            <input
+                                                                autoFocus
+                                                                className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white"
+                                                                defaultValue={project.name}
+                                                                onBlur={(e) => handleProjectRename(project.id, e.target.value)}
+                                                                onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        ) : (
+                                                            <div className="flex items-center min-w-0 flex-1 justify-between">
+                                                                <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
+                                                                {showDocWordCount && <span className="text-[10px] text-slate-400/90 dark:text-zinc-500/90 font-medium shrink-0 mr-1.5">{(project.content || '').length.toLocaleString()}자</span>}
+                                                                <div className="flex items-center shrink-0">
+                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
+                                                                    <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
+                                                                </div>
                                                             </div>
-                                                        </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </Reorder.Item>
@@ -3648,121 +3842,296 @@
                                     })}
                                 </Reorder.Group>
                             </div>
-                        </div>
-
-                        {/* 휴지통 버튼 - 하단 고정 */}
-                        <div className="shrink-0 border-t border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#161618]">
-                            <button
-                                onClick={() => setIsTrashOpen(true)}
-                                className={`w-full px-5 py-2 flex items-center justify-between transition-colors ${isTrashOpen ? 'bg-slate-100 dark:bg-zinc-700' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
-                            >
-                                <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
-                                    <IconTrash className="w-4 h-4" />
-                                    <span className="text-[11px] font-bold">휴지통</span>
-                                    {trash.length > 0 && (
-                                        <span className="text-[9px] bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-full font-bold">{trash.length}</span>
-                                    )}
-                                </div>
-                                <svg className="w-3 h-3 text-slate-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
-                    </aside>
-
-                    <main
-                        className={`flex-1 relative overflow-hidden transition-all duration-500 ease-in-out ${activeProject.type === 'board' ? (isPanning || isMarqueeSelectingRef.current ? 'cursor-grabbing' : draggingNodeId ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
-                        ref={containerRef}
-                        onMouseDown={(e) => {
-                            if (activeProject.type === 'board') {
-                                if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
-                                lastMousePos.current = { x: e.clientX, y: e.clientY };
-                                latestMousePos.current = { x: e.clientX, y: e.clientY };
-
-                                if (e.shiftKey && e.button === 0) {
-                                    isMarqueeSelectingRef.current = true;
-                                    const startCoords = getCanvasCoords(e.clientX, e.clientY);
-                                    setMarquee({ x: startCoords.x, y: startCoords.y, width: 0, height: 0, startX: startCoords.x, startY: startCoords.y });
-                                } else if (e.button === 0) {
-                                    setIsPanning(true);
-                                    if (!e.shiftKey) {
-                                        setSelectedNodeIds(new Set());
-                                        setSelectedNodeId(null);
-                                    }
-                                }
-                            }
-                        }}
-                    >
-                        {/* 상단 공통 도구 (타이머, 집중모드) */}
-                        <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
-                            <div className="flex items-center gap-2 pointer-events-auto">
-                                <button
-                                    onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
-                                    className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
-                                    title="뽀모도로 타이머"
-                                >
-                                    {!isPomodoroOpen && isPomoActive ? (
-                                        <div className="relative w-6 h-6">
-                                            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                                                {/* Background */}
-                                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-100 dark:text-zinc-700" />
-
-                                                {/* Red Wedge */}
-                                                <circle
-                                                    cx="50" cy="50" r="22.5"
-                                                    fill="none"
-                                                    stroke="#ef4444"
-                                                    strokeWidth="45"
-                                                    strokeDasharray={2 * Math.PI * 22.5}
-                                                    style={{
-                                                        strokeDashoffset: (2 * Math.PI * 22.5) * (pomoRemaining / pomoInitialTotal),
-                                                        transition: isPomoActive ? 'stroke-dashoffset 1s linear' : 'none',
-                                                    }}
-                                                    className="opacity-90"
-                                                />
-                                            </svg>
-                                        </div>
-                                    ) : (
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isPomodoroOpen ? 'text-white' : 'text-slate-400'}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                                    )}
-                                </button>
-                                <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
-                                    <button
-                                        onClick={() => {
-                                            setIsZenMode(!isZenMode);
-                                        }}
-                                        className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
-                                        title={compareMode ? "현재 활성 패널 집중 모드" : "집중 모드 (Ctrl+J)"}
-                                    >
-                                        <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                                    </button>
-                                </div>
-                            </div>
-                            <AnimatePresence>
-                                {isPomodoroOpen && (
-                                    <PomodoroTimer
-                                        minutes={pomoMinutes} setMinutes={setPomoMinutes}
-                                        seconds={pomoSeconds} setSeconds={setPomoSeconds}
-                                        isActive={isPomoActive} setIsActive={setIsPomoActive}
-                                        initialTotal={pomoInitialTotal} setInitialTotal={setPomoInitialTotal}
-                                        remaining={pomoRemaining} setRemaining={setPomoRemaining}
-                                        isSetting={isPomoSetting} setIsSetting={setIsPomoSetting}
-                                        showToast={showToast}
-                                    />
-                                )}
-                            </AnimatePresence>
-                        </div>
-
-                        {isTrashOpen ? (
-                            /* 휴지통 메인 뷰 */
-                            <div className="w-full h-full overflow-y-auto custom-scroll px-10">
-                                <div className="max-w-4xl mx-auto py-12">
-                                    {/* 헤더 */}
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-                                                <IconTrash className="w-7 h-7 text-red-500" />
-                                            </div>
+                                                </div>
+                                                                        {/* 휴지통 버튼 - 하단 고정 */}
+                                                                        <div className="shrink-0 border-t border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#161618]">
+                                                                            <button
+                                                                                onClick={() => { setIsTrashOpen(true); setCorkboardMode(false); setActiveProjectId(null); }}
+                                                                                className={`w-full px-5 py-2 flex items-center justify-between transition-colors ${isTrashOpen ? 'bg-slate-100 dark:bg-zinc-700' : 'hover:bg-slate-100 dark:hover:bg-zinc-800'}`}
+                                                                            >
+                                                                                <div className="flex items-center gap-2 text-slate-500 dark:text-zinc-400">
+                                                                                    <IconTrash className="w-4 h-4" />
+                                                                                    <span className="text-[11px] font-bold">휴지통</span>
+                                                                                    {trash.length > 0 && (
+                                                                                        <span className="text-[9px] bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-full font-bold">{trash.length}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <svg className="w-3 h-3 text-slate-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                                </svg>
+                                                                            </button>
+                                                                        </div>
+                                            </aside>
+                        
+                                            <main
+                                                className={`flex-1 relative overflow-hidden transition-all duration-500 ease-in-out ${activeProject?.type === 'board' ? (isPanning || isMarqueeSelectingRef.current ? 'cursor-grabbing' : draggingNodeId ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+                                                ref={containerRef}
+                                                onMouseDown={(e) => {
+                                                    if (activeProject?.type === 'board' && !corkboardMode) {
+                                                        if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
+                                                        lastMousePos.current = { x: e.clientX, y: e.clientY };
+                                                        latestMousePos.current = { x: e.clientX, y: e.clientY };
+                        
+                                                        if (e.shiftKey && e.button === 0) {
+                                                            isMarqueeSelectingRef.current = true;
+                                                            const startCoords = getCanvasCoords(e.clientX, e.clientY);
+                                                            setMarquee({ x: startCoords.x, y: startCoords.y, width: 0, height: 0, startX: startCoords.x, startY: startCoords.y });
+                                                        } else if (e.button === 0) {
+                                                            setIsPanning(true);
+                                                            if (!e.shiftKey) {
+                                                                setSelectedNodeIds(new Set());
+                                                                setSelectedNodeId(null);
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                {/* 상단 공통 도구 (타이머, 집중모드) */}
+                                                <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
+                                                    <div className="flex items-center gap-2 pointer-events-auto">
+                                                        <button
+                                                            onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
+                                                            className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
+                                                            title="뽀모도로 타이머"
+                                                        >
+                                                            {!isPomodoroOpen && isPomoActive ? (
+                                                                <div className="relative w-6 h-6">
+                                                                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                                                        {/* Background */}
+                                                                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-100 dark:text-zinc-700" />
+                        
+                                                                        {/* Red Wedge */}
+                                                                        <circle
+                                                                            cx="50" cy="50" r="22.5"
+                                                                            fill="none"
+                                                                            stroke="#ef4444"
+                                                                            strokeWidth="45"
+                                                                            strokeDasharray={2 * Math.PI * 22.5}
+                                                                            style={{
+                                                                                strokeDashoffset: (2 * Math.PI * 22.5) * (pomoRemaining / pomoInitialTotal),
+                                                                                transition: isPomoActive ? 'stroke-dashoffset 1s linear' : 'none',
+                                                                            }}
+                                                                            className="opacity-90"
+                                                                        />
+                                                                    </svg>
+                                                                </div>
+                                                            ) : (
+                                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={isPomodoroOpen ? 'text-white' : 'text-slate-400'}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                                            )}
+                                                        </button>
+                                                        <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsZenMode(!isZenMode);
+                                                                }}
+                                                                className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
+                                                                title={compareMode ? "현재 활성 패널 집중 모드" : "집중 모드 (Ctrl+J)"}
+                                                            >
+                                                                <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <AnimatePresence>
+                                                        {isPomodoroOpen && (
+                                                            <PomodoroTimer
+                                                                minutes={pomoMinutes} setMinutes={setPomoMinutes}
+                                                                seconds={pomoSeconds} setSeconds={setPomoSeconds}
+                                                                isActive={isPomoActive} setIsActive={setIsPomoActive}
+                                                                initialTotal={pomoInitialTotal} setInitialTotal={setPomoInitialTotal}
+                                                                remaining={pomoRemaining} setRemaining={setPomoRemaining}
+                                                                isSetting={isPomoSetting} setIsSetting={setIsPomoSetting}
+                                                                showToast={showToast}
+                                                            />
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                        
+                                                                                                {corkboardMode ? (
+                        
+                                                                                                    /* 코르크보드 모드 뷰 */
+                        
+                                                                                                    <div 
+                        
+                                                                                                        className="w-full h-full overflow-y-auto custom-scroll p-10 dot-background"
+                        
+                                                                                                        onWheel={(e) => e.stopPropagation()}
+                        
+                                                                                                    >
+                        
+                                                                                                        <div className="max-w-7xl mx-auto py-12">
+                        
+                                                                                                            {/* 헤더 */}
+                        
+                                                                                                            <div className="flex items-center justify-between mb-8">
+                        
+                                                                                                                <div className="flex items-center gap-4">
+                        
+                                                                                                                    <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+                        
+                                                                                                                        <span className="text-2xl">📌</span>
+                        
+                                                                                                                    </div>
+                        
+                                                                                                                    <div>
+                        
+                                                                                                                        <h2 className="text-2xl font-black text-slate-800 dark:text-zinc-100">코르크 보드</h2>
+                        
+                                                                                                                        <span className="text-sm text-slate-400 dark:text-zinc-500">{projects.filter(p => p.type === 'doc').length}개 문서</span>
+                        
+                                                                                                                    </div>
+                        
+                                                                                                                </div>
+                        
+                                                                                                                <button
+                        
+                                                                                                                    onClick={createNewDoc}
+                        
+                                                                                                                    className="px-5 py-2.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
+                        
+                                                                                                                >
+                        
+                                                                                                                    <IconPlus className="w-4 h-4" />
+                        
+                                                                                                                    새 문서
+                        
+                                                                                                                </button>
+                        
+                                                                                                            </div>
+                        
+                                                                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        
+                                                                                                                {projects.filter(p => p.type === 'doc').map((doc) => (
+                        
+                                                                                                                    <motion.div
+                        
+                                                                                                                        key={doc.id}
+                        
+                                                                                                                        layoutId={`corkboard-${doc.id}`}
+                        
+                                                                                                                        className="bg-white dark:bg-zinc-800 rounded-lg shadow-md border border-slate-200 dark:border-zinc-700 p-2 flex flex-col h-[300px] hover:shadow-xl transition-all"
+                        
+                                                                                                                        onWheel={(e) => {
+                        
+                                                                                                                            const el = e.currentTarget.querySelector('textarea');
+                        
+                                                                                                                            if (el && el.scrollHeight > el.clientHeight) {
+                        
+                                                                                                                                e.stopPropagation();
+                        
+                                                                                                                            }
+                        
+                                                                                                                        }}
+                        
+                                                                                                                    >
+                        
+                                                                                                                        <div className="flex items-center justify-between mb-2 border-b border-slate-100 dark:border-zinc-700 pb-2">
+                        
+                                                                                                                            <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+                        
+                                                                                                                                <span className="text-lg shrink-0">📄</span>
+                        
+                                                                                                                                {corkboardEditingId === doc.id ? (
+                                                                                                                                    <input
+                                                                                                                                        autoFocus
+                                                                                                                                        type="text"
+                                                                                                                                        className="w-full bg-slate-50 border border-indigo-400 rounded-[3px] px-1 text-sm font-black outline-none dark:bg-zinc-700 dark:text-white"
+                                                                                                                                        defaultValue={doc.name}
+                                                                                                                                        onBlur={(e) => { setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, name: e.target.value } : p)); setCorkboardEditingId(null); }}
+                                                                                                                                        onKeyDown={(e) => { if (e.key === 'Enter') { setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, name: e.target.value } : p)); setCorkboardEditingId(null); } }}
+                                                                                                                                        onClick={(e) => e.stopPropagation()}
+                                                                                                                                    />
+                                                                                                                                ) : (
+                                                                                                                                    <span
+                                                                                                                                        onDoubleClick={() => setCorkboardEditingId(doc.id)}
+                                                                                                                                        className="font-black text-slate-800 dark:text-zinc-100 truncate text-sm cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
+                                                                                                                                        title="더블클릭하여 제목 수정"
+                                                                                                                                    >
+                                                                                                                                        {doc.name}
+                                                                                                                                    </span>
+                                                                                                                                )}
+                        
+                                                                                                                            </div>
+                        
+                                                                                                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded-[2px] shrink-0 ${getStatusBadgeStyle(doc.status)}`}>{doc.status || '초고'}</span>
+                        
+                                                                                                                        </div>
+                        
+                                                                                                                        <div className="flex-1 overflow-hidden mb-2 relative -mr-3">
+                        
+                                                                                                                            <textarea 
+                        
+                                                                                                                                className="w-full h-full resize-none outline-none text-sm text-slate-600 dark:text-zinc-300 leading-relaxed bg-transparent border-none pr-3 placeholder:italic custom-scroll"
+                        
+                                                                                                                                placeholder="시놉시스를 입력하세요..."
+                        
+                                                                                                                                value={doc.synopsis || ''}
+                        
+                                                                                                                                onChange={(e) => setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, synopsis: e.target.value } : p))}
+                        
+                                                                                                                                onMouseDown={(e) => e.stopPropagation()} 
+                        
+                                                                                                                                onWheel={(e) => {
+                        
+                                                                                                                                    const el = e.currentTarget;
+                        
+                                                                                                                                    if (el.scrollHeight > el.clientHeight) {
+                        
+                                                                                                                                        e.stopPropagation();
+                        
+                                                                                                                                    }
+                        
+                                                                                                                                }}
+                        
+                                                                                                                            />
+                        
+                                                                                                                        </div>
+                        
+                                                                                                                        <div className="pt-2 border-t border-slate-100 dark:border-zinc-700 flex justify-between items-center text-[10px] text-slate-400 dark:text-zinc-500">
+                        
+                                                                                                                            <span>{(doc.content || "").length.toLocaleString()}자</span>
+                        
+                                                                                                                            <button 
+                        
+                                                                                                                                onClick={(e) => {
+                        
+                                                                                                                                    e.stopPropagation();
+                        
+                                                                                                                                    setCorkboardMode(false);
+                        
+                                                                                                                                    handleSelectProject(doc.id);
+                        
+                                                                                                                                }}
+                        
+                                                                                                                                className="hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors"
+                        
+                                                                                                                            >
+                        
+                                                                                                                                바로가기 →
+                        
+                                                                                                                            </button>
+                        
+                                                                                                                        </div>
+                        
+                                                                                                                    </motion.div>
+                        
+                                                                                                                ))}
+                        
+                                                                                                            </div>
+                        
+                                                                                                        </div>
+                        
+                                                                                                    </div>
+                        
+                                                                                                ) : isTrashOpen ? (
+                                                                                                                    /* 휴지통 메인 뷰 */
+                                                                                                                    <div className="w-full h-full overflow-y-auto custom-scroll p-10 bg-slate-100 dark:bg-zinc-950">
+                                                                                                                        <div className="max-w-7xl mx-auto py-12">
+                                                                                                                            {/* 헤더 */}
+                                                                                                                            <div className="flex items-center justify-between mb-8">
+                                                                                                                                <div className="flex items-center gap-4">
+                                                                                                                                    <div className="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
+                                                                                                                                        <IconTrash className="w-7 h-7 text-red-500" />
+                                                                                                                                    </div>
                                             <div>
                                                 <h2 className="text-2xl font-black text-slate-800 dark:text-zinc-100">휴지통</h2>
                                                 <span className="text-sm text-slate-400 dark:text-zinc-500">{trash.length}개 항목</span>
@@ -3786,7 +4155,7 @@
                                             <p className="text-sm">삭제된 보드와 문서가 여기에 표시됩니다</p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                                             {trash.map(item => (
                                                 <motion.div
                                                     key={item.id}
@@ -3794,49 +4163,45 @@
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
                                                     transition={{ duration: 0.15 }}
-                                                    className="group bg-white dark:bg-zinc-800 rounded-xl p-5 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-lg transition-all"
+                                                    className="group bg-white dark:bg-zinc-800 rounded-lg p-3 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-lg transition-all"
                                                 >
-                                                    <div className="flex items-start justify-between mb-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${item.type === 'board' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 ${item.type === 'board' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
                                                                 {item.type === 'board' ? '📋' : '📄'}
                                                             </div>
-                                                            <div>
-                                                                <h3 className="font-bold text-slate-800 dark:text-zinc-100">{item.name}</h3>
-                                                                <span className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase font-bold">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex justify-between items-start gap-2">
+                                                                    <h3 className="font-bold text-sm text-slate-800 dark:text-zinc-100 truncate flex-1">{item.name}</h3>
+                                                                    <span className="text-[12px] text-slate-400 dark:text-zinc-500 font-black shrink-0 mt-0.5 uppercase">
+                                                                        {item.type === 'board' ? `${item.nodes?.length || 0} 노드` : `${(item.content || '').length.toLocaleString()} 자`}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-[9px] text-slate-400 dark:text-zinc-500 uppercase font-bold block mt-0.5">
                                                                     {item.type === 'board' ? '보드' : '문서'}
-                                                                    {item.deletedAt && ` · ${new Date(item.deletedAt).toLocaleDateString()}`}
+                                                                    {item.deletedAt && ` · ${new Date(item.deletedAt).toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
                                                                 </span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* 미리보기 정보 */}
-                                                    <div className="text-[11px] text-slate-500 dark:text-zinc-400 mb-5 py-3 border-y border-slate-100 dark:border-zinc-700">
-                                                        {item.type === 'board' ? (
-                                                            <span>{item.nodes?.length || 0}개 노드 · {item.edges?.length || 0}개 연결</span>
-                                                        ) : (
-                                                            <span>{(item.content || '').length.toLocaleString()}자</span>
-                                                        )}
-                                                    </div>
-
                                                     {/* 액션 버튼 */}
-                                                    <div className="flex gap-2">
+                                                    <div className="flex gap-2 pt-2 border-t border-slate-50 dark:border-zinc-700/50">
                                                         <button
                                                             onClick={() => restoreFromTrash(item.id)}
-                                                            className="flex-1 py-2.5 px-4 text-[11px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                                            className="flex-1 py-1.5 px-3 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-md transition-colors flex items-center justify-center gap-1.5"
                                                         >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                                             </svg>
                                                             복원
                                                         </button>
                                                         <button
                                                             onClick={() => permanentDelete(item.id)}
-                                                            className="py-2.5 px-4 text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-lg transition-colors"
+                                                            className="py-1.5 px-3 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-md transition-colors"
                                                             title="완전 삭제"
                                                         >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                                             </svg>
                                                         </button>
@@ -3868,6 +4233,11 @@
                                         <button onClick={() => addNode('메모')} className="flex items-center gap-2 h-full px-3 rounded-[3px] hover:bg-amber-50 text-amber-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-amber-400" title="메모 추가">
                                             <span className="text-sm">💡</span>
                                             <span className="text-[10px] font-black hidden sm:inline">메모</span>
+                                        </button>
+                                        <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
+                                        <button onClick={() => addNode('할일')} className="flex items-center gap-2 h-full px-3 rounded-[3px] hover:bg-cyan-50 text-cyan-600 transition-all active:scale-95 group dark:hover:bg-zinc-700 dark:text-cyan-400" title="할일 추가">
+                                            <span className="text-sm">✅</span>
+                                            <span className="text-[10px] font-black hidden sm:inline">할일</span>
                                         </button>
                                         <div className="w-px h-4 bg-slate-200 mx-0.5 dark:bg-zinc-600"></div>
                                         <div className="relative" ref={nodeDropdownRef}>
@@ -3922,27 +4292,24 @@
 
                                 <div
                                     onMouseDown={(e) => e.stopPropagation()}
-                                    className="absolute bottom-8 right-8 z-[100] flex flex-col bg-white shadow-2xl border border-slate-200 rounded-[3px] overflow-hidden text-slate-600 font-bold dark:bg-darkpanel dark:border-darkborder dark:text-zinc-300">
+                                    className="absolute bottom-8 right-8 z-[100] flex flex-col gap-2 font-bold dark:text-zinc-300">
                                     <button
                                         onClick={() => handleAutoLayout()}
-                                        className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
+                                        className="w-11 h-11 flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-darkpanel dark:hover:bg-zinc-700 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] transition-all"
                                         title="자동 정렬 (Auto Layout)"
                                     >
                                         <IconLayout className="w-5 h-5 text-slate-500 dark:text-zinc-400" />
                                     </button>
                                     <button
                                         onClick={() => fitToScreen()}
-                                        className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700 border-b border-slate-100 dark:border-zinc-700"
+                                        className="w-11 h-11 flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-darkpanel dark:hover:bg-zinc-700 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] transition-all"
                                         title="화면 중앙 맞춤"
                                     >
                                         {/* 아이콘 SVG 생략 */}
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="scale-75">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="scale-75 text-slate-500 dark:text-zinc-400">
                                             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
                                         </svg>
                                     </button>
-                                    <button onClick={() => setScale(prev => Math.min(prev + 0.1, 3))} className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700">+</button>
-                                    <div className="py-2 text-[9px] font-black text-slate-400 border-y border-slate-50 text-center bg-slate-50/50 dark:bg-zinc-800/50 dark:border-zinc-700">{Math.round(scale * 100)}%</div>
-                                    <button onClick={() => setScale(prev => Math.max(prev - 0.1, 0.1))} className="w-11 h-11 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-zinc-700">-</button>
                                 </div>
 
                                 <div className="zoom-container w-full h-full" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})` }}>
@@ -4035,6 +4402,7 @@
                                             isSelected={selectedNodeIds.has(node.id) || selectedNodeId === node.id}
                                             isDragging={draggingNodeId && (selectedNodeIds.has(node.id) || draggingNodeId === node.id || dragOffset.nodeIds.has(node.id))}
                                             onClick={(e, id) => { if (!e.shiftKey) setSelectedNodeIds(new Set([id])); }}
+                                            onUpdateNode={(id, data) => updateActiveProject(prev => prev.map(n => n.id === id ? { ...n, data: { ...n.data, ...data } } : n))}
                                             onMouseDown={(e, id) => {
                                                 e.stopPropagation();
                                                 if (rAF.current) { cancelAnimationFrame(rAF.current); rAF.current = null; }
@@ -4082,7 +4450,7 @@
                                         const doc = getCompareDoc(0);
                                         if (!doc) return null;
                                         return (
-                                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`}>
+                                            <motion.div className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`}>
                                                 <div className="editor-title-container">
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 0 ? 'Focus Mode' : 'DOC TITLE'}</span>
@@ -4156,7 +4524,7 @@
                                         const doc = getCompareDoc(1);
                                         if (!doc) return null;
                                         return (
-                                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`}>
+                                            <motion.div className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`}>
                                                 <div className="editor-title-container">
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 1 ? 'Focus Mode' : 'DOC TITLE'}</span>
@@ -4212,11 +4580,18 @@
                             </div>
                         ) : (
                         <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
-                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
+                            <motion.div className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
                                 <div className="editor-title-container">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
                                         <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setShowSynopsisModal(true)}
+                                                className={`p-1 transition-all ${isZenMode ? 'opacity-10 hover:opacity-100' : ''} text-slate-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400`}
+                                                title="시놉시스"
+                                            >
+                                                <IconFileText className="w-4 h-4" />
+                                            </button>
                                             {renderStatusSelector(activeProject)}
                                         </div>
                                     </div>
@@ -4271,7 +4646,7 @@
                         </div>
                         )}
                         {/* Floating History Button for Single Doc View */}
-                        {!isTrashOpen && activeProject.type === 'doc' && !compareMode && !isZenMode && enableHistory && (
+                        {!isTrashOpen && activeProject.type === 'doc' && !compareMode && !isZenMode && !corkboardMode && enableHistory && (
                             <button
                                 onClick={() => setShowHistoryModal(true)}
                                 className="absolute bottom-8 right-8 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
@@ -4292,11 +4667,60 @@
                             onDelete={deleteSnapshot}
                         />
                     )}
+
+                    {/* 시놉시스 모달 */}
+                    <AnimatePresence>
+                        {showSynopsisModal && activeProject && (
+                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                                <motion.div 
+                                    initial={{ opacity: 0 }} 
+                                    animate={{ opacity: 1 }} 
+                                    exit={{ opacity: 0 }} 
+                                    className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+                                    onClick={() => setShowSynopsisModal(false)} 
+                                />
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="bg-white dark:bg-darkpanel w-[600px] h-[500px] rounded-xl shadow-2xl flex flex-col overflow-hidden relative z-10 border border-slate-200 dark:border-zinc-700"
+                                >
+                                    <div className="px-5 py-3 border-b border-slate-100 dark:border-zinc-700 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/50">
+                                        <h2 className="text-sm font-black text-slate-800 dark:text-zinc-100 flex items-center gap-2">
+                                            📝 시놉시스
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => { setShowSynopsisModal(false); setCorkboardMode(true); }}
+                                                className="px-3 py-1.5 bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 rounded text-xs font-bold transition-colors"
+                                            >
+                                                코르크 보드로 가기
+                                            </button>
+                                            <button onClick={() => setShowSynopsisModal(false)} className="p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded transition-colors">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 p-0 flex flex-col">
+                                        <textarea 
+                                            className="flex-1 w-full p-8 resize-none outline-none text-slate-600 dark:text-zinc-300 leading-loose custom-scroll bg-transparent text-base"
+                                            placeholder="이 문서의 시놉시스나 개요를 자유롭게 작성하세요..."
+                                            value={activeProject.synopsis || ''}
+                                            onChange={(e) => setProjects(prev => prev.map(p => p.id === activeProject.id ? { ...p, synopsis: e.target.value } : p))}
+                                        />
+                                    </div>
+                                </motion.div>
+                            </div>
+                        )}
+                    </AnimatePresence>
+
                     <AnimatePresence>
                         {mention.active && (
                             <div className="mention-list" style={{ top: mention.y, left: mention.x }}>
                                 <div className="w-[250px] flex flex-col border-r border-slate-100 dark:border-zinc-700">
-                                    <div className="p-2 bg-slate-50 dark:bg-zinc-800 text-[9px] font-black text-slate-400 tracking-widest uppercase border-b border-slate-100 dark:border-zinc-700">List</div>
+                                    <div className="p-2 bg-slate-50 dark:bg-zinc-800 text-[9px] font-black text-slate-400 tracking-widest uppercase border-b border-slate-100 dark:border-zinc-700">
+                                        {mention.type === '@' ? '캐릭터 리스트' : mention.type === '#' ? '사건 리스트' : mention.type === '$' ? '메모 리스트' : 'TO-DO 리스트'}
+                                    </div>
                                     <div className="flex-1 overflow-y-auto custom-scroll">
                                         {filteredMentionNodes.length > 0 ? filteredMentionNodes.map((node, i) => (
                                             <div key={node.id}
@@ -4325,6 +4749,10 @@
                                                     {node.type === '인물' ? (
                                                         <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[2px] rounded-sm shadow-sm leading-none ${getRoleBadgeStyle(node.data.role)}`}>
                                                             {node.data.role}
+                                                        </span>
+                                                    ) : node.type === '할일' && (node.data.items || []).length > 0 && (node.data.items || []).every(i => i.done) ? (
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded-[2px] bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+                                                            완료
                                                         </span>
                                                     ) : (
                                                         /* 사건일 때는 배지가 없어도 높이를 유지하도록 빈 공간 확보 */
@@ -4369,7 +4797,31 @@
                                                     </div>
                                                 )}
 
-                                                {filteredMentionNodes[mention.selectedIndex].data.memo || "작성된 메모가 없습니다."}
+                                                {filteredMentionNodes[mention.selectedIndex].type === '할일' && (
+                                                    <div className="mb-2 pb-2">
+                                                        <div className="text-[12px] font-bold uppercase text-cyan-500 mb-2">✅ 할일 목록</div>
+                                                        <div className="space-y-1">
+                                                            {(filteredMentionNodes[mention.selectedIndex].data.items || []).map(item => (
+                                                                <div key={item.id} className="flex items-center gap-2">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={item.done}
+                                                                        onChange={() => handleToggleTodoInMention(filteredMentionNodes[mention.selectedIndex].projectId, filteredMentionNodes[mention.selectedIndex].id, item.id)}
+                                                                        className="w-3 h-3 rounded-sm border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                                                                    />
+                                                                    <span className={`text-xs ${item.done ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-zinc-300'}`}>
+                                                                        {item.text}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                            {(filteredMentionNodes[mention.selectedIndex].data.items || []).length === 0 && (
+                                                                <div className="text-xs text-slate-400 italic">등록된 할 일이 없습니다</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {filteredMentionNodes[mention.selectedIndex].data.memo || (filteredMentionNodes[mention.selectedIndex].type !== '할일' ? "작성된 메모가 없습니다." : "")}
                                             </div>
                                         </>
                                     ) : (
@@ -4789,8 +5241,69 @@
                                                 </>
                                             )}
 
-                                            {/* 메모 */}
-                                            {activeNode.type !== '그룹' && (
+                                            {/* 할일 전용 필드 */}
+                                            {activeNode.type === '할일' && (
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">할 일 목록</label>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="+ 할 일 추가" 
+                                                            className="flex-1 p-3 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all rounded-[3px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200"
+                                                            value={todoInput}
+                                                            onChange={(e) => setTodoInput(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    if (e.nativeEvent.isComposing) return;
+                                                                    e.preventDefault();
+                                                                    if (todoInput.trim()) {
+                                                                        const newItem = { id: generateUUID(), text: todoInput.trim(), done: false };
+                                                                        updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, items: [...(n.data.items || []), newItem] } } : n));
+                                                                        setTodoInput('');
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <button 
+                                                            onClick={() => {
+                                                                if (todoInput.trim()) {
+                                                                    const newItem = { id: generateUUID(), text: todoInput.trim(), done: false };
+                                                                    updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, items: [...(n.data.items || []), newItem] } } : n));
+                                                                    setTodoInput('');
+                                                                }
+                                                            }}
+                                                            className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-[3px] transition-colors"
+                                                        >
+                                                            추가
+                                                        </button>
+                                                    </div>
+                                                    <div className="mt-2 space-y-1">
+                                                        {(activeNode.data.items || []).map(item => (
+                                                            <div key={item.id} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-[3px] border border-slate-100 dark:bg-zinc-800/50 dark:border-zinc-700 group">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={item.done} 
+                                                                    onChange={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, items: n.data.items.map(i => i.id === item.id ? { ...i, done: !i.done } : i) } } : n))}
+                                                                    className="w-4 h-4 rounded-sm border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                                                                />
+                                                                <span className={`text-sm flex-1 truncate ${item.done ? 'line-through text-slate-400 dark:text-zinc-500' : 'text-slate-700 dark:text-zinc-200'}`}>{item.text}</span>
+                                                                <button 
+                                                                    onClick={() => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, items: n.data.items.filter(i => i.id !== item.id) } } : n))}
+                                                                    className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                                                >
+                                                                    <IconTrash className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                        {(activeNode.data.items || []).length === 0 && (
+                                                            <div className="text-xs text-slate-400 text-center py-4 italic">등록된 할 일이 없습니다</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 메모 (할일, 그룹 제외) */}
+                                            {activeNode.type !== '그룹' && activeNode.type !== '할일' && (
                                                 <div>
                                                     <label className="text-[10px] font-bold text-slate-400 ml-1 uppercase">메모 및 세부 설정</label>
                                                     <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, memo: e.target.value } } : n))} placeholder="메모를 입력하세요..." />
