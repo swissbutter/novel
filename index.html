@@ -2287,7 +2287,7 @@
                         const diff = target - current;
 
                         if (Math.abs(diff) > 3) {
-                            textarea.scrollTop = current + diff * 0.04;
+                            textarea.scrollTop = current + diff * 0.09;
                         }
                     }
                     scrollAnimRef.current = requestAnimationFrame(loop);
@@ -3258,6 +3258,7 @@
                     updateDocContent(val);
                     requestAnimationFrame(() => {
                         if (textareaRef.current) {
+                            textareaRef.current.scrollTop = scrollTop; // 스크롤 위치 복구
                             textareaRef.current.setSelectionRange(pos + indent.length, pos + indent.length);
                             // 엔터 입력 직후 스크롤 목표 갱신
                             if (isZenMode) {
@@ -4762,7 +4763,7 @@
                                     <div className="flex-1 p-0 flex flex-col">
                                         <textarea 
                                             className="flex-1 w-full p-8 resize-none outline-none text-slate-600 dark:text-zinc-300 leading-loose custom-scroll bg-transparent text-base"
-                                            placeholder="이 문서의 시놉시스나 개요를 자유롭게 작성하세요..."
+                                            placeholder="시놉시스나 개요를 작성하세요..."
                                             value={activeProject.synopsis || ''}
                                             onChange={(e) => setProjects(prev => prev.map(p => p.id === activeProject.id ? { ...p, synopsis: e.target.value } : p))}
                                         />
