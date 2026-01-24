@@ -1826,9 +1826,26 @@
 
 
         // HistoryManager Modal
-        const HistoryManager = ({ doc, onClose, onRestore, onSnapshot }) => {
+        const HistoryManager = ({ doc, onClose, onRestore, onSnapshot, onDelete }) => {
             const [selectedSnapshot, setSelectedSnapshot] = useState(null);
+            const [isInputOpen, setIsInputOpen] = useState(false);
+            const [deleteTargetId, setDeleteTargetId] = useState(null); // 삭제 대상 ID 상태 추가
+            const [memoInput, setMemoInput] = useState('');
             const history = doc.history || [];
+
+            const handleSnapshot = () => {
+                onSnapshot(memoInput);
+                setIsInputOpen(false);
+                setMemoInput('');
+            };
+
+            const handleDeleteConfirm = () => {
+                if (deleteTargetId) {
+                    onDelete(deleteTargetId);
+                    if (selectedSnapshot?.id === deleteTargetId) setSelectedSnapshot(null);
+                    setDeleteTargetId(null);
+                }
+            };
 
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -1836,8 +1853,82 @@
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white dark:bg-darkpanel w-full max-w-4xl max-h-[85vh] rounded-xl shadow-2xl flex flex-col overflow-hidden relative z-10 border border-slate-200 dark:border-zinc-700"
+                        className="bg-white dark:bg-darkpanel w-[710px] h-[450px] rounded-xl shadow-2xl flex flex-col overflow-hidden relative z-10 border border-slate-200 dark:border-zinc-700"
                     >
+                        {/* 메모 입력 모달 */}
+                        <AnimatePresence>
+                            {isInputOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-[2px]"
+                                    onClick={() => setIsInputOpen(false)}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.9, opacity: 0 }}
+                                        className="bg-white dark:bg-zinc-800 p-5 rounded-lg shadow-2xl border border-slate-200 dark:border-zinc-700 w-80"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <h3 className="text-sm font-black text-slate-800 dark:text-zinc-100 mb-3">스냅샷 메모</h3>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            className="w-full p-3 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded text-sm font-medium mb-4 outline-none focus:border-indigo-500 dark:text-zinc-200"
+                                            placeholder="메모를 입력하세요 (선택)"
+                                            value={memoInput}
+                                            onChange={e => setMemoInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                                                    e.preventDefault();
+                                                    handleSnapshot();
+                                                }
+                                            }}
+                                        />
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setIsInputOpen(false)} className="flex-1 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-700 rounded">취소</button>
+                                            <button onClick={handleSnapshot} className="flex-1 py-2 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded shadow-sm">저장하기</button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* 삭제 확인 모달 */}
+                        <AnimatePresence>
+                            {deleteTargetId && (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-[2px]"
+                                    onClick={() => setDeleteTargetId(null)}
+                                >
+                                    <motion.div
+                                        initial={{ scale: 0.9, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.9, opacity: 0 }}
+                                        className="bg-white dark:bg-zinc-800 p-5 rounded-lg shadow-2xl border border-red-200 dark:border-red-900 w-72"
+                                        onClick={e => e.stopPropagation()}
+                                    >
+                                        <div className="flex flex-col items-center text-center mb-4">
+                                            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-3 text-red-500">
+                                                <IconTrash className="w-5 h-5" />
+                                            </div>
+                                            <h3 className="text-sm font-black text-slate-800 dark:text-zinc-100 mb-1">기록 삭제</h3>
+                                            <p className="text-xs text-slate-500 dark:text-zinc-400">정말로 이 기록을 삭제하시겠습니까?<br/>삭제된 기록은 복구할 수 없습니다.</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setDeleteTargetId(null)} className="flex-1 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-700 rounded">취소</button>
+                                            <button onClick={handleDeleteConfirm} className="flex-1 py-2 text-xs font-bold bg-red-600 text-white hover:bg-red-700 rounded shadow-sm">삭제하기</button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         <div className="p-5 border-b border-slate-100 dark:border-zinc-700 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-800/50">
                             <div>
                                 <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 flex items-center gap-2">
@@ -1850,11 +1941,11 @@
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={() => onSnapshot()}
+                                    onClick={() => { setMemoInput(''); setIsInputOpen(true); }}
                                     className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 rounded text-xs font-bold transition-colors flex items-center gap-1"
                                 >
                                     <IconPlus className="w-3 h-3" />
-                                    현재 상태 스냅샷 저장
+                                    현재 상태 스냅샷
                                 </button>
                                 <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded transition-colors">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
@@ -1863,41 +1954,7 @@
                         </div>
 
                         <div className="flex flex-1 overflow-hidden">
-                            {/* 히스토리 목록 */}
-                            <div className="w-64 border-r border-slate-100 dark:border-zinc-700 overflow-y-auto custom-scroll bg-slate-50/30 dark:bg-zinc-900/30">
-                                {history.length === 0 ? (
-                                    <div className="p-8 text-center text-slate-400 text-xs">
-                                        저장된 히스토리가 없습니다.
-                                    </div>
-                                ) : (
-                                    <div className="p-2 space-y-1">
-                                        {[...history].reverse().map((snap) => (
-                                            <div
-                                                key={snap.id}
-                                                onClick={() => setSelectedSnapshot(snap)}
-                                                className={`p-3 rounded-[3px] cursor-pointer transition-all border ${selectedSnapshot?.id === snap.id ? 'bg-white dark:bg-zinc-800 border-indigo-200 dark:border-indigo-900 shadow-sm' : 'border-transparent hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm'}`}
-                                            >
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded">
-                                                        {new Date(snap.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400">
-                                                        {snap.content.length.toLocaleString()}자
-                                                    </span>
-                                                </div>
-                                                <div className="text-xs font-medium text-slate-700 dark:text-zinc-300 line-clamp-2 leading-relaxed">
-                                                    {snap.summary || "내용 없음"}
-                                                </div>
-                                                <div className="text-[9px] text-slate-400 mt-1 tex-right">
-                                                    {new Date(snap.timestamp).toLocaleDateString()}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* 미리보기 및 복원 */}
+                            {/* 미리보기 및 복원 (왼쪽) */}
                             <div className="flex-1 flex flex-col bg-white dark:bg-darkpanel">
                                 {selectedSnapshot ? (
                                     <>
@@ -1928,7 +1985,50 @@
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-slate-300 dark:text-zinc-600 gap-3">
                                         <IconHistory className="w-12 h-12 opacity-50" />
-                                        <span className="text-sm">왼쪽 목록에서 버전을 선택하여 내용을 확인하세요</span>
+                                        <span className="text-sm">오른쪽 목록에서 버전을 선택하여 내용을 확인하세요</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 히스토리 목록 (오른쪽) */}
+                            <div className="w-64 border-l border-slate-100 dark:border-zinc-700 overflow-y-auto custom-scroll bg-slate-50/30 dark:bg-zinc-900/30">
+                                {history.length === 0 ? (
+                                    <div className="p-8 text-center text-slate-400 text-xs">
+                                        저장된 히스토리가 없습니다.
+                                    </div>
+                                ) : (
+                                    <div className="p-2 space-y-1">
+                                        {[...history].reverse().map((snap) => (
+                                            <div
+                                                key={snap.id}
+                                                onClick={() => setSelectedSnapshot(snap)}
+                                                className={`group relative p-3 rounded-[3px] cursor-pointer transition-all border ${selectedSnapshot?.id === snap.id ? 'bg-white dark:bg-zinc-800 border-indigo-200 dark:border-indigo-900 shadow-sm' : 'border-transparent hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm'}`}
+                                            >
+                                                <div className="flex items-center mb-1.5">
+                                                    <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded">
+                                                        {new Date(snap.timestamp).toLocaleString([], { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <div className="text-xs font-medium text-slate-700 dark:text-zinc-300 line-clamp-2 leading-relaxed mb-1.5">
+                                                    {snap.summary || "내용 없음"}
+                                                </div>
+                                                <div className="text-[9px] text-slate-400 text-right font-medium">
+                                                    {snap.content.length.toLocaleString()}자
+                                                </div>
+                                                
+                                                {/* 삭제 버튼 (호버 시 표시) */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteTargetId(snap.id);
+                                                    }}
+                                                    className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-500 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="기록 삭제"
+                                                >
+                                                    <IconTrash className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -1938,7 +2038,7 @@
             );
         };
 
-        const Workspace = ({ currentBook, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount }) => {
+        const Workspace = ({ currentBook, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
             const [isTrashOpen, setIsTrashOpen] = useState(false); // 휴지통 열림 상태
@@ -1951,9 +2051,152 @@
             const [isPomodoroOpen, setIsPomodoroOpen] = useState(false);
             const [showSystemSettings, setShowSystemSettings] = useState(false);
             const [showHistoryModal, setShowHistoryModal] = useState(false);
+            const [openStatusDropdownId, setOpenStatusDropdownId] = useState(null);
+
+            const [mention, setMention] = useState({ active: false, type: null, search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
+            const [showNodeDropdown, setShowNodeDropdown] = useState(false);
+            const [compareMode, setCompareMode] = useState(false);
+            const [compareDocIds, setCompareDocIds] = useState([null, null]);
+            const [activeComparePane, setActiveComparePane] = useState(0);
+            const [editingProjectId, setEditingProjectId] = useState(null);
+            const textareaRef = useRef(null);
+            const [pomoMinutes, setPomoMinutes] = useState(25);
+            const [pomoSeconds, setPomoSeconds] = useState(0);
+            const [isPomoActive, setIsPomoActive] = useState(false);
+            const [pomoInitialTotal, setPomoInitialTotal] = useState(25 * 60);
+            const [pomoRemaining, setPomoRemaining] = useState(25 * 60);
+            const [isPomoSetting, setIsPomoSetting] = useState(false);
+            const [isNameGenOpen, setIsNameGenOpen] = useState(false);
+            const [nameGenSettings, setNameGenSettings] = useState(null);
+            const [docFilter, setDocFilter] = useState(null);
+            const [isEditingTitle, setIsEditingTitle] = useState(false);
+            const titleInputRef = useRef(null);
+            const isDraggingSplitter = useRef(false);
+            const [isSplitterDragging, setIsSplitterDragging] = useState(false);
+            const [splitRatio, setSplitRatio] = useState(50);
+            const containerRef = useRef(null);
+            const nodeDropdownRef = useRef(null);
+            const compareTextareaRefs = useRef([null, null]);
+
+            const renderStatusSelector = (doc) => {
+                const isOpen = openStatusDropdownId === doc.id;
+                const currentStatus = doc.status || '초고';
+                
+                return (
+                    <div 
+                        className={`relative z-50 flex items-center p-1 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${isZenMode && !isOpen ? 'opacity-10 hover:opacity-100' : 'opacity-100'}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isOpen) setOpenStatusDropdownId(doc.id);
+                            else setOpenStatusDropdownId(null);
+                        }}
+                    >
+                        {['초고', '수정', '완료'].map(status => {
+                            const isActive = currentStatus === status;
+                            const show = isActive || isOpen;
+                            
+                            return (
+                                <div 
+                                    key={status}
+                                    className={`transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] overflow-hidden ${show ? 'max-w-[60px] opacity-100 mx-0.5' : 'max-w-0 opacity-0 mx-0'}`}
+                                >
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (isOpen) {
+                                                setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, status } : p));
+                                                setOpenStatusDropdownId(null);
+                                            } else {
+                                                setOpenStatusDropdownId(doc.id);
+                                            }
+                                        }} 
+                                        className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all whitespace-nowrap ${
+                                            isActive 
+                                            ? (status === '완료' ? 'bg-emerald-600 text-white shadow-sm' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-700 dark:text-indigo-300 border border-slate-200 dark:border-zinc-600') 
+                                            : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'
+                                        }`}
+                                    >
+                                        {status}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            };
+
+            const updateFocusScroll = useCallback(() => {
+                if (!isZenMode) return;
+                const textarea = activeComparePane === 0 || !compareMode ? (compareMode ? compareTextareaRefs.current[0] : textareaRef.current) : compareTextareaRefs.current[1];
+                if (!textarea) return;
+
+                const cursorPosition = textarea.selectionStart;
+                const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+                const lines = textBeforeCursor.split('\n');
+                const lineCount = lines.length;
+                const lineHeight = parseInt(getComputedStyle(textarea).lineHeight);
+                
+                const targetY = lineCount * lineHeight - (window.innerHeight * focusPosition);
+                
+                textarea.scrollTo({
+                    top: targetY,
+                    behavior: 'smooth'
+                });
+            }, [isZenMode, focusPosition, activeComparePane, compareMode]);
+
+            const animateViewport = useCallback((targetPan, targetScale) => {
+                if (panAnimationRef.current) cancelAnimationFrame(panAnimationRef.current);
+                
+                const startPan = { ...pan };
+                const startScale = scale;
+                const startTime = performance.now();
+                const duration = 500;
+
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const ease = t => t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                    
+                    const t = ease(progress);
+                    
+                    setPan({
+                        x: startPan.x + (targetPan.x - startPan.x) * t,
+                        y: startPan.y + (targetPan.y - startPan.y) * t
+                    });
+                    
+                    if (targetScale !== undefined) {
+                        setScale(startScale + (targetScale - startScale) * t);
+                    }
+
+                    if (progress < 1) {
+                        panAnimationRef.current = requestAnimationFrame(animate);
+                    }
+                };
+                
+                panAnimationRef.current = requestAnimationFrame(animate);
+            }, [pan, scale]);
+
+            useEffect(() => {
+                let interval = null;
+                if (isPomoActive && pomoRemaining > 0) {
+                    interval = setInterval(() => {
+                        setPomoRemaining(prev => {
+                            if (prev <= 1) {
+                                setIsPomoActive(false);
+                                showToast("뽀모도로 타이머가 종료되었습니다! ☕", "success");
+                                return 0;
+                            }
+                            return prev - 1;
+                        });
+                    }, 1000);
+                } else if (pomoRemaining === 0) {
+                    setIsPomoActive(false);
+                }
+                return () => clearInterval(interval);
+            }, [isPomoActive, pomoRemaining, showToast]);
 
             // 히스토리 관리 함수들
-            const createSnapshot = useCallback((docId) => {
+            const createSnapshot = useCallback((docId, memo) => {
                 setProjects(prev => prev.map(p => {
                     if (p.id !== docId) return p;
                     const newHistory = [
@@ -1962,7 +2205,7 @@
                             id: generateUUID(),
                             timestamp: Date.now(),
                             content: p.content || "",
-                            summary: (p.content || "").slice(0, 50) + ((p.content || "").length > 50 ? "..." : "")
+                            summary: memo || ((p.content || "").slice(0, 50) + ((p.content || "").length > 50 ? "..." : ""))
                         }
                     ];
                     // 최대 20개 유지
@@ -1992,6 +2235,15 @@
                 showToast("선택한 버전으로 복원되었습니다.");
             }, [activeProjectId, showToast]);
 
+            const deleteSnapshot = useCallback((snapshotId) => {
+                setProjects(prev => prev.map(p => {
+                    if (p.id !== activeProjectId) return p;
+                    const newHistory = (p.history || []).filter(h => h.id !== snapshotId);
+                    return { ...p, history: newHistory };
+                }));
+                showToast("기록이 삭제되었습니다.");
+            }, [activeProjectId, showToast]);
+
 
             const setSidebarCols = (projectId, cols) => {
                 setProjects(prev => prev.map(p =>
@@ -2016,20 +2268,69 @@
 
             useEffect(() => {
                 const handleDropdownClickOutside = (e) => {
-                    if (!showNodeDropdown) return;
-                    if (!e.target.closest('.relative')) {
+                    if (showNodeDropdown && !e.target.closest('.relative')) {
                         setShowNodeDropdown(false);
                     }
+                    if (openStatusDropdownId && !e.target.closest('.relative.z-50')) {
+                        setOpenStatusDropdownId(null);
+                    }
                 };
-                if (showNodeDropdown) {
+                if (showNodeDropdown || openStatusDropdownId) {
                     document.addEventListener('mousedown', handleDropdownClickOutside);
                 }
                 return () => document.removeEventListener('mousedown', handleDropdownClickOutside);
-            }, [showNodeDropdown]);
+            }, [showNodeDropdown, openStatusDropdownId]);
+
+            // Auto-save to parent component
+            useEffect(() => {
+                onUpdateBook({
+                    ...currentBook,
+                    projects,
+                    trash,
+                    activeProjectId,
+                    expandedProjects,
+                    scale,
+                    pan
+                });
+            }, [projects, trash, activeProjectId, expandedProjects, scale, pan]);
 
             const activeProject = useMemo(() => projects.find(p => p.id === activeProjectId) || projects[0], [projects, activeProjectId]);
 
             const nodes = activeProject?.nodes || [];
+            
+            const fitToScreen = useCallback((nodesToFit = nodes) => {
+                if (!nodesToFit || nodesToFit.length === 0) return;
+                
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodesToFit.forEach(node => {
+                    const w = node.type === '그룹' ? (node.data.width || 400) : CARD_W;
+                    const h = node.type === '그룹' ? (node.data.height || 300) : CARD_H;
+                    minX = Math.min(minX, node.x);
+                    maxX = Math.max(maxX, node.x + w);
+                    minY = Math.min(minY, node.y);
+                    maxY = Math.max(maxY, node.y + h);
+                });
+
+                const contentW = maxX - minX;
+                const contentH = maxY - minY;
+                const containerW = window.innerWidth;
+                const containerH = window.innerHeight;
+                
+                const padding = 100;
+                const scaleX = (containerW - padding * 2) / contentW;
+                const scaleY = (containerH - padding * 2) / contentH;
+                const newScale = Math.min(Math.max(scaleX, scaleY, 0.2), 1.5);
+
+                const centerX = minX + contentW / 2;
+                const centerY = minY + contentH / 2;
+                
+                setPan({
+                    x: containerW / 2 - centerX * newScale,
+                    y: containerH / 2 - centerY * newScale
+                });
+                setScale(newScale);
+            }, [nodes]);
+
             const edges = activeProject?.edges || [];
             const allBoardNodes = useMemo(() => projects.filter(p => p.type === 'board').flatMap(p => (p.nodes || []).map(node => ({ ...node, projectName: p.name }))), [projects]);
             const filteredMentionNodes = useMemo(() => { if (!mention.active) return []; return allBoardNodes.filter(n => n.type === (mention.type === '@' ? '인물' : mention.type === '#' ? '사건' : '메모') && (n.label.includes(mention.search) || mention.search === "")); }, [allBoardNodes, mention]);
@@ -3048,39 +3349,37 @@
 
                 const projectContent = (
                     <div className={containerClasses}>
-                        <div onClick={(e) => handleSelectProject(project.id, e)} onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
+                        <div onClick={(e) => handleSelectProject(project.id, e)} className={`flex items-center px-4 cursor-pointer group relative overflow-hidden ${isDoc ? 'h-[30px] py-0' : 'py-1.5'}`}>
                             {isActive && <div className={`absolute left-0 top-0 bottom-0 ${isDoc ? 'w-[3px]' : 'w-1'} bg-indigo-600 dark:bg-indigo-500`} />}
                             <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                 <span onClick={(e) => !isDoc && toggleProjectFolder(project.id, e)} className={`${isDoc ? 'text-sm opacity-50' : 'text-base'} shrink-0 dark:text-zinc-300`}>{isDoc ? '📄' : (isExpanded ? '📂' : '📁')}</span>
-                                {editingProjectId === project.id ? (<input autoFocus className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white" defaultValue={project.name} onBlur={(e) => handleProjectRename(project.id, e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)} />) : (
-                                    <div className="flex items-center min-w-0 flex-1 justify-between">
-                                        <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
-                                        {isExpanded && !isDoc && (
-                                            <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                {[1, 2, 3, 4].map(col => (
-                                                    <button
-                                                        key={col}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSidebarCols(project.id, col);
-                                                        }}
-                                                        className={`w-5 h-5 flex items-center justify-center text-[10px] font-black rounded-sm transition-colors ${cols === col
-                                                            ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-sm'
-                                                            : 'text-slate-400 hover:bg-white/50 dark:text-zinc-500 dark:hover:bg-zinc-700/50'
-                                                            }`}
-                                                        title={`${col}열 보기`}
-                                                    >
-                                                        {col}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="flex items-center shrink-0">
-                                            {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
-                                            <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
+                                <div className="flex items-center min-w-0 flex-1 justify-between">
+                                    <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
+                                    {isExpanded && !isDoc && (
+                                        <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            {[1, 2, 3, 4].map(col => (
+                                                <button
+                                                    key={col}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSidebarCols(project.id, col);
+                                                    }}
+                                                    className={`w-5 h-5 flex items-center justify-center text-[10px] font-black rounded-sm transition-colors ${cols === col
+                                                        ? 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-white shadow-sm'
+                                                        : 'text-slate-400 hover:bg-white/50 dark:text-zinc-500 dark:hover:bg-zinc-700/50'
+                                                        }`}
+                                                    title={`${col}열 보기`}
+                                                >
+                                                    {col}
+                                                </button>
+                                            ))}
                                         </div>
+                                    )}
+                                    <div className="flex items-center shrink-0">
+                                        {isDoc && <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>}
+                                        <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
                         {!isDoc && (
@@ -3225,6 +3524,8 @@
                             setEditorFontSize={setEditorFontSize}
                             showDocWordCount={showDocWordCount}
                             setShowDocWordCount={setShowDocWordCount}
+                            enableHistory={enableHistory}
+                            setEnableHistory={setEnableHistory}
                         />
                     )}
                     <aside className={`h-full bg-[#f5f5f5] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#141417] dark:border-zinc-700/50 transition-all duration-500 ease-in-out ${isZenMode ? 'w-0 -translate-x-full opacity-0' : 'w-80 opacity-100'
@@ -3239,7 +3540,7 @@
                                     <IconBack className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
                                 </div>
                                 <div className="flex flex-col items-start dark:hover:bg-zinc-800/80">
-                                    <span className="text-[12px] text-slate-400 tracking-tight group-hover:text-slate-200">작가의 방으로 돌아가기</span>
+                                    <span className="text-[12px] text-slate-400 tracking-tight group-hover:text-slate-200">내 서재로 돌아가기</span>
                                 </div>
                             </div>
                         </div>
@@ -3250,24 +3551,11 @@
                                     <span className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30">Novel project</span>
                                 </div>
 
-                                {isEditingTitle ? (
-                                    <input
-                                        ref={titleInputRef}
-                                        className="w-full text-2xl font-black text-slate-900 tracking-tighter leading-tight bg-slate-50 p-2 Galmuri14 border-b-2 border-slate-800 outline-none dark:bg-zinc-800 dark:text-white"
-                                        value={currentBook.title}
-                                        onChange={(e) => onUpdateBook({ ...currentBook, title: e.target.value })}
-                                        onBlur={() => setIsEditingTitle(false)}
-                                        onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                                    />
-                                ) : (
-                                    <h1
-                                        onDoubleClick={() => setIsEditingTitle(true)}
-                                        className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight cursor-pointer hover:text-slate-500 dark:hover:text-zinc-400 transition-colors"
-                                        title="더블클릭하여 제목 수정"
-                                    >
-                                        {currentBook.title}
-                                    </h1>
-                                )}
+                                <h1
+                                    className="text-xl font-black text-slate-800 dark:text-zinc-100 tracking-tighter leading-tight"
+                                >
+                                    {currentBook.title}
+                                </h1>
 
                                 <div className="flex items-center gap-2 mt-2 opacity-60">
                                     <span className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 tracking-wide">
@@ -3279,26 +3567,25 @@
 
 
                         <div className="flex-1 overflow-y-auto px-3 pt-4 custom-scroll pb-10">
-                            <div className="mb-5">
-                                <div className="flex items-center justify-between mb-3 px-2">
-                                    <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2">
-                                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 아이디어 보드
-                                    </div>
-                                    <button onClick={createNewProject} className="text-slate-400 hover:text-indigo-600 transition-colors" title="새 보드 추가">
-                                        <IconPlus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <Reorder.Group axis="y" values={projects.filter(p => p.type === 'board')} onReorder={handleReorderBoards} className="space-y-1">
-                                    {projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}
-                                </Reorder.Group>
-                            </div>
-                            <div>
-                                <div className="flex items-center justify-between mb-3 px-2 group h-7">
-                                    <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2" title="Shift+클릭으로 두 문서 비교">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${compareMode ? 'bg-amber-500 animate-pulse' : 'bg-indigo-500'}`}></span>
-                                        {compareMode ? '비교 모드' : '문서함'}
-                                    </div>
-                                    <div className="flex items-center gap-1">
+                                                                <div className="mb-5">
+                                                            <div className="flex items-center justify-between mb-3 px-2">
+                                                                <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2">
+                                                                    <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> 아이디어 보드 ({projects.filter(p => p.type === 'board').length})
+                                                                </div>
+                                                                <button onClick={createNewProject} className="text-slate-400 hover:text-indigo-600 transition-colors" title="새 보드 추가">
+                                                                    <IconPlus className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                            <Reorder.Group axis="y" values={projects.filter(p => p.type === 'board')} onReorder={handleReorderBoards} className="space-y-1">
+                                                                {projects.filter(p => p.type === 'board').map(project => renderProjectItem(project))}
+                                                            </Reorder.Group>
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-3 px-2 group h-7">
+                                                                <div className="text-[9px] font-black px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-500 rounded-[2px] tracking-widest uppercase border border-slate-200/50 dark:border-zinc-700/30 flex items-center gap-2" title="Shift+클릭으로 두 문서 비교">
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${compareMode ? 'bg-amber-500 animate-pulse' : 'bg-indigo-500'}`}></span>
+                                                                    {compareMode ? '비교 모드' : `문서함 (${projects.filter(p => p.type === 'doc').length})`}
+                                                                </div>                                    <div className="flex items-center gap-1">
                                         {/* 문서 필터 버튼 (회색/검은 배경 스타일) */}
                                         <div className="w-0 group-hover:w-[95px] overflow-hidden transition-all duration-500 ease-in-out">
                                             <div className="flex items-center gap-0.5 bg-slate-200 dark:bg-zinc-900 p-0.5 rounded-sm min-w-[95px] opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
@@ -3340,32 +3627,20 @@
                                                 transition={{ type: "tween", duration: 0.15 }}
                                                 whileDrag={{ scale: 1.02, boxShadow: '0 5px 15px rgba(0,0,0,0.1)', zIndex: 100 }}
                                                 onClick={(e) => handleSelectProject(project.id, e)}
-                                                onDoubleClick={(e) => { e.stopPropagation(); setEditingProjectId(project.id); }}
                                                 className={`border-b border-slate-200/50 dark:border-zinc-700/50 last:border-0 cursor-grab active:cursor-grabbing ${isActive ? 'bg-white dark:bg-zinc-700' : (compareMode && compareDocIds.includes(project.id)) ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-300 dark:ring-indigo-700' : 'hover:bg-slate-200/50 dark:hover:bg-zinc-700/50'}`}
                                             >
                                                 <div className="flex items-center px-4 h-[30px] py-0 group relative overflow-hidden">
                                                     {isActive && <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-600 dark:bg-indigo-500" />}
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1 z-10">
                                                         <span className="text-sm opacity-50 shrink-0 dark:text-zinc-300">📄</span>
-                                                        {editingProjectId === project.id ? (
-                                                            <input
-                                                                autoFocus
-                                                                className="w-full bg-white border border-indigo-400 rounded-[3px] px-1 text-[12px] font-bold outline-none dark:bg-zinc-700 dark:text-white"
-                                                                defaultValue={project.name}
-                                                                onBlur={(e) => handleProjectRename(project.id, e.target.value)}
-                                                                onKeyDown={(e) => e.key === 'Enter' && handleProjectRename(project.id, e.target.value)}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        ) : (
-                                                            <div className="flex items-center min-w-0 flex-1 justify-between">
-                                                                <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
-                                                                {showDocWordCount && <span className="text-[10px] text-slate-400/90 dark:text-zinc-500/90 font-medium shrink-0 mr-1.5">{(project.content || '').length.toLocaleString()}자</span>}
-                                                                <div className="flex items-center shrink-0">
-                                                                    <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
-                                                                    <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
-                                                                </div>
+                                                        <div className="flex items-center min-w-0 flex-1 justify-between">
+                                                            <span className={`text-[12px] truncate flex-1 mr-2 ${isActive ? 'text-slate-900 font-black dark:text-white' : 'text-slate-500 font-semibold dark:text-zinc-400'}`}>{project.name}</span>
+                                                            {showDocWordCount && <span className="text-[10px] text-slate-400/90 dark:text-zinc-500/90 font-medium shrink-0 mr-1.5">{(project.content || '').length.toLocaleString()}자</span>}
+                                                            <div className="flex items-center shrink-0">
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-[3px] ${getStatusBadgeStyle(project.status || '초고')}`}>{project.status || '초고'}</span>
+                                                                <button onClick={(e) => deleteProject(project.id, e)} className="w-0 opacity-0 group-hover:w-5 group-hover:opacity-100 group-hover:ml-1.5 overflow-hidden flex items-center justify-center text-slate-400 hover:text-red-500 transition-all duration-300 scale-90 dark:text-zinc-500 dark:hover:text-red-400"><IconTrash className="w-3 h-3" /></button>
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </Reorder.Item>
@@ -3811,11 +4086,7 @@
                                                 <div className="editor-title-container">
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 0 ? 'Focus Mode' : 'DOC TITLE'}</span>
-                                                        <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                                            {['초고', '수정', '완료'].map(status => (
-                                                                <button key={status} onClick={(e) => { e.stopPropagation(); setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, status } : p)); }} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(doc.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button>
-                                                            ))}
-                                                        </div>
+                                                        {renderStatusSelector(doc)}
                                                     </div>
                                                     <input
                                                         className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent"
@@ -3889,11 +4160,7 @@
                                                 <div className="editor-title-container">
                                                     <div className="flex items-center justify-between mb-3">
                                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{isZenMode && activeComparePane === 1 ? 'Focus Mode' : 'DOC TITLE'}</span>
-                                                        <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                                            {['초고', '수정', '완료'].map(status => (
-                                                                <button key={status} onClick={(e) => { e.stopPropagation(); setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, status } : p)); }} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(doc.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button>
-                                                            ))}
-                                                        </div>
+                                                        {renderStatusSelector(doc)}
                                                     </div>
                                                     <input
                                                         className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent"
@@ -3944,71 +4211,74 @@
                                 </div>
                             </div>
                         ) : (
-                            <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
-                                <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
-                                    <div className="editor-title-container">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => setShowHistoryModal(true)}
-                                                    className={`px-2 py-1 flex items-center gap-1 rounded-[3px] transition-all text-[10px] font-bold ${isZenMode ? 'opacity-10 hover:opacity-100 bg-slate-100 dark:bg-zinc-700 text-slate-500' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600'}`}
-                                                    title="문서 히스토리"
-                                                >
-                                                    <IconHistory className="w-3 h-3" />
-                                                    <span>기록</span>
-                                                </button>
-                                                <div className={`flex bg-slate-100 p-1 rounded-[3px] gap-1 dark:bg-zinc-700 transition-opacity ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                                    {['초고', '수정', '완료'].map(status => (<button key={status} onClick={() => setProjects(prev => prev.map(p => p.id === activeProject.id ? { ...p, status } : p))} className={`px-3 py-1 text-[10px] font-black rounded-[3px] transition-all ${(activeProject.status || '초고') === status ? (status === '완료' ? 'bg-emerald-600 text-white' : status === '수정' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-white shadow-sm text-indigo-600 dark:bg-zinc-600 dark:text-indigo-300') : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300'}`}>{status}</button>))}
+                        <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
+                            <motion.div layout className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
+                                <div className="editor-title-container">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest"> {isZenMode ? 'Focus Mode' : 'DOC TITLE'} </span>
+                                        <div className="flex gap-2">
+                                            {renderStatusSelector(activeProject)}
+                                        </div>
+                                    </div>
+                                    <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
+                                </div>
+                                <textarea
+                                    ref={textareaRef}
+                                    // [중요] zen-active 클래스 조건부 적용
+                                    className={`editor-textarea custom-scroll ${isZenMode ? 'zen-active' : ''}`}
+                                    style={{ fontSize: `${editorFontSize}px` }}
+                                    value={activeProject.content || ""}
+                                    onChange={(e) => {
+                                        handleDocInput(e);
+                                        updateFocusScroll(); // [중요] 입력할 때마다 목표 스크롤 갱신
+                                    }}
+                                    onKeyDown={(e) => {
+                                        handleDocKeyDown(e);
+                                        // 엔터나 백스페이스 누를 때도 갱신
+                                        if (e.key === 'Enter' || e.key === 'Backspace') requestAnimationFrame(updateFocusScroll);
+                                    }}
+                                    // [중요] 클릭하거나 키보드로 커서 이동 시에도 중앙 정렬
+                                    onClick={() => updateFocusScroll()}
+                                    onKeyUp={() => updateFocusScroll()}
+                                    placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
+                                />
+                                <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                    <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
+                                                        <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
+                                            <div className="flex gap-4 items-center">
+                                                <div className="flex flex-col gap-1"><span className="text-slate-400 uppercase">Statistics</span><div className="flex gap-3 text-slate-600 dark:text-zinc-400"><span>공백 포함: <b className="text-slate-900 dark:text-zinc-200">{(activeProject.content || "").length.toLocaleString()}</b>자</span><span>공백 제외: <b className="text-slate-900 dark:text-zinc-200">{(activeProject.content || "").replace(/\s+/g, '').length.toLocaleString()}</b>자</span></div></div>
+                                                <div className="w-px h-6 bg-slate-100 mx-2 dark:bg-zinc-700"></div>
+                                                <div className="flex flex-col gap-1"><span className="text-indigo-400 uppercase">Achievement</span><span className="text-[14px] text-indigo-600 italic dark:text-indigo-400">{Math.min(Math.round(((activeProject.content || "").length / defaultTargetCount) * 100), 100)}%</span></div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="text-slate-400 uppercase">Target Goal</span>
+                                                <div className="text-slate-600 dark:text-zinc-400 text-[14px] font-black">
+                                                    <span><b className="text-slate-900 dark:text-zinc-200">{defaultTargetCount.toLocaleString()}</b>자</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <input className="w-full text-2xl font-black text-slate-800 outline-none border-b-2 border-slate-100 focus:border-indigo-400 pb-2 transition-all dark:text-zinc-200 dark:border-zinc-700 dark:focus:border-indigo-500 dark:bg-transparent" value={activeProject.name} onChange={(e) => handleProjectRename(activeProject.id, e.target.value)} placeholder="문서 제목" />
-                                    </div>
-                                    <textarea
-                                        ref={textareaRef}
-                                        className={`editor-textarea custom-scroll ${isZenMode ? 'zen-active' : ''}`}
-                                        style={{ fontSize: `${editorFontSize}px` }}
-                                        value={activeProject.content || ""}
-                                        onChange={(e) => {
-                                            handleDocInput(e);
-                                            updateFocusScroll();
-                                        }}
-                                        onKeyDown={(e) => {
-                                            handleDocKeyDown(e);
-                                            if (e.key === 'Enter' || e.key === 'Backspace') requestAnimationFrame(updateFocusScroll);
-                                        }}
-                                        onClick={() => updateFocusScroll()}
-                                        onKeyUp={() => updateFocusScroll()}
-                                        placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
-                                    />
-                                    <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
-                                        <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
-                                            <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
-                                                <div className="flex gap-4 items-center">
-                                                    <div className="flex flex-col gap-1"><span className="text-slate-400 uppercase">Statistics</span><div className="flex gap-3 text-slate-600 dark:text-zinc-400"><span>공백 포함: <b className="text-slate-900 dark:text-zinc-200">{(activeProject.content || "").length.toLocaleString()}</b>자</span><span>공백 제외: <b className="text-slate-900 dark:text-zinc-200">{(activeProject.content || "").replace(/\s+/g, '').length.toLocaleString()}</b>자</span></div></div>
-                                                    <div className="w-px h-6 bg-slate-100 mx-2 dark:bg-zinc-700"></div>
-                                                    <div className="flex flex-col gap-1"><span className="text-indigo-400 uppercase">Achievement</span><span className="text-[14px] text-indigo-600 italic dark:text-indigo-400">{Math.min(Math.round(((activeProject.content || "").length / defaultTargetCount) * 100), 100)}%</span></div>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className="text-slate-400 uppercase">Target Goal</span>
-                                                    <div className="text-slate-600 dark:text-zinc-400 text-[14px] font-black">
-                                                        <span><b className="text-slate-900 dark:text-zinc-200">{defaultTargetCount.toLocaleString()}</b>자</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${Math.min(((activeProject.content || "").length / defaultTargetCount) * 100, 100)}%` }}
-                                                    style={{ backgroundColor: (activeProject.content || "").length >= defaultTargetCount ? "#10b981" : "#4f46e5" }}
-                                                    className="h-full transition-all duration-500 ease-out rounded-[3px]"
-                                                />
-                                            </div>
+                                        <div className="w-full h-1.5 bg-slate-100 rounded-[3px] overflow-hidden dark:bg-zinc-700">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(((activeProject.content || "").length / defaultTargetCount) * 100, 100)}%` }}
+                                                style={{ backgroundColor: (activeProject.content || "").length >= defaultTargetCount ? "#10b981" : "#4f46e5" }}
+                                                className="h-full transition-all duration-500 ease-out rounded-[3px]"
+                                            />
                                         </div>
                                     </div>
-                                </motion.div>
-                            </div>
+                                </div>
+                            </motion.div>
+                        </div>
+                        )}
+                        {/* Floating History Button for Single Doc View */}
+                        {!isTrashOpen && activeProject.type === 'doc' && !compareMode && !isZenMode && enableHistory && (
+                            <button
+                                onClick={() => setShowHistoryModal(true)}
+                                className="absolute bottom-8 right-8 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
+                            >
+                                <IconHistory className="w-3 h-3" />
+                                <span>기록 {activeProject.history?.length > 0 ? `(${activeProject.history.length})` : ''}</span>
+                            </button>
                         )}
                     </main>
 
@@ -4018,7 +4288,8 @@
                             doc={activeProject}
                             onClose={() => setShowHistoryModal(false)}
                             onRestore={restoreSnapshot}
-                            onSnapshot={() => createSnapshot(activeProject.id)}
+                            onSnapshot={(memo) => createSnapshot(activeProject.id, memo)}
+                            onDelete={deleteSnapshot}
                         />
                     )}
                     <AnimatePresence>
@@ -4614,7 +4885,7 @@
             );
         };
 
-        const SystemSettingsModal = ({ onClose, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount }) => {
+        const SystemSettingsModal = ({ onClose, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             return (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
                     <motion.div
@@ -4633,30 +4904,25 @@
                             </button>
                         </div>
 
-                        <div className="space-y-8">
+                        <div className="space-y-10">
                             {/* 외관 설정 섹션 */}
                             <section>
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-zinc-800 pb-2">Appearance</h3>
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">화면 테마</div>
-                                        </div>
+                                        <div className="text-sm font-black text-slate-700 dark:text-zinc-200">테마</div>
                                         <button
                                             onClick={toggleDarkMode}
-                                            className={`w-32 flex items-center justify-center gap-2 px-4 py-2 rounded-sm font-black text-[11px] transition-all ${isDarkMode ? 'bg-zinc-800 text-zinc-300 border border-zinc-700' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}
+                                            className={`w-24 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-sm font-black text-[10px] transition-all ${isDarkMode ? 'bg-zinc-800 text-zinc-300 border border-zinc-700' : 'bg-white text-slate-600 border border-slate-200 shadow-sm'}`}
                                         >
-                                            {isDarkMode ? <><IconMoon className="w-3 h-3" /> 다크 모드</> : <><IconSun className="w-3 h-3" /> 라이트 모드</>}
+                                            {isDarkMode ? <><IconMoon className="w-3 h-3" /> 다크</> : <><IconSun className="w-3 h-3" /> 라이트</>}
                                         </button>
                                     </div>
-
+                                    <div className="w-px h-4 bg-slate-200 dark:bg-zinc-700"></div>
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">기본 폰트</div>
-                                        </div>
+                                        <div className="text-sm font-black text-slate-700 dark:text-zinc-200">폰트</div>
                                         <button
                                             onClick={toggleFont}
-                                            className="w-32 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-sm font-black text-[11px] hover:bg-indigo-100 transition-all dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800"
+                                            className="w-24 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-sm font-black text-[10px] hover:bg-indigo-100 transition-all dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800"
                                         >
                                             <IconFont className="w-3 h-3" />
                                             {FONT_DISPLAY_NAMES[fontMode] || fontMode}
@@ -4667,7 +4933,7 @@
 
                             {/* 편집기 설정 섹션 */}
                             <section>
-                                <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                                <div className="flex items-center justify-between mb-5 border-b border-slate-100 dark:border-zinc-800 pb-2">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Editor Settings</h3>
                                     <button
                                         onClick={() => {
@@ -4675,6 +4941,8 @@
                                             setEditorFontSize(18);
                                             setDefaultTargetCount(5000);
                                             setFocusPosition(0.5);
+                                            setShowDocWordCount(false);
+                                            setEnableHistory(false);
                                         }}
                                         className="text-slate-400 hover:text-indigo-500 transition-colors"
                                         title="기본값으로 초기화"
@@ -4682,11 +4950,9 @@
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
                                     </button>
                                 </div>
-                                <div className="space-y-5">
+                                <div className="space-y-7">
                                     <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">에디터 너비</div>
-                                        </div>
+                                        <div className="text-sm font-black text-slate-700 dark:text-zinc-200">에디터 너비</div>
                                         <div className="flex gap-1.5">
                                             {[
                                                 { value: 'narrow', label: '좁음' },
@@ -4704,57 +4970,57 @@
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">문서 리스트 글자수 보이기</div>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowDocWordCount(!showDocWordCount)}
-                                            className={`w-10 h-5 rounded-full transition-all relative ${showDocWordCount ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-600'}`}
-                                        >
-                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${showDocWordCount ? 'left-5' : 'left-0.5'}`} />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <div>
+                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
+                                        <div className="flex items-center justify-between">
                                             <div className="text-sm font-black text-slate-700 dark:text-zinc-200">글자 크기</div>
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    className="w-12 px-1 py-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-sm font-black text-[10px] text-right outline-none focus:border-indigo-500 text-slate-800 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    value={editorFontSize}
+                                                    onChange={(e) => setEditorFontSize(parseInt(e.target.value) || 18)}
+                                                />
+                                                <span className="text-[9px] font-black text-slate-400">PX</span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                className="w-24 px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm font-black text-[11px] text-right outline-none focus:border-indigo-500 transition-all dark:text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                value={editorFontSize}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value) || 18;
-                                                    setEditorFontSize(val);
-                                                }}
-                                                min="10"
-                                                max="40"
-                                            />
-                                            <span className="text-[11px] font-black text-slate-400 uppercase">px</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">목표 자수 설정</div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                className="w-24 px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-sm font-black text-[11px] text-right outline-none focus:border-indigo-500 transition-all dark:text-zinc-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                                value={defaultTargetCount || 5000}
-                                                onChange={(e) => {
-                                                    const val = parseInt(e.target.value) || 0;
-                                                    setDefaultTargetCount(val);
-                                                }}
-                                            />
-                                            <span className="text-[11px] font-black text-slate-400 uppercase">자</span>
+                                        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-700"></div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">목표 자수</div>
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    className="w-16 px-1 py-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-sm font-black text-[10px] text-right outline-none focus:border-indigo-500 text-slate-800 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                    value={defaultTargetCount || 5000}
+                                                    onChange={(e) => setDefaultTargetCount(parseInt(e.target.value) || 0)}
+                                                />
+                                                <span className="text-[9px] font-black text-slate-400">자</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-3">
+                                    <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">리스트 글자수 표시</div>
+                                            <button
+                                                onClick={() => setShowDocWordCount(!showDocWordCount)}
+                                                className={`w-10 h-5 rounded-full transition-all relative shrink-0 ${showDocWordCount ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-600'}`}
+                                            >
+                                                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${showDocWordCount ? 'left-5' : 'left-0.5'}`} />
+                                            </button>
+                                        </div>
+                                        <div className="w-px h-4 bg-slate-200 dark:bg-zinc-700"></div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-sm font-black text-slate-700 dark:text-zinc-200">히스토리 기능</div>
+                                            <button
+                                                onClick={() => setEnableHistory(!enableHistory)}
+                                                className={`w-10 h-5 rounded-full transition-all relative shrink-0 ${enableHistory ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-zinc-600'}`}
+                                            >
+                                                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${enableHistory ? 'left-5' : 'left-0.5'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
                                         <div className="flex justify-between items-end">
                                             <div>
                                                 <div className="text-sm font-black text-slate-700 dark:text-zinc-200">집중 모드 포커스 높이</div>
@@ -4793,7 +5059,7 @@
             );
         };
 
-        const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount }) => {
+        const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
             const [showSystemSettings, setShowSystemSettings] = useState(false);
 
@@ -4983,6 +5249,8 @@
                             setEditorFontSize={setEditorFontSize}
                             showDocWordCount={showDocWordCount}
                             setShowDocWordCount={setShowDocWordCount}
+                            enableHistory={enableHistory}
+                            setEnableHistory={setEnableHistory}
                         />
                     )}
 
@@ -5083,7 +5351,7 @@
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-3">
                                     <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
-                                    <h2 className="text-lg font-bold text-slate-700 dark:text-zinc-200">나의 책장</h2>
+                                    <h2 className="text-lg font-bold text-slate-700 dark:text-zinc-200">내 서재</h2>
                                     <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-[3px]">{books.length}권</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -5164,6 +5432,7 @@
             const [editorWidth, setEditorWidth] = useState(() => localStorage.getItem('sagak_editor_width') || 'default');
             const [editorFontSize, setEditorFontSize] = useState(() => parseInt(localStorage.getItem('sagak_editor_fontsize')) || 18);
             const [showDocWordCount, setShowDocWordCount] = useState(() => localStorage.getItem('sagak_show_doc_wordcount') !== 'false');
+            const [enableHistory, setEnableHistory] = useState(() => localStorage.getItem('sagak_enable_history') !== 'false');
             const saveTimerRef = useRef(null);
 
             useEffect(() => {
@@ -5178,7 +5447,8 @@
                 localStorage.setItem('sagak_editor_width', editorWidth);
                 localStorage.setItem('sagak_editor_fontsize', editorFontSize);
                 localStorage.setItem('sagak_show_doc_wordcount', showDocWordCount);
-            }, [focusPosition, defaultTargetCount, editorWidth, editorFontSize, showDocWordCount]);
+                localStorage.setItem('sagak_enable_history', enableHistory);
+            }, [focusPosition, defaultTargetCount, editorWidth, editorFontSize, showDocWordCount, enableHistory]);
 
             const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
@@ -5262,6 +5532,8 @@
                             setEditorFontSize={setEditorFontSize}
                             showDocWordCount={showDocWordCount}
                             setShowDocWordCount={setShowDocWordCount}
+                            enableHistory={enableHistory}
+                            setEnableHistory={setEnableHistory}
                         />
                     )}
                     {view === 'workspace' && currentBook && (
@@ -5282,6 +5554,8 @@
                             editorFontSize={editorFontSize}
                             showDocWordCount={showDocWordCount}
                             setShowDocWordCount={setShowDocWordCount}
+                            enableHistory={enableHistory}
+                            setEnableHistory={setEnableHistory}
                         />
                     )}
                 </div>
