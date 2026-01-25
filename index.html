@@ -3760,11 +3760,7 @@
                         <div
                             className="px-6 pt-6 pb-5 border-b border-slate-200/60 dark:border-zinc-800/60"
                             style={{
-                                background: isDarkMode
-                                    ? `linear-gradient(180deg, ${currentBook.color}08 0%, ${currentBook.color}15 40%, ${currentBook.color}25 70%, ${currentBook.color}35 100%)`
-                                    : `linear-gradient(180deg, ${currentBook.color}85 0%, ${currentBook.color}75 15%, ${currentBook.color}60 35%, ${currentBook.color}45 55%, ${currentBook.color}30 75%, ${currentBook.color}20 100%)`,
-                                backdropFilter: 'blur(12px)',
-                                WebkitBackdropFilter: 'blur(12px)'
+                                backgroundColor: isDarkMode ? `${currentBook.color}12` : `${currentBook.color}22`,
                             }}
                         >
                             <div className="text-left">
