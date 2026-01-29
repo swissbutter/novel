@@ -160,6 +160,19 @@
             stroke-linejoin: round;
         }
 
+        @keyframes dashFlow {
+            from {
+                stroke-dashoffset: 0;
+            }
+            to {
+                stroke-dashoffset: calc(var(--dash-offset, -24) * 1px);
+            }
+        }
+
+        .edge-path-animated {
+            animation: dashFlow var(--dash-duration, 0.6s) linear infinite;
+        }
+
         .edge-hitbox {
             fill: none;
             stroke: transparent;
@@ -579,7 +592,12 @@
         const getStrokeDashArray = (style, width) => {
             const w = width || 2;
             switch (style) {
-                case 'dashed': return `${w * 2}, ${w * 2}`;
+                case 'dashed':
+                    // 굵기에 따라 파선 길이 비율 조정
+                    if (w >= 6) {
+                        return `${w * 3}, ${w * 2}`;
+                    }
+                    return `${w * 4}, ${w * 3}`;
                 case 'dotted': return `0, ${w * 2}`;
                 default: return "";
             }
@@ -4416,7 +4434,7 @@
 
                                             let pathData = isEventToEvent ? `M ${x1} ${y1} L ${getEdgeTargetPos(from, to, 12).x} ${getEdgeTargetPos(from, to, 12).y}` : getBezierPath(x1, y1, x2, y2);
                                             const strokeWidth = edge.width || (isPersonToEvent ? 12 : isEventToEvent ? 4 : isSameType && !isCoreType(from.type) ? 3 : 2);
-                                            const strokeDash = edge.style ? getStrokeDashArray(edge.style, strokeWidth) : (isIdeaInvolved ? "8, 6" : "");
+                                            const strokeDash = edge.style ? getStrokeDashArray(edge.style, strokeWidth) : "";
                                             const labelWidth = Math.max(70, (edge.label || "").length * 10 + 20);
                                             const showLabel = true;
                                             return (
@@ -4428,7 +4446,7 @@
                                                             <path d={pathData} stroke={isDarkMode ? '#09080B' : '#f8fafc'} strokeWidth={strokeWidth} className="edge-path" />
                                                         </>
                                                     ) : (
-                                                        <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} strokeDasharray={strokeDash} className="edge-path opacity-80" />
+                                                        <path d={pathData} stroke={edgeColor} strokeWidth={strokeWidth} markerEnd={isEventToEvent ? "url(#arrow-event)" : ""} strokeDasharray={strokeDash} className={`edge-path opacity-80${edge.style === 'dashed' ? ' edge-path-animated' : ''}`} style={edge.style === 'dashed' ? { '--dash-offset': -(strokeWidth >= 6 ? strokeWidth * 5 : strokeWidth * 7), '--dash-duration': '0.5s' } : undefined} />
                                                     )}
                                                     {showLabel && edge.label && (
                                                         <g className="cursor-pointer pointer-events-auto" onDoubleClick={(e) => { e.stopPropagation(); setSelectedEdgeId(edge.id); }}>
