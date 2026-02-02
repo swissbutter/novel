@@ -2148,6 +2148,96 @@
             );
         };
 
+        const SectorNavigator = ({ nodes, onNavigate }) => {
+            const [isOpen, setIsOpen] = useState(false);
+
+            const handleNavigate = useCallback((sector) => {
+                if (!nodes || nodes.length === 0) return;
+
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                nodes.forEach(n => {
+                    const w = n.type === '그룹' ? (n.data.width || 400) : 250;
+                    const h = n.type === '그룹' ? (n.data.height || 300) : 200;
+                    minX = Math.min(minX, n.x);
+                    maxX = Math.max(maxX, n.x + w);
+                    minY = Math.min(minY, n.y);
+                    maxY = Math.max(maxY, n.y + h);
+                });
+
+                const padding = 1000;
+                minX -= padding; minY -= padding;
+                maxX += padding; maxY += padding;
+
+                const width = maxX - minX;
+                const height = maxY - minY;
+                const sectorW = width / 3;
+                const sectorH = height / 3;
+
+                const row = Math.floor((sector - 1) / 3);
+                const col = (sector - 1) % 3;
+
+                const centerX = minX + col * sectorW + sectorW / 2;
+                const centerY = minY + row * sectorH + sectorH / 2;
+
+                const containerW = window.innerWidth;
+                const containerH = window.innerHeight;
+                
+                const scaleX = containerW / sectorW;
+                const scaleY = containerH / sectorH;
+                const targetScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.1), 1.5);
+
+                const targetPan = {
+                    x: containerW / 2 - centerX * targetScale,
+                    y: containerH / 2 - centerY * targetScale
+                };
+
+                onNavigate(targetPan, targetScale);
+            }, [nodes, onNavigate]);
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.altKey && e.key >= '1' && e.key <= '9') {
+                        e.preventDefault();
+                        handleNavigate(parseInt(e.key));
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [handleNavigate]);
+
+            return (
+                <div className="relative pointer-events-auto">
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'}`}
+                        title="섹터 네비게이션 (Alt + 1~9)"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M15 3v18" /><path d="M3 9h18" /><path d="M3 15h18" /></svg>
+                    </button>
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: -10, scale: 0.9 }}
+                                className="absolute top-full right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-slate-200 dark:border-zinc-700 p-2 grid grid-cols-3 gap-1 w-[140px]"
+                            >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => handleNavigate(num)}
+                                        className="aspect-square flex items-center justify-center rounded bg-slate-50 hover:bg-indigo-100 hover:text-indigo-600 dark:bg-zinc-700 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-400 text-slate-500 dark:text-zinc-400 font-bold text-sm transition-colors"
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            );
+        };
+
         const Workspace = ({ currentBook, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
@@ -2164,6 +2254,8 @@
             const [showSynopsisModal, setShowSynopsisModal] = useState(false);
             const [openStatusDropdownId, setOpenStatusDropdownId] = useState(null);
             const [corkboardMode, setCorkboardMode] = useState(false);
+            const [corkboardSearch, setCorkboardSearch] = useState('');
+            const [corkboardStatusFilter, setCorkboardStatusFilter] = useState(null);
 
             const [mention, setMention] = useState({ active: false, type: null, search: '', x: 0, y: 0, pos: 0, selectedIndex: 0 });
             const [showNodeDropdown, setShowNodeDropdown] = useState(false);
@@ -3971,6 +4063,9 @@
                                                 {/* 상단 공통 도구 (타이머, 집중모드) */}
                                                 <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
                                                     <div className="flex items-center gap-2 pointer-events-auto">
+                                                        {activeProject.type === 'board' && !corkboardMode && (
+                                                            <SectorNavigator nodes={nodes} onNavigate={animateViewport} />
+                                                        )}
                                                         <button
                                                             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
                                                             className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
@@ -4029,89 +4124,114 @@
                                                 </div>
                         
                                                                                                 {corkboardMode ? (
-                        
                                                                                                     /* 코르크보드 모드 뷰 */
-                        
-                                                                                                    <div 
-                        
-                                                                                                        className="w-full h-full overflow-y-auto custom-scroll p-10 dot-background"
-                        
-                                                                                                        onWheel={(e) => e.stopPropagation()}
-                        
-                                                                                                    >
-                        
+                                                                                                    <div className="w-full h-full overflow-y-auto custom-scroll p-10 dot-background">
                                                                                                         <div className="max-w-7xl mx-auto py-12">
-                        
                                                                                                             {/* 헤더 */}
-                        
                                                                                                             <div className="flex items-center justify-between mb-8">
-                        
                                                                                                                 <div className="flex items-center gap-4">
-                        
                                                                                                                     <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-                        
                                                                                                                         <span className="text-2xl">📌</span>
-                        
                                                                                                                     </div>
-                        
                                                                                                                     <div>
-                        
                                                                                                                         <h2 className="text-2xl font-black text-slate-800 dark:text-zinc-100">코르크 보드</h2>
-                        
                                                                                                                         <span className="text-sm text-slate-400 dark:text-zinc-500">{projects.filter(p => p.type === 'doc').length}개 문서</span>
-                        
                                                                                                                     </div>
-                        
                                                                                                                 </div>
-                        
-                                                                                                                <button
-                        
-                                                                                                                    onClick={createNewDoc}
-                        
-                                                                                                                    className="px-5 py-2.5 text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800 flex items-center gap-2"
-                        
-                                                                                                                >
-                        
-                                                                                                                    <IconPlus className="w-4 h-4" />
-                        
-                                                                                                                    새 문서
-                        
-                                                                                                                </button>
-                        
-                                                                                                            </div>
-                        
-                                                                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        
-                                                                                                                {projects.filter(p => p.type === 'doc').map((doc) => (
-                        
-                                                                                                                    <motion.div
-                        
-                                                                                                                        key={doc.id}
-                        
-                                                                                                                        layoutId={`corkboard-${doc.id}`}
-                        
-                                                                                                                        className="bg-white dark:bg-zinc-800 rounded-lg shadow-md border border-slate-200 dark:border-zinc-700 p-2 flex flex-col h-[300px] hover:shadow-xl transition-all"
-                        
-                                                                                                                        onWheel={(e) => {
-                        
-                                                                                                                            const el = e.currentTarget.querySelector('textarea');
-                        
-                                                                                                                            if (el && el.scrollHeight > el.clientHeight) {
-                        
-                                                                                                                                e.stopPropagation();
-                        
+                                                                                                                
+                                                                                                                <div className="hidden xl:flex items-center gap-3">
+                                                                                                                    {/* 숫자 이동 입력 */}
+                                                                                                                    <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-2 h-9 shadow-sm gap-1.5" title="카드 번호로 이동 (Enter)">
+                                                                                                                        <span className="text-[10px] font-black text-slate-400 uppercase">Go</span>
+                                                                                                                        <input 
+                                                                                                                            type="number" 
+                                                                                                                            placeholder="#" 
+                                                                                                                            className="bg-slate-50 dark:bg-zinc-900 border-none outline-none text-xs font-black text-indigo-600 dark:text-indigo-400 w-8 text-center h-6 rounded-md [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                                                                                            onKeyDown={(e) => {
+                                                                                                                                if (e.key === 'Enter') {
+                                                                                                                                    const num = parseInt(e.target.value);
+                                                                                                                                    const cards = document.querySelectorAll('.corkboard-card');
+                                                                                                                                    if (num > 0 && num <= cards.length) {
+                                                                                                                                        cards[num-1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                                                                                                        cards[num-1].classList.add('ring-2', 'ring-indigo-500', 'ring-offset-2');
+                                                                                                                                        setTimeout(() => cards[num-1].classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-2'), 2000);
+                                                                                                                                    } else {
+                                                                                                                                        showToast("유효하지 않은 번호입니다", "error");
+                                                                                                                                    }
+                                                                                                                                    e.target.value = '';
+                                                                                                                                }
+                                                                                                                            }}
+                                                                                                                        />
+                                                                                                                    </div>
+
+                                                                                                                    {/* 검색 및 필터 영역 */}
+                                                                                                                    <div className="flex items-center bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg px-3 h-9 shadow-sm gap-2">
+                                                                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-400"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                                                                                                        <input 
+                                                                                                                            type="text" 
+                                                                                                                            placeholder="문서 제목 검색..." 
+                                                                                                                            className="bg-transparent border-none outline-none text-xs font-bold text-slate-700 dark:text-zinc-200 w-40"
+                                                                                                                            value={corkboardSearch}
+                                                                                                                            onChange={(e) => setCorkboardSearch(e.target.value)}
+                                                                                                                        />
+                                                                                                                    </div>
+
+                                                                                                                    <div className="flex bg-slate-100 dark:bg-zinc-900 p-1 rounded-lg border border-slate-200 dark:border-zinc-800 h-9">
+                                                                                                                        {['초고', '수정', '완료'].map(status => {
+                                                                                                                            const isActive = corkboardStatusFilter === status;
+                                                                                                                            let activeClass = '';
+                                                                                                                            
+                                                                                                                            if (isActive) {
+                                                                                                                                if (status === '수정') activeClass = 'bg-amber-100 text-amber-600 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800 shadow-sm';
+                                                                                                                                else if (status === '완료') activeClass = 'bg-emerald-600 text-white shadow-sm';
+                                                                                                                                else activeClass = 'bg-white dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400 shadow-sm';
                                                                                                                             }
-                        
-                                                                                                                        }}
-                        
+
+                                                                                                                            return (
+                                                                                                                                <button
+                                                                                                                                    key={status}
+                                                                                                                                    onClick={() => setCorkboardStatusFilter(prev => prev === status ? null : status)}
+                                                                                                                                    className={`px-3 flex items-center justify-center text-[10px] font-black rounded-md transition-all ${isActive 
+                                                                                                                                        ? activeClass 
+                                                                                                                                        : 'text-slate-400 hover:text-slate-600 dark:text-zinc-500'}`}
+                                                                                                                                >
+                                                                                                                                    {status}
+                                                                                                                                </button>
+                                                                                                                            );
+                                                                                                                        })}
+                                                                                                                    </div>
+
+                                                                                                                    <button
+                                                                                                                        onClick={createNewDoc}
+                                                                                                                        className="px-5 h-9 text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 dark:text-indigo-400 rounded-lg transition-colors border border-indigo-200 dark:border-indigo-800 flex items-center gap-2 shadow-sm"
                                                                                                                     >
-                        
-                                                                                                                        <div className="flex items-center justify-between mb-2 border-b border-slate-100 dark:border-zinc-700 pb-2">
-                        
+                                                                                                                        <IconPlus className="w-4 h-4" />
+                                                                                                                        새 문서
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                            </div>
+
+                                                                                                            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                                                                                                                {projects
+                                                                                                                    .filter(p => p.type === 'doc')
+                                                                                                                    .filter(p => !corkboardStatusFilter || (p.status || '초고') === corkboardStatusFilter)
+                                                                                                                    .filter(p => p.name.toLowerCase().includes(corkboardSearch.toLowerCase()))
+                                                                                                                    .map((doc, idx) => (
+                                                                                                                    <motion.div
+                                                                                                                        key={doc.id}
+                                                                                                                        initial={{ opacity: 0 }}
+                                                                                                                        animate={{ opacity: 1 }}
+                                                                                                                        transition={{ duration: 0.1 }}
+                                                                                                                        className="corkboard-card bg-white dark:bg-zinc-800 rounded-lg shadow-md border border-slate-200 dark:border-zinc-700 p-2 flex flex-col h-[300px] hover:shadow-xl group/card relative transition-shadow"
+                                                                                                                    >
+                                                                                                                        {/* 인덱스 표시 */}
+                                                                                                                        <div className="absolute -top-2 -left-2 w-6 h-6 bg-slate-800 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg z-10 border-2 border-white dark:border-zinc-700 group-hover/card:bg-indigo-600 transition-colors">
+                                                                                                                            {idx + 1}
+                                                                                                                        </div>
+                                                                                                                        
+                                                                                                                        <div className="flex items-center justify-between mb-2 border-b border-slate-100 dark:border-zinc-700 pb-2 pl-4">
                                                                                                                             <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
-                        
                                                                                                                                 <span className="text-lg shrink-0">📄</span>
-                        
                                                                                                                                 {corkboardEditingId === doc.id ? (
                                                                                                                                     <input
                                                                                                                                         autoFocus
@@ -4131,169 +4251,133 @@
                                                                                                                                         {doc.name}
                                                                                                                                     </span>
                                                                                                                                 )}
-                        
                                                                                                                             </div>
-                        
                                                                                                                             <span className={`text-[9px] font-black px-2 py-0.5 rounded-[2px] shrink-0 ${getStatusBadgeStyle(doc.status)}`}>{doc.status || '초고'}</span>
-                        
                                                                                                                         </div>
-                        
                                                                                                                         <div className="flex-1 overflow-hidden mb-2 relative -mr-2">
-
                                                                                                                             <textarea
-
                                                                                                                                 className="w-full h-full resize-none outline-none text-sm text-slate-600 dark:text-zinc-300 leading-relaxed bg-transparent border-none pr-2 placeholder:italic custom-scroll"
-                        
                                                                                                                                 placeholder="시놉시스를 입력하세요..."
-                        
                                                                                                                                 value={doc.synopsis || ''}
-                        
                                                                                                                                 onChange={(e) => setProjects(prev => prev.map(p => p.id === doc.id ? { ...p, synopsis: e.target.value } : p))}
-                        
                                                                                                                                 onMouseDown={(e) => e.stopPropagation()} 
-                        
                                                                                                                                 onWheel={(e) => {
-                        
                                                                                                                                     const el = e.currentTarget;
-                        
                                                                                                                                     if (el.scrollHeight > el.clientHeight) {
-                        
                                                                                                                                         e.stopPropagation();
-                        
                                                                                                                                     }
-                        
                                                                                                                                 }}
-                        
                                                                                                                             />
-                        
                                                                                                                         </div>
-                        
                                                                                                                         <div className="pt-2 border-t border-slate-100 dark:border-zinc-700 flex justify-between items-center text-[10px] text-slate-400 dark:text-zinc-500">
-                        
                                                                                                                             <span>{(doc.content || "").length.toLocaleString()}자</span>
-                        
                                                                                                                             <button 
-                        
                                                                                                                                 onClick={(e) => {
-                        
                                                                                                                                     e.stopPropagation();
-                        
                                                                                                                                     setCorkboardMode(false);
-                        
                                                                                                                                     handleSelectProject(doc.id);
-                        
                                                                                                                                 }}
-                        
                                                                                                                                 className="hover:text-indigo-600 dark:hover:text-indigo-400 font-bold transition-colors"
-                        
                                                                                                                             >
-                        
                                                                                                                                 바로가기 →
-                        
                                                                                                                             </button>
-                        
                                                                                                                         </div>
-                        
                                                                                                                     </motion.div>
-                        
                                                                                                                 ))}
-                        
                                                                                                             </div>
-                        
                                                                                                         </div>
-                        
                                                                                                     </div>
-                        
                                                                                                 ) : isTrashOpen ? (
-                                                                                                                    /* 휴지통 메인 뷰 */
-                                                                                                                    <div className="w-full h-full overflow-y-auto custom-scroll p-10 bg-slate-100 dark:bg-zinc-950">
-                                                                                                                        <div className="max-w-7xl mx-auto py-12">
-                                                                                                                            {/* 헤더 */}
-                                                                                                                            <div className="flex items-center justify-between mb-8">
-                                                                                                                                <div className="flex items-center gap-4">
-                                                                                                                                    <div className="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
-                                                                                                                                        <IconTrash className="w-7 h-7 text-red-500" />
+                                                                                                    /* 휴지통 메인 뷰 */
+                                                                                                    <div className="w-full h-full overflow-y-auto custom-scroll p-10 bg-slate-100 dark:bg-zinc-950">
+                                                                                                        <div className="max-w-7xl mx-auto py-12">
+                                                                                                            {/* 헤더 */}
+                                                                                                            <div className="flex items-center justify-between mb-8">
+                                                                                                                <div className="flex items-center gap-4">
+                                                                                                                    <div className="w-14 h-14 bg-red-50 dark:bg-red-900/20 rounded-xl flex items-center justify-center">
+                                                                                                                        <IconTrash className="w-7 h-7 text-red-500" />
+                                                                                                                    </div>
+                                                                                                                    <div>
+                                                                                                                        <h2 className="text-2xl font-black text-slate-800 dark:text-zinc-100">휴지통</h2>
+                                                                                                                        <span className="text-sm text-slate-400 dark:text-zinc-500">{trash.length}개 항목</span>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                {trash.length > 0 && (
+                                                                                                                    <button
+                                                                                                                        onClick={emptyTrash}
+                                                                                                                        className="px-5 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-200 dark:border-red-800"
+                                                                                                                    >
+                                                                                                                        휴지통 비우기
+                                                                                                                    </button>
+                                                                                                                )}
+                                                                                                            </div>
+
+                                                                                                            {/* 컨텐츠 - 카드 형식 */}
+                                                                                                            {trash.length === 0 ? (
+                                                                                                                <div className="h-[400px] flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
+                                                                                                                    <IconTrash className="w-20 h-20 mb-6 opacity-20" />
+                                                                                                                    <p className="text-xl font-bold mb-2">휴지통이 비어있습니다</p>
+                                                                                                                    <p className="text-sm">삭제된 보드와 문서가 여기에 표시됩니다</p>
+                                                                                                                </div>
+                                                                                                            ) : (
+                                                                                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                                                                                                    {trash.map(item => (
+                                                                                                                        <motion.div
+                                                                                                                            key={item.id}
+                                                                                                                            initial={{ opacity: 0 }}
+                                                                                                                            animate={{ opacity: 1 }}
+                                                                                                                            exit={{ opacity: 0 }}
+                                                                                                                            transition={{ duration: 0.15 }}
+                                                                                                                            className="group bg-white dark:bg-zinc-800 rounded-lg p-3 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-lg transition-all"
+                                                                                                                        >
+                                                                                                                            <div className="flex items-start justify-between mb-3">
+                                                                                                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                                                                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 ${item.type === 'board' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
+                                                                                                                                        {item.type === 'board' ? '📋' : '📄'}
                                                                                                                                     </div>
-                                            <div>
-                                                <h2 className="text-2xl font-black text-slate-800 dark:text-zinc-100">휴지통</h2>
-                                                <span className="text-sm text-slate-400 dark:text-zinc-500">{trash.length}개 항목</span>
-                                            </div>
-                                        </div>
-                                        {trash.length > 0 && (
-                                            <button
-                                                onClick={emptyTrash}
-                                                className="px-5 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors border border-red-200 dark:border-red-800"
-                                            >
-                                                휴지통 비우기
-                                            </button>
-                                        )}
-                                    </div>
+                                                                                                                                    <div className="min-w-0 flex-1">
+                                                                                                                                        <div className="flex justify-between items-start gap-2">
+                                                                                                                                            <h3 className="font-bold text-sm text-slate-800 dark:text-zinc-100 truncate flex-1">{item.name}</h3>
+                                                                                                                                            <span className="text-[12px] text-slate-400 dark:text-zinc-500 font-black shrink-0 mt-0.5 uppercase">
+                                                                                                                                                {item.type === 'board' ? `${item.nodes?.length || 0} 노드` : `${(item.content || '').length.toLocaleString()} 자`}
+                                                                                                                                            </span>
+                                                                                                                                        </div>
+                                                                                                                                        <span className="text-[9px] text-slate-400 dark:text-zinc-500 uppercase font-bold block mt-0.5">
+                                                                                                                                            {item.type === 'board' ? '보드' : '문서'}
+                                                                                                                                            {item.deletedAt && ` · ${new Date(item.deletedAt).toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
+                                                                                                                                        </span>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </div>
 
-                                    {/* 컨텐츠 - 카드 형식 */}
-                                    {trash.length === 0 ? (
-                                        <div className="h-[400px] flex flex-col items-center justify-center text-slate-400 dark:text-zinc-500">
-                                            <IconTrash className="w-20 h-20 mb-6 opacity-20" />
-                                            <p className="text-xl font-bold mb-2">휴지통이 비어있습니다</p>
-                                            <p className="text-sm">삭제된 보드와 문서가 여기에 표시됩니다</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                                            {trash.map(item => (
-                                                <motion.div
-                                                    key={item.id}
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className="group bg-white dark:bg-zinc-800 rounded-lg p-3 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 hover:shadow-lg transition-all"
-                                                >
-                                                    <div className="flex items-start justify-between mb-3">
-                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-base shrink-0 ${item.type === 'board' ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-emerald-100 dark:bg-emerald-900/30'}`}>
-                                                                {item.type === 'board' ? '📋' : '📄'}
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex justify-between items-start gap-2">
-                                                                    <h3 className="font-bold text-sm text-slate-800 dark:text-zinc-100 truncate flex-1">{item.name}</h3>
-                                                                    <span className="text-[12px] text-slate-400 dark:text-zinc-500 font-black shrink-0 mt-0.5 uppercase">
-                                                                        {item.type === 'board' ? `${item.nodes?.length || 0} 노드` : `${(item.content || '').length.toLocaleString()} 자`}
-                                                                    </span>
-                                                                </div>
-                                                                <span className="text-[9px] text-slate-400 dark:text-zinc-500 uppercase font-bold block mt-0.5">
-                                                                    {item.type === 'board' ? '보드' : '문서'}
-                                                                    {item.deletedAt && ` · ${new Date(item.deletedAt).toLocaleString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                                                                                            {/* 액션 버튼 */}
+                                                                                                                            <div className="flex gap-2 pt-2 border-t border-slate-50 dark:border-zinc-700/50">
+                                                                                                                                <button
+                                                                                                                                    onClick={() => restoreFromTrash(item.id)}
+                                                                                                                                    className="flex-1 py-1.5 px-3 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-md transition-colors flex items-center justify-center gap-1.5"
+                                                                                                                                >
+                                                                                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                                                                                                    </svg>
+                                                                                                                                    복원
+                                                                                                                                </button>
+                                                                                                                                <button
+                                                                                                                                    onClick={() => permanentDelete(item.id)}
+                                                                                                                                    className="py-1.5 px-3 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-md transition-colors"
+                                                                                                                                    title="완전 삭제"
+                                                                                                                                >
+                                                                                                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                                                                                    </svg>
+                                                                                                                                </button>
+                                                                                                                            </div>
+                                                                                                                        </motion.div>
+                                                                                                                    ))}
+                                                                                                                </div>
+                                                                                                            )}
+                                                                                                        </div>
+                                                                                                    </div>
 
-                                                    {/* 액션 버튼 */}
-                                                    <div className="flex gap-2 pt-2 border-t border-slate-50 dark:border-zinc-700/50">
-                                                        <button
-                                                            onClick={() => restoreFromTrash(item.id)}
-                                                            className="flex-1 py-1.5 px-3 text-[10px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 dark:text-emerald-400 rounded-md transition-colors flex items-center justify-center gap-1.5"
-                                                        >
-                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                            </svg>
-                                                            복원
-                                                        </button>
-                                                        <button
-                                                            onClick={() => permanentDelete(item.id)}
-                                                            className="py-1.5 px-3 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 rounded-md transition-colors"
-                                                            title="완전 삭제"
-                                                        >
-                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-                                                </motion.div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         ) : activeProject.type === 'board' ? (
                             <>
                                 <div className="absolute top-6 left-6 z-[80] flex items-center gap-3" onMouseDown={(e) => e.stopPropagation()}>
