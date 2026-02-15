@@ -16,6 +16,8 @@
     <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -432,6 +434,51 @@
         .compare-container .zen-active::-webkit-scrollbar {
             display: none !important;
         }
+
+        /* Responsive Sidebar and Editor */
+        @media (max-width: 1024px) {
+            .workspace-sidebar {
+                position: absolute !important;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 200 !important;
+                box-shadow: 20px 0 50px rgba(0,0,0,0.2) !important;
+                background: white !important;
+            }
+            .dark .workspace-sidebar {
+                background: #141417 !important;
+            }
+            .editor-paper {
+                margin: 0 auto !important;
+                min-height: 100vh !important;
+                border-radius: 0 !important;
+            }
+            .mobile-hide {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .editor-paper {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                min-height: 100vh !important;
+                border-radius: 0 !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+            .editor-title-container {
+                padding: 30px 20px 10px 20px !important;
+            }
+            .editor-textarea {
+                padding: 10px 20px 60px 20px !important;
+            }
+            .editor-textarea.zen-active {
+                padding-bottom: 40vh !important;
+            }
+        }
     </style>
 </head>
 
@@ -520,6 +567,13 @@
     <script type="text/babel">
         const { useState, useCallback, useRef, useMemo, useEffect, memo } = React;
         const { motion, AnimatePresence, Reorder } = window.Motion;
+
+        // Supabase 초기화 (config.js에서 로드)
+        const config = window.SAGAK_CONFIG || {};
+        const SUPABASE_URL = config.SUPABASE_URL || '';
+        const SUPABASE_ANON_KEY = config.SUPABASE_ANON_KEY || '';
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
         const CARD_W = 250;
         const CARD_H = 200;
         const FONT_DISPLAY_NAMES = {
@@ -2239,7 +2293,7 @@
             );
         };
 
-        const Workspace = ({ currentBook, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const Workspace = ({ currentBook, user, onLogin, onLogout, onWithdrawal, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
             const [isTrashOpen, setIsTrashOpen] = useState(false); // 휴지통 열림 상태
@@ -2273,7 +2327,36 @@
             const [pomoRemaining, setPomoRemaining] = useState(25 * 60);
             const [isPomoSetting, setIsPomoSetting] = useState(false);
             const [isNameGenOpen, setIsNameGenOpen] = useState(false);
+            const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
             const [nameGenSettings, setNameGenSettings] = useState(null);
+
+            // 화면 크기에 따른 초기 모드 설정
+            useEffect(() => {
+                const handleResize = () => {
+                    const isLarge = window.innerWidth > 1024;
+                    if (isLarge) {
+                        setIsSidebarOpen(true);
+                    } else {
+                        // 태블릿/모바일에서는 보드일 경우 코르크보드로 강제 전환
+                        const currentProject = projects.find(p => p.id === activeProjectId);
+                        if (currentProject && currentProject.type === 'board') {
+                            setCorkboardMode(true);
+                        }
+                    }
+                };
+
+                // 초기 실행
+                if (window.innerWidth <= 1024) {
+                    setIsZenMode(true); // 모바일은 집중 모드(사이드바 닫힘)로 시작
+                    const currentProject = projects.find(p => p.id === activeProjectId);
+                    if (currentProject && currentProject.type === 'board') {
+                        setCorkboardMode(true);
+                    }
+                }
+
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, [activeProjectId, projects]);
             const [todoInput, setTodoInput] = useState('');
             const [docFilter, setDocFilter] = useState(null);
             const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -2679,9 +2762,19 @@
                 }
 
                 setActiveProjectId(id);
-                if (target && target.type !== 'doc') setIsZenMode(false);
+                if (target && target.type !== 'doc') {
+                    setIsZenMode(false);
+                    // 모바일/태블릿에서 보드 선택 시 자동으로 코르크 보드 모드로 전환
+                    if (window.innerWidth <= 1024 && target.type === 'board') {
+                        setCorkboardMode(true);
+                    } else {
+                        setCorkboardMode(false);
+                    }
+                } else {
+                    setCorkboardMode(false);
+                }
+                
                 setIsTrashOpen(false);
-                setCorkboardMode(false); // Disable corkboard mode
                 // 프로젝트 전환 시 선택 상태 및 임시 상태 초기화 (메모리 관리)
                 setSelectedNodeIds(new Set());
                 setSelectedNodeId(null);
@@ -3834,6 +3927,10 @@
                     {showSystemSettings && (
                         <SystemSettingsModal
                             onClose={() => setShowSystemSettings(false)}
+                            user={user}
+                            onLogin={onLogin}
+                            onLogout={onLogout}
+                            onWithdrawal={onWithdrawal}
                             isDarkMode={isDarkMode}
                             toggleDarkMode={toggleDarkMode}
                             fontMode={fontMode}
@@ -3856,7 +3953,8 @@
                             setEnableHistory={setEnableHistory}
                         />
                     )}
-                    <aside className={`h-full bg-[#f5f5f5] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#141417] dark:border-zinc-700/50 transition-all duration-500 ease-in-out ${isZenMode ? 'w-0 -translate-x-full opacity-0' : 'w-80 opacity-100'
+                    
+                    <aside className={`workspace-sidebar h-full bg-[#f5f5f5] border-r border-slate-200 z-[100] flex flex-col shadow-2xl overflow-hidden dark:bg-[#141417] dark:border-zinc-700/50 transition-all duration-500 ease-in-out ${isZenMode ? 'w-0 -translate-x-full opacity-0' : (isSidebarOpen ? 'w-80 opacity-100' : 'w-0 -translate-x-full opacity-0')
                         }`} style={{ borderRadius: 0 }}>
 
                         <div className="w-full bg-slate-800 rounded-none">
@@ -3898,7 +3996,7 @@
 
 
                         <div className="flex-1 overflow-y-auto px-3 pt-4 custom-scroll pb-10">
-                                                                <div className="mb-5">
+                                                        <div className="mb-5 mobile-hide">
                                                             <div className="flex items-center justify-between mb-3 px-2">
                                                                 <div 
                                                                     onClick={() => {
@@ -4065,7 +4163,9 @@
                                                 <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
                                                     <div className="flex items-center gap-2 pointer-events-auto">
                                                         {activeProject.type === 'board' && !corkboardMode && (
-                                                            <SectorNavigator nodes={nodes} onNavigate={animateViewport} />
+                                                            <div className="mobile-hide">
+                                                                <SectorNavigator nodes={nodes} onNavigate={animateViewport} />
+                                                            </div>
                                                         )}
                                                         <button
                                                             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
@@ -4100,7 +4200,12 @@
                                                         <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
                                                             <button
                                                                 onClick={() => {
-                                                                    setIsZenMode(!isZenMode);
+                                                                    const nextZen = !isZenMode;
+                                                                    setIsZenMode(nextZen);
+                                                                    // 모바일/태블릿에서는 집중 모드 해제 시 사이드바를 열고, 설정 시 사이드바를 닫음
+                                                                    if (window.innerWidth <= 1024) {
+                                                                        setIsSidebarOpen(!nextZen);
+                                                                    }
                                                                 }}
                                                                 className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
                                                                 title={compareMode ? "현재 활성 패널 집중 모드" : "집중 모드 (Ctrl+J)"}
@@ -4746,7 +4851,7 @@
                                 </div>
                             </div>
                         ) : (
-                        <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-10'}`}>
+                        <div className={`w-full h-full overflow-y-auto custom-scroll transition-all duration-500 ease-in-out ${isZenMode ? 'px-0' : 'px-0 lg:px-10'}`}>
                             <motion.div className={`editor-paper relative ${editorWidth === 'wide' ? 'editor-wide' : editorWidth === 'narrow' ? 'editor-narrow' : ''}`} style={{ boxShadow: isZenMode ? '0 0 0 15px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1)' : '' }}>
                                 <div className="editor-title-container">
                                     <div className="flex items-center justify-between mb-3">
@@ -4782,7 +4887,7 @@
                                     onKeyUp={() => updateFocusScroll()}
                                     placeholder="이곳에 내용을 작성하세요... (@인물 / #사건 / $메모 입력)"
                                 />
-                                <div className={`px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
+                                <div className={`px-5 lg:px-[40px] pb-10 transition-all duration-500 ${isZenMode ? 'opacity-10 hover:opacity-100' : ''}`}>
                                     <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col gap-3 dark:border-zinc-700">
                                                         <div className="flex justify-between items-end text-[10px] font-black tracking-tighter">
                                             <div className="flex gap-4 items-center">
@@ -4814,7 +4919,7 @@
                         {!isTrashOpen && activeProject.type === 'doc' && !compareMode && !isZenMode && !corkboardMode && enableHistory && (
                             <button
                                 onClick={() => setShowHistoryModal(true)}
-                                className="absolute bottom-8 right-8 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
+                                className="mobile-hide absolute bottom-8 right-8 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
                             >
                                 <IconHistory className="w-3 h-3" />
                                 <span>기록 {activeProject.history?.length > 0 ? `(${activeProject.history.length})` : ''}</span>
@@ -5474,14 +5579,16 @@
                                                     <textarea className="w-full mt-1 h-56 p-4 bg-slate-50 border border-slate-200 text-sm outline-none focus:bg-white transition-all resize-none leading-relaxed dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-200 dark:focus:bg-zinc-700" value={activeNode.data.memo} onChange={e => updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, data: { ...n.data, memo: e.target.value } } : n))} placeholder="메모를 입력하세요..." />
                                                     <AnimatePresence>
                                                         {activeNode.type === '인물' && isNameGenOpen && (
-                                                            <NameGenerator
-                                                                onClose={() => setIsNameGenOpen(false)}
-                                                                onConfirm={(name) => {
-                                                                    updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, label: name } : n));
-                                                                }}
-                                                                settings={nameGenSettings}
-                                                                onSettingsChange={setNameGenSettings}
-                                                            />
+                                                            <div className="mobile-hide">
+                                                                <NameGenerator
+                                                                    onClose={() => setIsNameGenOpen(false)}
+                                                                    onConfirm={(name) => {
+                                                                        updateActiveProject(prev => prev.map(n => n.id === activeNode.id ? { ...n, label: name } : n));
+                                                                    }}
+                                                                    settings={nameGenSettings}
+                                                                    onSettingsChange={setNameGenSettings}
+                                                                />
+                                                            </div>
                                                         )}
                                                     </AnimatePresence>
                                                 </div>
@@ -5563,7 +5670,64 @@
             );
         };
 
-        const SystemSettingsModal = ({ onClose, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const SystemSettingsModal = ({ onClose, user, onLogin, onLogout, onWithdrawal, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+            const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+            const [withdrawInput, setWithdrawInput] = useState('');
+
+            if (showWithdrawConfirm) {
+                return (
+                    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => { setShowWithdrawConfirm(false); setWithdrawInput(''); }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white dark:bg-darkpanel p-8 rounded-lg shadow-2xl w-[380px] border border-red-200 dark:border-red-800"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                                    <IconTrash className="w-6 h-6 text-red-600 dark:text-red-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-800 dark:text-zinc-100">계정 영구 삭제</h3>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-400">이 작업은 되돌릴 수 없습니다</p>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-md mb-6 border border-red-100 dark:border-red-900/20">
+                                <p className="text-sm text-red-700 dark:text-red-400 leading-relaxed font-medium">
+                                    계정을 삭제하면 클라우드에 백업된 <span className="font-black">모든 데이터가 즉시 파기</span>됩니다. 로컬 데이터는 보존될 수 있으나 동기화는 중단됩니다.
+                                </p>
+                            </div>
+
+                            <p className="text-[10px] font-bold text-slate-400 dark:text-zinc-400 mb-2 uppercase">"삭제"를 입력하여 확정하세요</p>
+                            <input
+                                type="text"
+                                value={withdrawInput}
+                                onChange={(e) => setWithdrawInput(e.target.value)}
+                                className="w-full p-4 mb-6 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-md text-slate-900 dark:text-zinc-100 font-black focus:outline-none focus:border-red-500 transition-colors text-center text-lg"
+                                placeholder="삭제"
+                                autoFocus
+                            />
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setShowWithdrawConfirm(false); setWithdrawInput(''); }}
+                                    className="flex-1 py-3 text-sm font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={() => { if (withdrawInput === '삭제') { onWithdrawal(); onClose(); } }}
+                                    disabled={withdrawInput !== '삭제'}
+                                    className={`flex-1 py-3 text-sm font-black rounded-md transition-colors ${withdrawInput === '삭제' ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20' : 'bg-slate-200 dark:bg-zinc-700 text-slate-400 dark:text-zinc-500 cursor-not-allowed'}`}
+                                >
+                                    탈퇴 확정
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                );
+            }
+
             return (
                 <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
                     <motion.div
@@ -5583,6 +5747,122 @@
                         </div>
 
                         <div className="space-y-10">
+                            {/* 계정/클라우드 설정 섹션 */}
+                            <section>
+                                <div className="flex items-center justify-between mb-5 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account & Cloud</h3>
+                                </div>
+                                {user ? (
+                                    <div className="space-y-4">
+                                        <div className="p-5 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-100 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-500 to-purple-600"></div>
+                                            <div className="flex items-center justify-between relative z-10">
+                                                <div className="flex items-center gap-4">
+                                                    {user.user_metadata?.avatar_url ? (
+                                                        <img src={user.user_metadata.avatar_url} className="w-14 h-14 rounded-full border-2 border-white shadow-md dark:border-zinc-700 object-cover" />
+                                                    ) : (
+                                                        <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-black border-2 border-white shadow-md dark:border-zinc-700">
+                                                            {user.email?.[0].toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <div className="text-base font-black text-slate-800 dark:text-zinc-100">{user.user_metadata?.full_name || '작가님'}</div>
+                                                            <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[8px] font-black rounded-full uppercase tracking-tighter shadow-sm">Cloud Active</span>
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-bold">{user.email}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <button
+                                                        onClick={onLogout}
+                                                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-md text-[10px] font-black text-slate-600 dark:text-zinc-300 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all shadow-sm"
+                                                    >
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                                        로그아웃
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end px-1">
+                                            <button 
+                                                onClick={() => setShowWithdrawConfirm(true)}
+                                                className="text-[10px] font-bold text-slate-400 hover:text-red-500 underline underline-offset-4 transition-colors opacity-60 hover:opacity-100"
+                                            >
+                                                계정 삭제 및 데이터 파기
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-6 bg-slate-50 dark:bg-zinc-800/50 rounded-sm border border-dashed border-slate-200 dark:border-zinc-700 text-center">
+                                        <p className="text-xs font-bold text-slate-500 dark:text-zinc-400 mb-4">로그인하면 작성한 문서를 클라우드에 안전하게 저장하고<br/>다른 기기에서 이어 쓸 수 있습니다.</p>
+                                        <button
+                                            onClick={onLogin}
+                                            className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 dark:bg-zinc-800 dark:border-zinc-700 rounded-sm text-xs font-black text-slate-600 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all shadow-sm"
+                                        >
+                                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                                            </svg>
+                                            구글 계정으로 로그인
+                                        </button>
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* 회원 탈퇴 확인 모달 */}
+                            <AnimatePresence>
+                                {showWithdrawConfirm && (
+                                    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => { setShowWithdrawConfirm(false); setWithdrawInput(''); }}>
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            className="bg-white dark:bg-darkpanel p-6 rounded-lg shadow-2xl w-[350px] border border-red-200 dark:border-red-800"
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                                    <IconTrash className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-base font-black text-slate-800 dark:text-zinc-100">계정 삭제</h3>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-400">데이터가 영구적으로 파기됩니다</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-slate-600 dark:text-zinc-300 mb-4 leading-relaxed">
+                                                계정을 삭제하시겠습니까? 클라우드에 저장된 <span className="font-bold text-red-600 dark:text-red-400">모든 라이브러리 데이터가 즉시 삭제</span>되며 복구할 수 없습니다. 계속하시려면 아래에 <span className="font-black text-red-600">삭제</span>를 입력하세요.
+                                            </p>
+                                            <input
+                                                type="text"
+                                                value={withdrawInput}
+                                                onChange={(e) => setWithdrawInput(e.target.value)}
+                                                className="w-full p-3 mb-4 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-md text-slate-900 dark:text-zinc-100 font-bold focus:outline-none focus:border-red-500 transition-colors"
+                                                placeholder="삭제"
+                                                autoFocus
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => { setShowWithdrawConfirm(false); setWithdrawInput(''); }}
+                                                    className="flex-1 py-2.5 text-xs font-bold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-md transition-colors"
+                                                >
+                                                    취소
+                                                </button>
+                                                <button
+                                                    onClick={() => { if (withdrawInput === '삭제') { onWithdrawal(); setShowWithdrawConfirm(false); } }}
+                                                    disabled={withdrawInput !== '삭제'}
+                                                    className={`flex-1 py-2.5 text-xs font-black rounded-md transition-colors ${withdrawInput === '삭제' ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/20' : 'bg-slate-200 dark:bg-zinc-700 text-slate-400 dark:text-zinc-500 cursor-not-allowed'}`}
+                                                >
+                                                    탈퇴 및 데이터 파기
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </div>
+                                )}
+                            </AnimatePresence>
+
                             {/* 외관 설정 섹션 */}
                             <section>
                                 <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
@@ -5737,7 +6017,84 @@
             );
         };
 
-        const Library = ({ books, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        // Landing Page (Minimalist & Literary Redesign)
+        const Landing = ({ onLogin }) => {
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#fdfbf7] dark:bg-[#0c0c0c] p-6 relative overflow-hidden transition-colors duration-1000">
+                    
+                    {/* 아주 은은한 배경 텍스처 */}
+                    <div className="absolute inset-0 opacity-[0.4] dark:opacity-[0.2] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}></div>
+
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 1.5, ease: "easeInOut" }}
+                        className="max-w-md w-full z-10 flex flex-col items-center"
+                    >
+                        {/* 로고 & 아이콘 */}
+                        <motion.div 
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.2 }}
+                            className="mb-12 relative group cursor-default"
+                        >
+                            <div className="absolute inset-0 bg-indigo-500/20 dark:bg-indigo-500/10 blur-[40px] rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                            <img src="sagak_icon.png" className="w-20 h-20 rounded-[20px] shadow-2xl relative z-10" alt="Sagak Studio" />
+                        </motion.div>
+
+                        {/* 메인 타이틀 (명조체) */}
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            className="text-center mb-16 space-y-6"
+                        >
+                            <h1 className="text-4xl md:text-5xl font-Ridibatang font-bold text-slate-900 dark:text-zinc-100 tracking-tight leading-tight">
+                                사각, 생각의 소리
+                            </h1>
+                            <p className="font-Ridibatang text-sm md:text-base text-slate-500 dark:text-zinc-500 leading-loose tracking-wide">
+                                흩어진 문장들이 모여 하나의 세계가 되는 곳.<br/>
+                                오직 당신의 이야기에만 집중하세요.
+                            </p>
+                        </motion.div>
+
+                        {/* 로그인 버튼 */}
+                        <motion.div 
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ duration: 1, delay: 0.8 }}
+                            className="w-full px-4"
+                        >
+                            <button
+                                onClick={onLogin}
+                                className="w-full py-4 bg-transparent border border-slate-300 dark:border-zinc-800 rounded-sm text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-800 dark:hover:border-zinc-500 transition-all duration-500 flex items-center justify-center gap-3 group relative overflow-hidden"
+                            >
+                                <span className="absolute inset-0 bg-slate-50 dark:bg-zinc-900 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out -z-10"></span>
+                                <svg className="w-4 h-4 transition-transform duration-500 group-hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"/>
+                                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"/>
+                                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="currentColor"/>
+                                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor"/>
+                                </svg>
+                                <span className="font-Ridibatang text-sm">구글 계정으로 입장하기</span>
+                            </button>
+                        </motion.div>
+
+                        {/* 하단 카피 */}
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 1, delay: 1.2 }}
+                            className="absolute bottom-10 text-[10px] text-slate-300 dark:text-zinc-700 font-serif tracking-widest uppercase"
+                        >
+                            Sagak Studio
+                        </motion.div>
+                    </motion.div>
+                </div>
+            );
+        };
+
+        const Library = ({ books, user, onLogin, onLogout, onWithdrawal, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
             const [showSystemSettings, setShowSystemSettings] = useState(false);
             
@@ -5945,6 +6302,10 @@
                     {showSystemSettings && (
                         <SystemSettingsModal
                             onClose={() => setShowSystemSettings(false)}
+                            user={user}
+                            onLogin={onLogin}
+                            onLogout={onLogout}
+                            onWithdrawal={onWithdrawal}
                             isDarkMode={isDarkMode}
                             toggleDarkMode={toggleDarkMode}
                             fontMode={fontMode}
@@ -5992,9 +6353,7 @@
                     {/* 헤더 */}
                     <header className="h-14 px-8 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-50 border-b border-slate-200 dark:border-zinc-800">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-sm flex items-center justify-center shadow-lg">
-                                <span className="text-white text-sm">S</span>
-                            </div>
+                            <img src="sagak_icon.png" className="w-8 h-8 rounded-sm shadow-md object-cover" alt="Logo" />
                             <div>
                                 <span className="text-base font-black tracking-tight text-slate-800 dark:text-zinc-100">사각 스튜디오</span>
                             </div>
@@ -6002,10 +6361,14 @@
                         <div className="flex items-center gap-1.5">
                             <button
                                 onClick={() => setShowSystemSettings(true)}
-                                className={`w-8 h-8 flex items-center justify-center rounded-sm transition-all ${showSystemSettings ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+                                className={`w-8 h-8 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
                                 title="시스템 설정"
                             >
-                                <IconSettings className="w-4 h-4" />
+                                {user?.user_metadata?.avatar_url ? (
+                                    <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" />
+                                ) : (
+                                    <IconSettings className="w-4 h-4" />
+                                )}
                             </button>
                         </div>
                     </header>
@@ -6071,8 +6434,14 @@
                                     <span className="text-xs font-bold text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-2 py-1 rounded-[3px]">{books.length}권</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={openSavePanel} className={`h-8 px-3 flex items-center gap-1.5 rounded-sm transition-all text-sm font-medium ${filePanel.isOpen && filePanel.mode === 'save' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="전체 저장"><IconSave className="w-4 h-4" />저장하기</button>
-                                    <button onClick={openLoadPanel} className={`h-8 px-3 flex items-center gap-1.5 rounded-sm transition-all text-sm font-medium ${filePanel.isOpen && filePanel.mode === 'load' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="파일 불러오기"><IconUpload className="w-4 h-4" />불러오기</button>
+                                    <button onClick={openSavePanel} className={`h-8 px-2.5 lg:px-3 flex items-center gap-1.5 rounded-sm transition-all text-sm font-medium ${filePanel.isOpen && filePanel.mode === 'save' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="전체 저장">
+                                        <IconSave className="w-4 h-4" />
+                                        <span className="hidden lg:inline">저장하기</span>
+                                    </button>
+                                    <button onClick={openLoadPanel} className={`h-8 px-2.5 lg:px-3 flex items-center gap-1.5 rounded-sm transition-all text-sm font-medium ${filePanel.isOpen && filePanel.mode === 'load' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`} title="파일 불러오기">
+                                        <IconUpload className="w-4 h-4" />
+                                        <span className="hidden lg:inline">불러오기</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -6128,17 +6497,75 @@
 
         const App = () => {
             const [view, setView] = useState('library');
-            const [books, setBooks] = useState(() => {
-                try {
+            const [user, setUser] = useState(null);
+            const hasFetchedCloud = useRef(false);
+            const [books, setBooks] = useState([]);
+
+            // 로컬 데이터 로딩 (사용자 없을 때만)
+            useEffect(() => {
+                if (!user && !hasFetchedCloud.current) {
                     const saved = localStorage.getItem('sagak_library');
-                    if (!saved) return [];
-                    const parsed = JSON.parse(saved);
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch (e) {
-                    console.error('localStorage 데이터 파싱 오류:', e);
-                    return [];
+                    if (saved) {
+                        try {
+                            const parsed = JSON.parse(saved);
+                            if (Array.isArray(parsed)) setBooks(parsed);
+                        } catch(e) { console.error(e); }
+                    }
                 }
-            });
+            }, [user]);
+
+            // Supabase 세션 감시
+            useEffect(() => {
+                if (!supabaseClient) return;
+
+                const { data: { subscription } } = supabaseClient.auth.onAuthStateChange((event, session) => {
+                    const currentUser = session?.user ?? null;
+                    setUser(currentUser);
+                    
+                    if (event === 'SIGNED_OUT') {
+                        setBooks([]); // 상태 초기화
+                        setCurrentBookId(null); // 활성 작품 초기화
+                        setView('library'); // 뷰 초기화
+                        hasFetchedCloud.current = false;
+                        localStorage.removeItem('sagak_library'); // 로컬 저장소 초기화
+                    } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                        hasFetchedCloud.current = false; // 새로운 로그인 시 페칭 준비
+                    }
+                });
+
+                return () => subscription.unsubscribe();
+            }, []);
+
+            // 클라우드 데이터 불러오기
+            useEffect(() => {
+                const fetchCloudData = async () => {
+                    if (!user || !supabaseClient || hasFetchedCloud.current) return;
+
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from('user_data')
+                            .select('library_data')
+                            .eq('user_id', user.id)
+                            .maybeSingle();
+
+                        if (data && data.library_data && Array.isArray(data.library_data)) {
+                            // 데이터가 있는 경우
+                            if (books.length === 0 || confirm('클라우드에 저장된 데이터를 불러오시겠습니까? 로컬 데이터가 덮어씌워질 수 있습니다.')) {
+                                setBooks(data.library_data);
+                                showToast("클라우드 데이터를 불러왔습니다.");
+                            }
+                        }
+                        hasFetchedCloud.current = true;
+                    } catch (err) {
+                        console.error('클라우드 데이터 로딩 중 예외:', err);
+                    }
+                };
+
+                if (user) {
+                    fetchCloudData();
+                }
+            }, [user]);
+
             const [currentBookId, setCurrentBookId] = useState(null);
             const [toast, setToast] = useState(null);
             const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
@@ -6186,21 +6613,61 @@
 
             useEffect(() => {
                 if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-                saveTimerRef.current = setTimeout(() => {
+                
+                // 유저가 있는데 아직 클라우드 데이터를 가져오지 않았다면 저장을 유예 (데이터 덮어쓰기 방지)
+                if (user && !hasFetchedCloud.current) return;
+
+                saveTimerRef.current = setTimeout(async () => {
                     try {
+                        // 로컬 저장
                         localStorage.setItem('sagak_library', JSON.stringify(books));
+
+                        // 클라우드 저장 (로그인 시 & 데이터가 존재할 때)
+                        if (user && supabaseClient && books.length > 0) {
+                            const { error } = await supabaseClient
+                                .from('user_data')
+                                .upsert({
+                                    user_id: user.id,
+                                    library_data: books,
+                                    updated_at: new Date().toISOString()
+                                });
+
+                            if (error) {
+                                console.error('Cloud Sync Error Details:', error);
+                            }
+                        }
                     } catch (e) {
                         console.error('저장 실패:', e);
-                        showToast("브라우저 저장 공간이 부족합니다! 데이터를 파일로 백업해 주세요.", "error");
                     }
-                }, 1000);
+                }, 1500); // 텍스트 입력 후 1.5초 뒤 저장
                 return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-            }, [books]);
+            }, [books, user]);
 
             const showToast = useCallback((message, type = 'success') => {
                 setToast({ message, type });
                 setTimeout(() => setToast(null), 2000);
             }, []);
+
+            const handleWithdrawal = async () => {
+                if (!user || !supabaseClient) return;
+                
+                try {
+                    // 1. 데이터 삭제
+                    const { error: dbError } = await supabaseClient
+                        .from('user_data')
+                        .delete()
+                        .eq('user_id', user.id);
+                    
+                    if (dbError) throw dbError;
+
+                    // 2. 로그아웃 (회원 탈퇴 API는 Admin 권한이 필요하므로 클라이언트에서는 데이터 삭제 후 로그아웃으로 처리)
+                    await supabaseClient.auth.signOut();
+                    showToast("회원 탈퇴가 완료되었습니다. 데이터가 모두 삭제되었습니다.");
+                } catch (e) {
+                    console.error('회원 탈퇴 실패:', e);
+                    showToast("회원 탈퇴 중 오류가 발생했습니다.", "error");
+                }
+            };
 
             const currentBook = useMemo(() => books.find(b => b.id === currentBookId), [books, currentBookId]);
 
@@ -6214,10 +6681,42 @@
 
             return (
                 <div className={`w-full font-pretendard antialiased text-slate-800 flex flex-col ${isDarkMode ? 'dark' : ''} ${fontMode}`} style={{ height: '100%' }}>                    <AnimatePresence> {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />} </AnimatePresence>
-                    {view === 'library' && (
+                    {!user ? (
+                        <Landing onLogin={async () => {
+                            const { error } = await supabaseClient?.auth.signInWithOAuth({ 
+                                provider: 'google',
+                                options: {
+                                    redirectTo: window.location.origin
+                                }
+                            });
+                            if (error) {
+                                console.error('Login error:', error.message);
+                                showToast("로그인 실패: " + error.message, "error");
+                            }
+                        }} />
+                    ) : view === 'library' ? (
                         <Library
                             books={books}
-                            onSelectBook={(id) => { setCurrentBookId(id); setView('workspace'); }}
+                            user={user}
+                            onLogin={async () => {
+                                // (혹시 모를 상황 대비 코드 유지)
+                                const { error } = await supabaseClient?.auth.signInWithOAuth({ 
+                                    provider: 'google',
+                                    options: {
+                                        redirectTo: window.location.origin
+                                    }
+                                });
+                                if (error) {
+                                    console.error('Login error:', error.message);
+                                    showToast("로그인 실패: " + error.message, "error");
+                                }
+                            }}
+                            onLogout={() => supabaseClient?.auth.signOut()}
+                            onWithdrawal={handleWithdrawal}
+                            onSelectBook={(id) => { 
+                                setCurrentBookId(id); 
+                                setView('workspace'); 
+                            }}
                             onCreateBook={(newBook) => setBooks([...books, newBook])}
                             onDeleteBook={(id) => {
                                 setBooks(prev => prev.filter(b => b.id !== id));
@@ -6251,10 +6750,24 @@
                             enableHistory={enableHistory}
                             setEnableHistory={setEnableHistory}
                         />
-                    )}
-                    {view === 'workspace' && currentBook && (
+                    ) : view === 'workspace' && currentBook && (
                         <Workspace
                             currentBook={currentBook}
+                            user={user}
+                            onLogin={async () => {
+                                const { error } = await supabaseClient?.auth.signInWithOAuth({ 
+                                    provider: 'google',
+                                    options: {
+                                        redirectTo: window.location.origin
+                                    }
+                                });
+                                if (error) {
+                                    console.error('Login error:', error.message);
+                                    showToast("로그인 실패: " + error.message, "error");
+                                }
+                            }}
+                            onLogout={() => supabaseClient?.auth.signOut()}
+                            onWithdrawal={handleWithdrawal}
                             onUpdateBook={handleUpdateBook}
                             onExit={() => setView('library')}
                             showToast={showToast}
