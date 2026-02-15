@@ -661,12 +661,12 @@
         // Toast
         const Toast = ({ message, type, onClose }) => (
             <motion.div 
-                initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }} 
-                animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }} 
-                exit={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }} 
-                className="fixed top-1/2 left-1/2 z-[9999] flex items-center gap-3 bg-zinc-800/90 dark:bg-zinc-100/90 backdrop-blur-md text-white dark:text-zinc-900 px-8 py-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:border-black/5"
+                initial={{ y: 50, opacity: 0, scale: 0.9, x: '-50%' }} 
+                animate={{ y: 0, opacity: 1, scale: 1, x: '-50%' }} 
+                exit={{ y: 50, opacity: 0, scale: 0.9, x: '-50%' }} 
+                className="fixed bottom-10 left-1/2 z-[9999] flex items-center gap-3 bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 rounded-full shadow-2xl"
             >
-                <span className="text-base font-bold tracking-tight">{message}</span>
+                <span className="text-sm font-bold">{message}</span>
             </motion.div>
         );
 
