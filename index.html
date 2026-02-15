@@ -660,8 +660,13 @@
 
         // Toast
         const Toast = ({ message, type, onClose }) => (
-            <motion.div initial={{ y: 50, opacity: 0, scale: 0.9 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 50, opacity: 0, scale: 0.9 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-zinc-800 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 rounded-full shadow-2xl">
-                <span className="text-sm font-bold">{message}</span>
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }} 
+                animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }} 
+                exit={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }} 
+                className="fixed top-1/2 left-1/2 z-[9999] flex items-center gap-3 bg-zinc-800/90 dark:bg-zinc-100/90 backdrop-blur-md text-white dark:text-zinc-900 px-8 py-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:border-black/5"
+            >
+                <span className="text-base font-bold tracking-tight">{message}</span>
             </motion.div>
         );
 
@@ -6547,10 +6552,8 @@
 
                         if (data && data.library_data && Array.isArray(data.library_data)) {
                             // 데이터가 있는 경우
-                            if (books.length === 0 || confirm('클라우드에 저장된 데이터를 불러오시겠습니까? 로컬 데이터가 덮어씌워질 수 있습니다.')) {
-                                setBooks(data.library_data);
-                                showToast("클라우드 데이터를 불러왔습니다.");
-                            }
+                            setBooks(data.library_data);
+                            showToast("클라우드 데이터를 불러왔습니다.");
                         }
                         hasFetchedCloud.current = true;
                     } catch (err) {
