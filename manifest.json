@@ -3,13 +3,13 @@
   "name": "Sagak Studio",
   "icons": [
     {
-      "src": "app.icns",
-      "type": "image/icns",
+      "src": "sagak_icon.png",
+      "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "app.icns",
-      "type": "image/icns",
+      "src": "sagak_icon.png",
+      "type": "image/png",
       "sizes": "512x512"
     }
   ],
