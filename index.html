@@ -5682,20 +5682,24 @@
             const [withdrawInput, setWithdrawInput] = useState('');
 
             // 설정 항목 레이아웃
-            const SettingRow = ({ icon, title, sub, children }) => (
-                <div className="flex items-center justify-between py-4 border-b last:border-0 border-slate-100 dark:border-zinc-800/50">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 shrink-0">
-                            {icon}
-                        </div>
+            const SettingRow = ({ icon, title, sub, children, className = "" }) => (
+                <div className={`flex items-center justify-between py-2 border-b last:border-0 border-slate-100 dark:border-zinc-800/50 ${className}`}>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500 shrink-0">{icon}</div>
                         <div>
-                            <div className="text-sm font-black text-slate-700 dark:text-zinc-100">{title}</div>
-                            {sub && <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tight">{sub}</div>}
+                            <div className="text-[13px] font-black text-slate-700 dark:text-zinc-100 leading-tight">{title}</div>
+                            {sub && <div className="text-[9px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-tight">{sub}</div>}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        {children}
-                    </div>
+                    <div className="flex items-center gap-2">{children}</div>
+                </div>
+            );
+
+            // 한 줄 병합용 아이템
+            const SettingItem = ({ title, children }) => (
+                <div className="flex items-center justify-between flex-1 py-2 px-2">
+                    <div className="text-[12px] font-black text-slate-600 dark:text-zinc-300">{title}</div>
+                    <div className="flex items-center gap-2">{children}</div>
                 </div>
             );
 
