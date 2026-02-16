@@ -1350,7 +1350,7 @@
                         className="bg-white dark:bg-darkpanel p-8 rounded-sm shadow-2xl w-[450px] border border-slate-200 dark:border-zinc-700"
                         onClick={e => e.stopPropagation()}
                     >
-                        <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">로컬 파일 저장</h2>
+                        <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">파일 저장</h2>
                         <div className="mb-6">
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-2 uppercase">파일명</label>
                             <div className="flex gap-2">
@@ -1611,7 +1611,7 @@
                             </>
                         ) : (
                             <>
-                                <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">로컬 파일 불러오기</h2>
+                                <h2 className="text-lg font-black text-slate-800 dark:text-zinc-100 mb-6">파일 불러오기</h2>
 
                                 <div className="mb-6">
                                     <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 mb-3 uppercase">불러오기 방식</label>
@@ -5756,6 +5756,14 @@
                             <section>
                                 <div className="flex items-center justify-between mb-5 border-b border-slate-100 dark:border-zinc-800 pb-2">
                                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account & Cloud</h3>
+                                    {user && (
+                                        <button 
+                                            onClick={() => setShowWithdrawConfirm(true)}
+                                            className="text-[10px] font-bold text-slate-400 hover:text-red-500 underline underline-offset-4 transition-colors opacity-60 hover:opacity-100"
+                                        >
+                                            계정 삭제 및 데이터 파기
+                                        </button>
+                                    )}
                                 </div>
                                 {user ? (
                                     <div className="space-y-4">
@@ -5773,7 +5781,6 @@
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-0.5">
                                                             <div className="text-base font-black text-slate-800 dark:text-zinc-100">{user.user_metadata?.full_name || '작가님'}</div>
-                                                            <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[8px] font-black rounded-full uppercase tracking-tighter shadow-sm">Cloud Active</span>
                                                         </div>
                                                         <div className="text-[11px] text-slate-400 dark:text-zinc-500 font-bold">{user.email}</div>
                                                     </div>
@@ -5788,14 +5795,6 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex justify-end px-1">
-                                            <button 
-                                                onClick={() => setShowWithdrawConfirm(true)}
-                                                className="text-[10px] font-bold text-slate-400 hover:text-red-500 underline underline-offset-4 transition-colors opacity-60 hover:opacity-100"
-                                            >
-                                                계정 삭제 및 데이터 파기
-                                            </button>
                                         </div>
                                     </div>
                                 ) : (
@@ -6096,7 +6095,7 @@
             );
         };
 
-        const Library = ({ books, user, onLogin, onLogout, onWithdrawal, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const Library = ({ books, user, onLogin, onLogout, onWithdrawal, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, onCloudUpload, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
             const [showSystemSettings, setShowSystemSettings] = useState(false);
             
@@ -6361,15 +6360,32 @@
                             </div>
                         </div>
                         <div className="flex items-center gap-1.5">
+                            {user && (
+                                <button
+                                    onClick={onCloudUpload}
+                                    className="group relative h-9 w-9 sm:w-auto px-0 sm:px-4 flex items-center justify-center sm:gap-2 bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700 rounded-full transition-all duration-300 shadow-sm active:scale-95"
+                                    title="클라우드 동기화"
+                                >
+                                    <div className="flex items-center justify-center text-slate-500 dark:text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                        <svg className="w-4 h-4 transition-transform duration-700 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 2v6h-6"></path>
+                                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                                            <path d="M3 22v-6h6"></path>
+                                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                                        </svg>
+                                    </div>
+                                    <span className="text-xs font-black tracking-tight hidden sm:inline">클라우드 동기화</span>
+                                </button>
+                            )}
                             <button
                                 onClick={() => setShowSystemSettings(true)}
-                                className={`w-8 h-8 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+                                className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
                                 title="시스템 설정"
                             >
                                 {user?.user_metadata?.avatar_url ? (
                                     <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" />
                                 ) : (
-                                    <IconSettings className="w-4 h-4" />
+                                    <IconSettings className="w-5 h-5" />
                                 )}
                             </button>
                         </div>
@@ -6502,6 +6518,8 @@
             const [user, setUser] = useState(null);
             const hasFetchedCloud = useRef(false);
             const [books, setBooks] = useState([]);
+            const [isDirty, setIsDirty] = useState(false);
+            const isInitialLoad = useRef(true);
 
             // 로컬 데이터 로딩 (사용자 없을 때만)
             useEffect(() => {
@@ -6510,11 +6528,35 @@
                     if (saved) {
                         try {
                             const parsed = JSON.parse(saved);
-                            if (Array.isArray(parsed)) setBooks(parsed);
+                            if (Array.isArray(parsed)) {
+                                setBooks(parsed);
+                                isInitialLoad.current = true; // 로컬 데이터 로드 시 초기 상태로 간주
+                            }
                         } catch(e) { console.error(e); }
                     }
                 }
             }, [user]);
+
+            // 변경 감지 (저장 필요 여부 확인)
+            useEffect(() => {
+                if (isInitialLoad.current) {
+                    isInitialLoad.current = false;
+                    return;
+                }
+                setIsDirty(true);
+            }, [books]);
+
+            // 브라우저 종료 시 경고
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    if (isDirty) {
+                        e.preventDefault();
+                        e.returnValue = ''; // 크롬 등 현대 브라우저에서 경고창을 띄우기 위한 표준 방식
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, [isDirty]);
 
             // Supabase 세션 감시
             useEffect(() => {
@@ -6552,6 +6594,7 @@
 
                         if (data && data.library_data && Array.isArray(data.library_data)) {
                             // 데이터가 있는 경우
+                            isInitialLoad.current = true; // 클라우드 데이터 로드 시 초기 상태로 간주
                             setBooks(data.library_data);
                             showToast("클라우드 데이터를 불러왔습니다.");
                         }
@@ -6611,36 +6654,41 @@
                 showToast(`폰트 변경: ${FONT_DISPLAY_NAMES[nextFont]}`);
             };
 
-            useEffect(() => {
-                if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+            const handleCloudUpload = useCallback(async () => {
+                if (!user || !supabaseClient) {
+                    showToast("로그인이 필요합니다", "error");
+                    return;
+                }
                 
-                // 유저가 있는데 아직 클라우드 데이터를 가져오지 않았다면 저장을 유예 (데이터 덮어쓰기 방지)
-                if (user && !hasFetchedCloud.current) return;
+                if (books.length === 0) {
+                    showToast("저장할 데이터가 없습니다", "error");
+                    return;
+                }
 
-                saveTimerRef.current = setTimeout(async () => {
-                    try {
-                        // 로컬 저장
-                        localStorage.setItem('sagak_library', JSON.stringify(books));
+                try {
+                    // 즉시 로컬 저장 수행
+                    localStorage.setItem('sagak_library', JSON.stringify(books));
+                    
+                    showToast("클라우드 동기화 중...");
+                    const { error } = await supabaseClient
+                        .from('user_data')
+                        .upsert({
+                            user_id: user.id,
+                            library_data: books,
+                            updated_at: new Date().toISOString()
+                        });
 
-                        // 클라우드 저장 (로그인 시 & 데이터가 존재할 때)
-                        if (user && supabaseClient && books.length > 0) {
-                            const { error } = await supabaseClient
-                                .from('user_data')
-                                .upsert({
-                                    user_id: user.id,
-                                    library_data: books,
-                                    updated_at: new Date().toISOString()
-                                });
-
-                            if (error) {
-                                console.error('Cloud Sync Error Details:', error);
-                            }
-                        }
-                    } catch (e) {
-                        console.error('저장 실패:', e);
+                    if (error) {
+                        console.error('Cloud Sync Error Details:', error);
+                        showToast("클라우드 저장 실패", "error");
+                    } else {
+                        setIsDirty(false);
+                        showToast("로컬 및 클라우드 저장 완료!");
                     }
-                }, 1500); // 텍스트 입력 후 1.5초 뒤 저장
-                return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+                } catch (e) {
+                    console.error('저장 실패:', e);
+                    showToast("오류가 발생했습니다", "error");
+                }
             }, [books, user]);
 
             const showToast = useCallback((message, type = 'success') => {
@@ -6698,6 +6746,7 @@
                         <Library
                             books={books}
                             user={user}
+                            onCloudUpload={handleCloudUpload}
                             onLogin={async () => {
                                 // (혹시 모를 상황 대비 코드 유지)
                                 const { error } = await supabaseClient?.auth.signInWithOAuth({ 
