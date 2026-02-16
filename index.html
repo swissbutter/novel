@@ -2203,98 +2203,6 @@
                                 )}
                             </div>
                         </div>
-                    </motion.div>
-                </div>
-            );
-        };
-
-        const SectorNavigator = ({ nodes, onNavigate }) => {
-            const [isOpen, setIsOpen] = useState(false);
-
-            const handleNavigate = useCallback((sector) => {
-                if (!nodes || nodes.length === 0) return;
-
-                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-                nodes.forEach(n => {
-                    const w = n.type === '그룹' ? (n.data.width || 400) : 250;
-                    const h = n.type === '그룹' ? (n.data.height || 300) : 200;
-                    minX = Math.min(minX, n.x);
-                    maxX = Math.max(maxX, n.x + w);
-                    minY = Math.min(minY, n.y);
-                    maxY = Math.max(maxY, n.y + h);
-                });
-
-                const padding = 1000;
-                minX -= padding; minY -= padding;
-                maxX += padding; maxY += padding;
-
-                const width = maxX - minX;
-                const height = maxY - minY;
-                const sectorW = width / 3;
-                const sectorH = height / 3;
-
-                const row = Math.floor((sector - 1) / 3);
-                const col = (sector - 1) % 3;
-
-                const centerX = minX + col * sectorW + sectorW / 2;
-                const centerY = minY + row * sectorH + sectorH / 2;
-
-                const containerW = window.innerWidth;
-                const containerH = window.innerHeight;
-                
-                const scaleX = containerW / sectorW;
-                const scaleY = containerH / sectorH;
-                const targetScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.1), 1.5);
-
-                const targetPan = {
-                    x: containerW / 2 - centerX * targetScale,
-                    y: containerH / 2 - centerY * targetScale
-                };
-
-                onNavigate(targetPan, targetScale);
-            }, [nodes, onNavigate]);
-
-            useEffect(() => {
-                const handleKeyDown = (e) => {
-                    if (e.altKey && e.key >= '1' && e.key <= '9') {
-                        e.preventDefault();
-                        handleNavigate(parseInt(e.key));
-                    }
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [handleNavigate]);
-
-            return (
-                <div className="relative pointer-events-auto">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400'}`}
-                        title="섹터 네비게이션 (Alt + 1~9)"
-                    >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 3v18" /><path d="M15 3v18" /><path d="M3 9h18" /><path d="M3 15h18" /></svg>
-                    </button>
-                    <AnimatePresence>
-                        {isOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.9 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.9 }}
-                                className="absolute top-full right-0 mt-2 bg-white dark:bg-zinc-800 rounded-lg shadow-xl border border-slate-200 dark:border-zinc-700 p-2 grid grid-cols-3 gap-1 w-[140px]"
-                            >
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => handleNavigate(num)}
-                                        className="aspect-square flex items-center justify-center rounded bg-slate-50 hover:bg-indigo-100 hover:text-indigo-600 dark:bg-zinc-700 dark:hover:bg-indigo-900/50 dark:hover:text-indigo-400 text-slate-500 dark:text-zinc-400 font-bold text-sm transition-colors"
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
             );
         };
 
@@ -4169,11 +4077,6 @@
                                                 {/* 상단 공통 도구 (타이머, 집중모드) */}
                                                 <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
                                                     <div className="flex items-center gap-2 pointer-events-auto">
-                                                        {activeProject.type === 'board' && !corkboardMode && (
-                                                            <div className="mobile-hide">
-                                                                <SectorNavigator nodes={nodes} onNavigate={animateViewport} />
-                                                            </div>
-                                                        )}
                                                         <button
                                                             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
                                                             className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
