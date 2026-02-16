@@ -2298,7 +2298,7 @@
             );
         };
 
-        const Workspace = ({ currentBook, user, onLogin, onLogout, onWithdrawal, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const Workspace = ({ currentBook, user, onLogin, onLogout, onWithdrawal, onUpdateBook, onExit, showToast, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, editorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory, cloudAutoSaveInterval, setCloudAutoSaveInterval }) => {
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
             const [isTrashOpen, setIsTrashOpen] = useState(false); // 휴지통 열림 상태
@@ -3956,6 +3956,8 @@
                             setShowDocWordCount={setShowDocWordCount}
                             enableHistory={enableHistory}
                             setEnableHistory={setEnableHistory}
+                            cloudAutoSaveInterval={cloudAutoSaveInterval}
+                            setCloudAutoSaveInterval={setCloudAutoSaveInterval}
                         />
                     )}
                     
@@ -5675,7 +5677,7 @@
             );
         };
 
-        const SystemSettingsModal = ({ onClose, user, onLogin, onLogout, onWithdrawal, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const SystemSettingsModal = ({ onClose, user, onLogin, onLogout, onWithdrawal, isDarkMode, toggleDarkMode, fontMode, toggleFont, activeProject, onUpdateProject, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory, cloudAutoSaveInterval, setCloudAutoSaveInterval }) => {
             const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
             const [withdrawInput, setWithdrawInput] = useState('');
 
@@ -6350,6 +6352,8 @@
                             setShowDocWordCount={setShowDocWordCount}
                             enableHistory={enableHistory}
                             setEnableHistory={setEnableHistory}
+                            cloudAutoSaveInterval={cloudAutoSaveInterval}
+                            setCloudAutoSaveInterval={setCloudAutoSaveInterval}
                         />
                     )}
 
@@ -6890,6 +6894,8 @@
                             setShowDocWordCount={setShowDocWordCount}
                             enableHistory={enableHistory}
                             setEnableHistory={setEnableHistory}
+                            cloudAutoSaveInterval={cloudAutoSaveInterval}
+                            setCloudAutoSaveInterval={setCloudAutoSaveInterval}
                         />
                     )}
                 </div>
