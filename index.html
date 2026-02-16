@@ -2289,7 +2289,7 @@
                 
                 return (
                     <div 
-                        className={`relative z-50 flex items-center p-1 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${isZenMode && !isOpen ? 'opacity-10 hover:opacity-100' : 'opacity-100'}`}
+                        className={`relative z-50 flex items-center p-1 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${isZenMode && !isOpen ? 'hidden' : 'opacity-100'}`}
                         onClick={(e) => {
                             e.stopPropagation();
                             if (!isOpen) setOpenStatusDropdownId(doc.id);
@@ -4790,7 +4790,7 @@
                                         <div className="flex gap-1">
                                             <button
                                                 onClick={() => setShowSynopsisModal(true)}
-                                                className={`p-1 transition-all ${isZenMode ? 'opacity-10 hover:opacity-100' : ''} text-slate-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400`}
+                                                className={`p-1 transition-all ${isZenMode ? 'hidden' : ''} text-slate-400 hover:text-indigo-600 dark:text-zinc-500 dark:hover:text-indigo-400`}
                                                 title="시놉시스"
                                             >
                                                 <IconFileText className="w-4 h-4" />
