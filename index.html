@@ -2860,13 +2860,25 @@
                     if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
                         e.preventDefault();
                         if (activeProject && activeProject.type === 'doc') {
-                            setIsZenMode(prev => !prev);
+                            if (isSidebarOpen && !isZenMode) {
+                                // 1단계: 사이드바만 숨김
+                                setIsSidebarOpen(false);
+                                setIsZenMode(false);
+                            } else if (!isSidebarOpen && !isZenMode) {
+                                // 2단계: 집중모드 활성화
+                                setIsSidebarOpen(false);
+                                setIsZenMode(true);
+                            } else {
+                                // 3단계: 모든 효과 취소
+                                setIsSidebarOpen(true);
+                                setIsZenMode(false);
+                            }
                         }
                     }
                 };
                 window.addEventListener('keydown', handleZenModeKeyDown);
                 return () => window.removeEventListener('keydown', handleZenModeKeyDown);
-            }, [activeProject]);
+            }, [activeProject, isSidebarOpen, isZenMode]);
 
             useEffect(() => {
                 const div = containerRef.current;
@@ -4112,11 +4124,18 @@
                                                         <div className={`flex items-center rounded-full shadow-xl border transition-all ${isZenMode ? 'bg-indigo-600 border-indigo-500 shadow-indigo-500/20' : 'bg-white text-slate-400 border-slate-200 hover:text-indigo-600 dark:bg-zinc-800 dark:border-zinc-700'}`}>
                                                             <button
                                                                 onClick={() => {
-                                                                    const nextZen = !isZenMode;
-                                                                    setIsZenMode(nextZen);
-                                                                    // 모바일/태블릿에서는 집중 모드 해제 시 사이드바를 열고, 설정 시 사이드바를 닫음
-                                                                    if (window.innerWidth <= 1024) {
-                                                                        setIsSidebarOpen(!nextZen);
+                                                                    if (isSidebarOpen && !isZenMode) {
+                                                                        // 1단계: 사이드바만 숨김
+                                                                        setIsSidebarOpen(false);
+                                                                        setIsZenMode(false);
+                                                                    } else if (!isSidebarOpen && !isZenMode) {
+                                                                        // 2단계: 집중모드 활성화 (사이드바는 이미 숨겨짐)
+                                                                        setIsSidebarOpen(false);
+                                                                        setIsZenMode(true);
+                                                                    } else {
+                                                                        // 3단계: 모든 효과 취소 (사이드바 보이고 집중모드 해제)
+                                                                        setIsSidebarOpen(true);
+                                                                        setIsZenMode(false);
                                                                     }
                                                                 }}
                                                                 className={`flex items-center justify-center gap-2 h-8 w-8 rounded-full text-[12px] font-black tracking-widest transition-all ${isZenMode ? 'text-white' : 'text-slate-400 hover:text-indigo-600'}`}
