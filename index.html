@@ -6571,6 +6571,8 @@
                         setCurrentBookId(null); // 활성 작품 초기화
                         setView('library'); // 뷰 초기화
                         hasFetchedCloud.current = false;
+                        setIsDirty(false); // 로그아웃 시 변경 사항 없음으로 초기화
+                        isInitialLoad.current = true; // 다음 데이터 로드 시 초기 상태로 인식하게 함
                         localStorage.removeItem('sagak_library'); // 로컬 저장소 초기화
                     } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
                         hasFetchedCloud.current = false; // 새로운 로그인 시 페칭 준비
