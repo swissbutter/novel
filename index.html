@@ -2262,7 +2262,6 @@
 
                 // 초기 실행
                 if (window.innerWidth <= 1024) {
-                    setIsZenMode(true); // 모바일은 집중 모드(사이드바 닫힘)로 시작
                     const currentProject = projects.find(p => p.id === activeProjectId);
                     if (currentProject && currentProject.type === 'board') {
                         setCorkboardMode(true);
