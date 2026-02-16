@@ -5796,6 +5796,33 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        
+                                        {/* 자동 저장 설정 추가 */}
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-zinc-800/30 rounded-lg border border-slate-100 dark:border-zinc-800">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-indigo-600 dark:text-indigo-400"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[11px] font-black text-slate-700 dark:text-zinc-200">클라우드 자동 저장</div>
+                                                    <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Auto-sync Interval</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <select 
+                                                    value={cloudAutoSaveInterval} 
+                                                    onChange={(e) => setCloudAutoSaveInterval(parseInt(e.target.value))}
+                                                    className="bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-[11px] font-black px-2 py-1.5 rounded outline-none focus:border-indigo-500 transition-colors"
+                                                >
+                                                    <option value={0}>사용 안함</option>
+                                                    <option value={1}>1분</option>
+                                                    <option value={5}>5분</option>
+                                                    <option value={10}>10분</option>
+                                                    <option value={30}>30분</option>
+                                                    <option value={60}>1시간</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="p-6 bg-slate-50 dark:bg-zinc-800/50 rounded-sm border border-dashed border-slate-200 dark:border-zinc-700 text-center">
@@ -6095,7 +6122,7 @@
             );
         };
 
-        const Library = ({ books, user, onLogin, onLogout, onWithdrawal, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, onCloudUpload, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory }) => {
+        const Library = ({ books, user, onLogin, onLogout, onWithdrawal, onSelectBook, onCreateBook, onDeleteBook, onUpdateBook, onImport, onReorderBooks, onCloudUpload, isDarkMode, toggleDarkMode, fontMode, toggleFont, focusPosition, setFocusPosition, defaultTargetCount, setDefaultTargetCount, editorWidth, setEditorWidth, editorFontSize, setEditorFontSize, showDocWordCount, setShowDocWordCount, enableHistory, setEnableHistory, cloudAutoSaveInterval, setCloudAutoSaveInterval }) => {
             const [modalConfig, setModalConfig] = useState({ isOpen: false, mode: 'create', targetBook: null });
             const [showSystemSettings, setShowSystemSettings] = useState(false);
             
@@ -6621,7 +6648,9 @@
             const [editorFontSize, setEditorFontSize] = useState(() => parseInt(localStorage.getItem('sagak_editor_fontsize')) || 18);
             const [showDocWordCount, setShowDocWordCount] = useState(() => localStorage.getItem('sagak_show_doc_wordcount') !== 'false');
             const [enableHistory, setEnableHistory] = useState(() => localStorage.getItem('sagak_enable_history') !== 'false');
+            const [cloudAutoSaveInterval, setCloudAutoSaveInterval] = useState(() => parseInt(localStorage.getItem('sagak_cloud_autosave_interval')) || 10);
             const saveTimerRef = useRef(null);
+            const autoSaveTimerRef = useRef(null);
 
             useEffect(() => {
                 if (isDarkMode) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
@@ -6636,7 +6665,21 @@
                 localStorage.setItem('sagak_editor_fontsize', editorFontSize);
                 localStorage.setItem('sagak_show_doc_wordcount', showDocWordCount);
                 localStorage.setItem('sagak_enable_history', enableHistory);
-            }, [focusPosition, defaultTargetCount, editorWidth, editorFontSize, showDocWordCount, enableHistory]);
+                localStorage.setItem('sagak_cloud_autosave_interval', cloudAutoSaveInterval);
+            }, [focusPosition, defaultTargetCount, editorWidth, editorFontSize, showDocWordCount, enableHistory, cloudAutoSaveInterval]);
+
+            // 클라우드 자동 저장 타이머
+            useEffect(() => {
+                if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
+                
+                if (user && cloudAutoSaveInterval > 0) {
+                    autoSaveTimerRef.current = setInterval(() => {
+                        handleCloudUpload();
+                    }, cloudAutoSaveInterval * 60 * 1000);
+                }
+                
+                return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
+            }, [cloudAutoSaveInterval, user, handleCloudUpload]);
 
             const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
@@ -6809,6 +6852,8 @@
                             setShowDocWordCount={setShowDocWordCount}
                             enableHistory={enableHistory}
                             setEnableHistory={setEnableHistory}
+                            cloudAutoSaveInterval={cloudAutoSaveInterval}
+                            setCloudAutoSaveInterval={setCloudAutoSaveInterval}
                         />
                     ) : view === 'workspace' && currentBook && (
                         <Workspace
