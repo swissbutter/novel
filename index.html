@@ -4088,8 +4088,11 @@
                                                 }}
                                             >
                                                 {/* 상단 공통 도구 (타이머, 집중모드) */}
-                                                <div className="fixed top-6 right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
+                                                <div className="fixed top-6 right-6 sm:right-8 md:right-10 z-[110] flex flex-col items-end gap-2 pointer-events-none">
                                                     <div className="flex items-center gap-2 pointer-events-auto">
+                                                        <span className={`text-[11px] font-bold text-slate-600 dark:text-zinc-400 hidden md:inline transition-opacity duration-500 ${isZenMode ? 'opacity-0' : 'opacity-100'}`}>
+                                                            {user?.user_metadata?.full_name ? `${user.user_metadata.full_name} 작가님` : '작가님'}
+                                                        </span>
                                                         <button
                                                             onClick={() => setIsPomodoroOpen(!isPomodoroOpen)}
                                                             className={`flex items-center justify-center w-8 h-8 rounded-full shadow-xl border transition-all ${isPomodoroOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-white border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700'}`}
@@ -4143,6 +4146,17 @@
                                                                 <IconZen className={`w-4 h-4 ${isZenMode ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
                                                             </button>
                                                         </div>
+                                                        <button
+                                                            onClick={() => setShowSystemSettings(true)}
+                                                            className="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-slate-200 hover:border-indigo-300 dark:bg-zinc-800 dark:border-zinc-700 transition-all shadow-xl"
+                                                            title="시스템 설정"
+                                                        >
+                                                            {user?.user_metadata?.avatar_url ? (
+                                                                <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover rounded-full" />
+                                                            ) : (
+                                                                <IconSettings className="w-4 h-4 text-slate-400" />
+                                                            )}
+                                                        </button>
                                                     </div>
                                                     <AnimatePresence>
                                                         {isPomodoroOpen && (
@@ -4849,7 +4863,7 @@
                         {!isTrashOpen && activeProject.type === 'doc' && !compareMode && !isZenMode && !corkboardMode && enableHistory && (
                             <button
                                 onClick={() => setShowHistoryModal(true)}
-                                className="mobile-hide absolute bottom-8 right-8 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
+                                className="mobile-hide absolute bottom-8 right-6 sm:right-8 md:right-10 z-[100] h-7 px-2.5 bg-white dark:bg-zinc-800 shadow-xl border border-slate-200 dark:border-zinc-700 rounded-[3px] flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 font-bold hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 transition-all text-[10px]"
                             >
                                 <IconHistory className="w-3 h-3" />
                                 <span>기록 {activeProject.history?.length > 0 ? `(${activeProject.history.length})` : ''}</span>
@@ -6338,17 +6352,22 @@
                                     <span className="text-xs font-black tracking-tight hidden sm:inline">클라우드 동기화</span>
                                 </button>
                             )}
-                            <button
-                                onClick={() => setShowSystemSettings(true)}
-                                className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
-                                title="시스템 설정"
-                            >
-                                {user?.user_metadata?.avatar_url ? (
-                                    <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" />
-                                ) : (
-                                    <IconSettings className="w-5 h-5" />
-                                )}
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-slate-600 dark:text-zinc-400 hidden sm:inline">
+                                    {user?.user_metadata?.full_name ? `${user.user_metadata.full_name} 작가님` : '작가님'}
+                                </span>
+                                <button
+                                    onClick={() => setShowSystemSettings(true)}
+                                    className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
+                                    title="시스템 설정"
+                                >
+                                    {user?.user_metadata?.avatar_url ? (
+                                        <img src={user.user_metadata.avatar_url} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <IconSettings className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </header>
 
