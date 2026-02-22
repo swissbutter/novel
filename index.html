@@ -2224,7 +2224,10 @@
             const [projects, setProjects] = useState(currentBook.projects || []);
             const [trash, setTrash] = useState(currentBook.trash || []); // 휴지통
             const [isTrashOpen, setIsTrashOpen] = useState(false); // 휴지통 열림 상태
-            const [activeProjectId, setActiveProjectId] = useState(currentBook.activeProjectId || (currentBook.projects[0] ? currentBook.projects[0].id : 'default'));
+            const [activeProjectId, setActiveProjectId] = useState(() => {
+                const saved = localStorage.getItem(`sagak_last_proj_${currentBook.id}`);
+                return saved || (currentBook.activeProjectId || (currentBook.projects[0] ? currentBook.projects[0].id : 'default'));
+            });
             const [expandedProjects, setExpandedProjects] = useState(currentBook.expandedProjects || (currentBook.projects[0] ? { [currentBook.projects[0].id]: true } : {}));
             const [scale, setScale] = useState(currentBook.scale || 1);
             const [pan, setPan] = useState(currentBook.pan || { x: 0, y: 0 });
@@ -2235,7 +2238,16 @@
             const [showHistoryModal, setShowHistoryModal] = useState(false);
             const [showSynopsisModal, setShowSynopsisModal] = useState(false);
             const [openStatusDropdownId, setOpenStatusDropdownId] = useState(null);
-            const [corkboardMode, setCorkboardMode] = useState(false);
+            const [corkboardMode, setCorkboardMode] = useState(() => {
+                const saved = localStorage.getItem(`sagak_last_mode_${currentBook.id}`);
+                return saved === 'true';
+            });
+
+            // 프로젝트 및 모드 상태 저장
+            useEffect(() => {
+                localStorage.setItem(`sagak_last_proj_${currentBook.id}`, activeProjectId);
+                localStorage.setItem(`sagak_last_mode_${currentBook.id}`, corkboardMode);
+            }, [activeProjectId, corkboardMode, currentBook.id]);
             const [corkboardSearch, setCorkboardSearch] = useState('');
             const [corkboardStatusFilter, setCorkboardStatusFilter] = useState(null);
             const [isCorkboardFilterOpen, setIsCorkboardFilterOpen] = useState(false);
@@ -6638,7 +6650,20 @@
                 }
             }, [user]);
 
-            const [currentBookId, setCurrentBookId] = useState(null);
+            const [currentBookId, setCurrentBookId] = useState(() => {
+                const lastBookId = localStorage.getItem('sagak_last_book_id');
+                return lastBookId || null;
+            });
+
+            // 상태 저장 로직 추가
+            useEffect(() => {
+                if (currentBookId) {
+                    localStorage.setItem('sagak_last_book_id', currentBookId);
+                } else {
+                    localStorage.removeItem('sagak_last_book_id');
+                }
+            }, [currentBookId]);
+
             const [toast, setToast] = useState(null);
             const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
             const [fontMode, setFontMode] = useState(() => localStorage.getItem('sagak_font') || 'maruburi');
@@ -6680,6 +6705,20 @@
                 
                 return () => { if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current); };
             }, [cloudAutoSaveInterval, user, handleCloudUpload]);
+
+            // 브라우저 백그라운드 전환 시 즉시 저장 (모바일 대응)
+            useEffect(() => {
+                const handleVisibilityChange = () => {
+                    if (document.visibilityState === 'hidden') {
+                        localStorage.setItem('sagak_library', JSON.stringify(books));
+                        if (currentBookId) {
+                            localStorage.setItem('sagak_last_book_id', currentBookId);
+                        }
+                    }
+                };
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }, [books, currentBookId]);
 
             const toggleDarkMode = () => setIsDarkMode(prev => !prev);
 
