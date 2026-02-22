@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <title>사각 스튜디오</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -18,6 +18,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="theme-color" content="#09090b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.log('Service Worker registration failed: ', err));
+            });
+        }
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -6386,6 +6398,11 @@
                                 </button>
                             )}
                             <div className="flex items-center gap-3">
+                                {user && (
+                                    <span className="text-sm font-black text-slate-700 dark:text-zinc-300 mr-1 hidden sm:block">
+                                        {user.user_metadata?.full_name || '작가'}님
+                                    </span>
+                                )}
                                 <button
                                     onClick={() => setShowSystemSettings(true)}
                                     className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
