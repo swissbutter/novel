@@ -6410,11 +6410,6 @@
                                 </button>
                             )}
                             <div className="flex items-center gap-3">
-                                {user && (
-                                    <span className="text-sm font-black text-slate-700 dark:text-zinc-300 mr-1 hidden sm:block">
-                                        {user.user_metadata?.full_name || '작가'}님
-                                    </span>
-                                )}
                                 <button
                                     onClick={() => setShowSystemSettings(true)}
                                     className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
