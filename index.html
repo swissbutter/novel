@@ -6548,10 +6548,7 @@
         };
 
         const App = () => {
-            const [view, setView] = useState(() => {
-                const lastBookId = localStorage.getItem('sagak_last_book_id');
-                return lastBookId ? 'workspace' : 'library';
-            });
+            const [view, setView] = useState('library');
             const [user, setUser] = useState(null);
             const hasFetchedCloud = useRef(false);
             const [books, setBooks] = useState([]);
@@ -6648,10 +6645,7 @@
                 }
             }, [user]);
 
-            const [currentBookId, setCurrentBookId] = useState(() => {
-                const lastBookId = localStorage.getItem('sagak_last_book_id');
-                return lastBookId || null;
-            });
+            const [currentBookId, setCurrentBookId] = useState(null);
 
             // 상태 저장 로직 추가
             useEffect(() => {
