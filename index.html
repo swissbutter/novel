@@ -6410,6 +6410,11 @@
                                 </button>
                             )}
                             <div className="flex items-center gap-3">
+                                {user && (
+                                    <span className="text-xs font-black text-slate-600 dark:text-zinc-400 mobile-hide">
+                                        {user.user_metadata?.full_name || '작가'}님
+                                    </span>
+                                )}
                                 <button
                                     onClick={() => setShowSystemSettings(true)}
                                     className={`w-9 h-9 flex items-center justify-center rounded-full overflow-hidden transition-all ${showSystemSettings ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-950' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'}`}
@@ -6548,7 +6553,10 @@
         };
 
         const App = () => {
-            const [view, setView] = useState('library');
+            const [view, setView] = useState(() => {
+                const lastBookId = localStorage.getItem('sagak_last_book_id');
+                return lastBookId ? 'workspace' : 'library';
+            });
             const [user, setUser] = useState(null);
             const hasFetchedCloud = useRef(false);
             const [books, setBooks] = useState([]);
@@ -6817,26 +6825,12 @@
 
             return (
                 <div className={`w-full font-pretendard antialiased text-slate-800 flex flex-col ${isDarkMode ? 'dark' : ''} ${fontMode}`} style={{ height: '100%' }}>                    <AnimatePresence> {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />} </AnimatePresence>
-                    {!user ? (
-                        <Landing onLogin={async () => {
-                            const { error } = await supabaseClient?.auth.signInWithOAuth({ 
-                                provider: 'google',
-                                options: {
-                                    redirectTo: window.location.origin
-                                }
-                            });
-                            if (error) {
-                                console.error('Login error:', error.message);
-                                showToast("로그인 실패: " + error.message, "error");
-                            }
-                        }} />
-                    ) : view === 'library' ? (
+                    {view === 'library' ? (
                         <Library
                             books={books}
                             user={user}
                             onCloudUpload={handleCloudUpload}
                             onLogin={async () => {
-                                // (혹시 모를 상황 대비 코드 유지)
                                 const { error } = await supabaseClient?.auth.signInWithOAuth({ 
                                     provider: 'google',
                                     options: {
@@ -6889,7 +6883,7 @@
                             cloudAutoSaveInterval={cloudAutoSaveInterval}
                             setCloudAutoSaveInterval={setCloudAutoSaveInterval}
                         />
-                    ) : view === 'workspace' && currentBook && (
+                    ) : view === 'workspace' && currentBook ? (
                         <Workspace
                             currentBook={currentBook}
                             user={user}
@@ -6897,7 +6891,7 @@
                                 const { error } = await supabaseClient?.auth.signInWithOAuth({ 
                                     provider: 'google',
                                     options: {
-                                        redirectTo: 'https://sagakstudio.vercel.app/'
+                                        redirectTo: window.location.origin
                                     }
                                 });
                                 if (error) {
@@ -6920,6 +6914,65 @@
                             setDefaultTargetCount={setDefaultTargetCount}
                             editorWidth={editorWidth}
                             editorFontSize={editorFontSize}
+                            showDocWordCount={showDocWordCount}
+                            setShowDocWordCount={setShowDocWordCount}
+                            enableHistory={enableHistory}
+                            setEnableHistory={setEnableHistory}
+                            cloudAutoSaveInterval={cloudAutoSaveInterval}
+                            setCloudAutoSaveInterval={setCloudAutoSaveInterval}
+                        />
+                    ) : (
+                        // Fallback if view is workspace but no book is selected
+                        <Library
+                            books={books}
+                            user={user}
+                            onCloudUpload={handleCloudUpload}
+                            onLogin={async () => {
+                                const { error } = await supabaseClient?.auth.signInWithOAuth({ 
+                                    provider: 'google',
+                                    options: {
+                                        redirectTo: window.location.origin
+                                    }
+                                });
+                                if (error) {
+                                    console.error('Login error:', error.message);
+                                    showToast("로그인 실패: " + error.message, "error");
+                                }
+                            }}
+                            onLogout={handleLogout}
+                            onWithdrawal={handleWithdrawal}
+                            onSelectBook={(id) => { 
+                                setCurrentBookId(id); 
+                                setView('workspace'); 
+                            }}
+                            onCreateBook={(newBook) => setBooks([...books, newBook])}
+                            onDeleteBook={(id) => {
+                                setBooks(prev => prev.filter(b => b.id !== id));
+                                showToast("작품이 삭제되었습니다.");
+                            }}
+                            onUpdateBook={handleUpdateBook}
+                            onReorderBooks={handleReorderBooks}
+                            onImport={(imported, shouldReplace) => {
+                                if (shouldReplace) {
+                                    setBooks(imported);
+                                    showToast("서재를 초기화하고 데이터를 불러왔습니다.");
+                                } else {
+                                    setBooks(prev => [...prev, ...imported]);
+                                    showToast("라이브러리를 추가로 불러왔습니다.");
+                                }
+                            }}
+                            isDarkMode={isDarkMode}
+                            toggleDarkMode={toggleDarkMode}
+                            fontMode={fontMode}
+                            toggleFont={toggleFont}
+                            focusPosition={focusPosition}
+                            setFocusPosition={setFocusPosition}
+                            defaultTargetCount={defaultTargetCount}
+                            setDefaultTargetCount={setDefaultTargetCount}
+                            editorWidth={editorWidth}
+                            setEditorWidth={setEditorWidth}
+                            editorFontSize={editorFontSize}
+                            setEditorFontSize={setEditorFontSize}
                             showDocWordCount={showDocWordCount}
                             setShowDocWordCount={setShowDocWordCount}
                             enableHistory={enableHistory}
