@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Library Batch Downloader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f4f8; }
+        button { padding: 20px 40px; font-size: 18px; cursor: pointer; background: #6366f1; color: white; border: none; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+        button:disabled { background: #cbd5e1; cursor: wait; }
+    </style>
+</head>
+<body>
+    <button id="downloadBtn">모든 라이브러리 압축 다운로드 (.zip)</button>
+
+    <script>
+        const urls = {
+            "jszip.min.js": "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
+            "FileSaver.min.js": "https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js",
+            "docx.js": "https://unpkg.com/docx@7.1.0/build/index.js",
+            "react.min.js": "https://unpkg.com/react@18/umd/react.production.min.js",
+            "react-dom.min.js": "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
+            "babel.min.js": "https://unpkg.com/@babel/standalone/babel.min.js",
+            "tailwind.js": "https://cdn.tailwindcss.com",
+            "framer-motion.js": "https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js",
+            "crypto-js.min.js": "https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js",
+            "dagre.min.js": "https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"
+        };
+
+        document.getElementById('downloadBtn').onclick = async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerText = "파일 다운로드 중...";
+            
+            const zip = new JSZip();
+            const folder = zip.folder("lib");
+
+            for (const [name, url] of Object.entries(urls)) {
+                try {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    folder.file(name, blob);
+                } catch (e) {
+                    console.error(`${name} 다운로드 실패:`, e);
+                }
+            }
+
+            btn.innerText = "압축 생성 중...";
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                saveAs(content, "libraries.zip");
+                btn.disabled = false;
+                btn.innerText = "다운로드 완료!";
+            });
+        };
+    </script>
+</body>
+</html>
